@@ -4,23 +4,20 @@ Daily Brain Teasers Web App using React/ React Native
 
 ## Overview
 
-My project is a recipe/ online cookbook. Where authors can provide their recipes onto the web page. 
-It will provide many recipes in of which people with accounts can create, so that an the author of the 
-recipe can get recognition for it. The recipes will contain the name of the recipe, ingredients required 
-to make the dish, followed by the steps on how to create. There will also be images that can be shown as
-the 'expected' end result. People can also filter the dishes they want by name, or rather to be more specific if they want to cook a certain dish with a certain ingredient. They can filter by ingredients and see which dish specifically contains that desired ingredient.
-
+My project is a brain teaser/ tenacious puzzle a day to help keep the mind sharp. 
+It will provide a new brain teaser each day with variations as to how to solve a problem. Will take suggestions from random users on the website as to what problem they would like  to see next or if they have a problem they would like to submit. Questions will have hints and a solutions button after a 'X' number of attempts. There will also be a QnA section where people can discuss the problem at hand possibly think up more variations for future problems. Will try to implement a images sections to better visualize the problems. There will be a home page and can filter by problem name and possibly number. Each user can have a unique profile with questions succesfully answersed out of the all the questions listed.
+This will be strictly mental strength training exercises, so no prequisites will be needed in order to solve a question. Just old fashioned pen, paper and good ol' effort
 
 
 
 ## Data Model
 
 
-The application will store Users, Recipes, Ingredients and Instruction on how to cook the recipes
+The application will store Users, Questions, and Solutions
 
-* users can have multiple recipes
-* each recipe can vary, 
-* anonymous users can also post recipes/dishes (this may be changed)
+* users will have a list of what questions they have completed
+* Questions will all be a little different
+* Solutions will always have text and try to guide the user to understand the thought process. Some solutions may include images *Research how to implement .png*
 
 SAMPLE DOCUMENTS:
 
@@ -38,11 +35,11 @@ An Example List with Embedded Items:
 ```javascript
 {
   user: // a reference to a User object
-  dish: "Cheesy scramble",
-  ingredients: "eggs, cheese, salt, pepper"
-  instructions: "step 1: cook, step 2: dont burn. Rinse and repeat"
+  questions_num: //how many questions they have successfully answered
+  contribution_score: //how many questions they have suggested and been actually implemented
   createdAt: // timestamp
 }
+//more will be added as this project flows along
 ```
 
 
@@ -52,7 +49,7 @@ An Example List with Embedded Items:
 
 ## Wireframes
 
-
+###TODO
 (___TODO__: wireframes for all of the pages on your site; they can be as simple as photos of drawings or you can use a tool like Balsamiq, Omnigraffle, etc._)
 
 /cook/add adding a recipe to the homepage
@@ -78,24 +75,23 @@ Here's a [complex example from wikipedia](https://upload.wikimedia.org/wikipedia
 ## User Stories or Use Cases
 
 1. As a non-registered user you can create an account
-2. As a non-registered user you can also post recipes anonomously
-3. As a user you can add recipes
-4. There recipes will contain your username and the date in which you posted it
-5. As a user you can see what recipes you have contributed
-6. As a user you can edit your recipes or create additions to them.
+2. As a non-registered user you can answer questions still but will not have a score
+3. As a user you can post in the comments section and maintain a score
+4. If your submitted question is selected, will receieve mention/shoutout for it
+5. As a user you can see what question you have contributed
+
 
 
 ## Research Topics
 
-(___TODO__: the research topics that you're planning on working on along with their point values... and the total points of research topics listed_)
 
+1. React Native
 
-1. Vue.js (5 points) want to try and implement something not using node.js
-Vue.js is state of the art and is currently a hot topic. But its libraries are also very challenging to learn.
-2. User Athentication (4 points)
-  create a user/password login system. 
+2. React Router 
 
-Total points: 9
+3. Swift Implementation??? via IOS
+
+4. 
 
 
 ## [Link to Initial Main Project File](app.js) 
@@ -108,5 +104,5 @@ Total points: 9
 
 1. [passport.js authentication docs](http://passportjs.org/docs) - (add link to source code that was based on this)
 2. [tutorial on vue.js](https://vuejs.org/v2/guide/) - (add link to source code that was based on this)
-
-^^^ Please refer to the above
+^^^ Will fix
+^^^ Please refer to the above 
