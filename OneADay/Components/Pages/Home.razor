@@ -1,0 +1,159 @@
+@page "/"
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject TeaserStore Store
+@inject StatsStore Stats
+@inject ProtectedLocalStorage LocalStorage
+
+<PageTitle>One a Day — Challenge of the day</PageTitle>
+
+<div class="oad-home">
+    <div class="oad-banner">Challenge of the day</div>
+
+    @if (_teaser is null)
+    {
+        <div class="oad-box">
+            <h2>Question:</h2>
+            <p>No brain teaser has been posted yet. Check back soon!</p>
+        </div>
+    }
+    else
+    {
+        <div class="oad-box oad-question">
+            <h2>Question:</h2>
+            @if (_teaser.Date != _today)
+            {
+                <p class="oad-question-date">From @_teaser.Date.ToString("dddd d MMMM yyyy") — today's teaser hasn't been posted yet.</p>
+            }
+            <p class="oad-question-text">@_teaser.Question</p>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(_teaser.Hint))
+        {
+            <div class="oad-hint-section">
+                @if (_showHint)
+                {
+                    <button class="oad-hint-revealed" @onclick="() => _showHint = false">
+                        <span>💡 Hint: @_teaser.Hint</span>
+                        <span class="oad-hint-hide">Click to hide</span>
+                    </button>
+                }
+                else
+                {
+                    <button class="oad-hint-toggle" @onclick="() => _showHint = true">
+                        💡 Stuck? Click to reveal a hint
+                    </button>
+                }
+            </div>
+        }
+
+        <div class="oad-box">
+            <h2>Submission:</h2>
+            <textarea class="oad-submission-input" rows="3" maxlength="@MaxSubmissionLength"
+                      placeholder="Type your answer here..."
+                      @bind="_submission" @bind:event="oninput"
+                      disabled="@_solved"></textarea>
+
+            <div class="oad-submit-row">
+                <button class="oad-btn-green" @onclick="CheckAnswer"
+                        disabled="@(_solved || string.IsNullOrWhiteSpace(_submission))">
+                    Submit answer
+                </button>
+            </div>
+
+            @if (_feedback is not null)
+            {
+                <p class="oad-feedback @(_solved ? "oad-correct" : "oad-incorrect")">@_feedback</p>
+            }
+
+            @if (_solved && !string.IsNullOrWhiteSpace(_teaser.Solution))
+            {
+                <p class="oad-solution">@_teaser.Solution</p>
+            }
+        </div>
+
+        @if (_stats is not null && _stats.TotalSubmissions > 0)
+        {
+            <p class="oad-stats">
+                🧠 @_stats.UniqueAttempters.ToString("N0") @(_stats.UniqueAttempters == 1 ? "mind has" : "minds have") taken on this challenge
+                — @_stats.SuccessfulSubmissions.ToString("N0")/@_stats.TotalSubmissions.ToString("N0") successful attempts
+            </p>
+        }
+    }
+</div>
+
+@code {
+    private const int MaxSubmissionLength = 300;
+    private const string VisitorKey = "oad-visitor-id";
+
+    private BrainTeaser? _teaser;
+    private DateOnly _today;
+    private string _submission = string.Empty;
+    private string? _feedback;
+    private bool _solved;
+    private bool _showHint;
+    private int _attempts;
+    private Guid _visitorId;
+    private StatsSnapshot? _stats;
+
+    protected override void OnInitialized()
+    {
+        _today = DateOnly.FromDateTime(DateTime.Now);
+        _teaser = Store.GetCurrent(_today);
+        if (_teaser is not null)
+        {
+            _stats = Stats.Get(_teaser.Id);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+        // Anonymous device id so "unique minds" can be counted without accounts.
+        var stored = await LocalStorage.GetAsync<Guid>(VisitorKey);
+        if (stored.Success && stored.Value != Guid.Empty)
+        {
+            _visitorId = stored.Value;
+        }
+        else
+        {
+            _visitorId = Guid.NewGuid();
+            await LocalStorage.SetAsync(VisitorKey, _visitorId);
+        }
+    }
+
+    private void CheckAnswer()
+    {
+        if (_teaser is null || string.IsNullOrWhiteSpace(_submission))
+        {
+            return;
+        }
+
+        // The maxlength attribute handles honest browsers; this backstops
+        // anything that bypasses it (e.g. crafted SignalR messages).
+        if (_submission.Length > MaxSubmissionLength)
+        {
+            _submission = _submission[..MaxSubmissionLength];
+        }
+
+        _attempts++;
+        if (_teaser.AcceptsAnswer(_submission))
+        {
+            _solved = true;
+            _feedback = $"Correct! Solved in {_attempts} attempt{(_attempts == 1 ? "" : "s")}. 🎉";
+        }
+        else
+        {
+            _feedback = "Not quite — stretch that brain and try again!";
+        }
+
+        if (_visitorId == Guid.Empty)
+        {
+            _visitorId = Guid.NewGuid();
+        }
+        Stats.RecordSubmission(_teaser.Id, _visitorId, _solved);
+        _stats = Stats.Get(_teaser.Id);
+    }
+}

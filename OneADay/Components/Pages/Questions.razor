@@ -1,0 +1,67 @@
+@page "/questions"
+@inject TeaserStore Store
+
+<PageTitle>One a Day — All questions</PageTitle>
+
+<div class="oad-questions">
+    <div class="oad-banner">All Questions</div>
+
+    <label class="oad-search-label" for="search">Search Bar:</label>
+    <input id="search" class="oad-search" type="search"
+           placeholder="Search past questions..."
+           @bind="_searchTerm" @bind:event="oninput" />
+
+    <div class="oad-box">
+        @if (Results.Count == 0)
+        {
+            <p>No questions found.</p>
+        }
+        else
+        {
+            <ol class="oad-question-list" reversed>
+                @foreach (var teaser in Results)
+                {
+                    <li>
+                        <div class="oad-q-date">@teaser.Date.ToString("ddd d MMM yyyy")</div>
+                        <div class="oad-q-text">@teaser.Question</div>
+                        @if (teaser.Date < _today)
+                        {
+                            @if (_revealed.Contains(teaser.Id))
+                            {
+                                <div class="oad-q-solution">
+                                    <strong>Answer:</strong> @teaser.Answer.Split(';')[0].Trim()
+                                    @if (!string.IsNullOrWhiteSpace(teaser.Solution))
+                                    {
+                                        <br />
+                                        <span>@teaser.Solution</span>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <button class="oad-reveal" @onclick="() => _revealed.Add(teaser.Id)">Show solution</button>
+                            }
+                        }
+                        else
+                        {
+                            <span class="oad-q-today">Today's challenge — <a href="/">solve it on the home page!</a></span>
+                        }
+                    </li>
+                }
+            </ol>
+        }
+    </div>
+</div>
+
+@code {
+    private string _searchTerm = string.Empty;
+    private DateOnly _today;
+    private readonly HashSet<Guid> _revealed = [];
+
+    private IReadOnlyList<BrainTeaser> Results => Store.Search(_searchTerm, _today);
+
+    protected override void OnInitialized()
+    {
+        _today = DateOnly.FromDateTime(DateTime.Now);
+    }
+}
