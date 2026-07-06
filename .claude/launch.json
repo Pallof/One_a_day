@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "oneaday",
+      "runtimeExecutable": "/Users/danielsing/.dotnet/dotnet",
+      "runtimeArgs": ["run", "--project", "OneADay", "--urls", "http://localhost:5178"],
+      "port": 5178
+    }
+  ]
+}

@@ -1,2 +1,10 @@
 node_modules/
 .DS_Store
+
+# .NET build output
+bin/
+obj/
+*.user
+
+# Claude Code local settings
+.claude/settings.local.json

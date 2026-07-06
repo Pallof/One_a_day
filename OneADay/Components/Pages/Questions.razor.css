@@ -1,0 +1,60 @@
+.oad-questions {
+    max-width: 720px;
+}
+
+.oad-search-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+}
+
+.oad-search {
+    width: 100%;
+    max-width: 420px;
+    border: 2px solid #1a1a1a;
+    border-radius: 4px;
+    padding: 0.6rem 0.9rem;
+    font-size: 1.05rem;
+    margin-bottom: 1.25rem;
+}
+
+.oad-question-list {
+    margin: 0;
+    padding-left: 1.5rem;
+}
+
+.oad-question-list li {
+    margin-bottom: 1.4rem;
+}
+
+.oad-q-date {
+    font-size: 0.85rem;
+    font-weight: 700;
+    opacity: 0.75;
+}
+
+.oad-q-text {
+    font-size: 1.05rem;
+    margin: 0.25rem 0 0.4rem 0;
+}
+
+.oad-reveal {
+    background: none;
+    border: 2px solid #1a1a1a;
+    border-radius: 4px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.oad-q-solution {
+    background: rgba(255, 255, 255, 0.55);
+    padding: 0.6rem 0.9rem;
+    border-radius: 4px;
+}
+
+.oad-q-today {
+    font-size: 0.9rem;
+    font-style: italic;
+}
