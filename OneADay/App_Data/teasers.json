@@ -1,0 +1,34 @@
+[
+  {
+    "Id": "d069c528-2987-42dc-bdd3-d68335ebe191",
+    "Date": "2026-07-02",
+    "Question": "I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?",
+    "Answer": "an echo; echo",
+    "Hint": "You might meet me in the mountains or an empty hall.",
+    "Solution": "An echo \u2014 it \u0022speaks\u0022 by repeating sound and needs no body to do it."
+  },
+  {
+    "Id": "9bf16cce-4a28-443e-ae9a-05facb1f816c",
+    "Date": "2026-07-01",
+    "Question": "What has keys but can\u0027t open locks, space but no room, and you can enter but not go inside?",
+    "Answer": "a keyboard; keyboard",
+    "Hint": "You are probably touching one right now.",
+    "Solution": "A keyboard \u2014 it has keys, a space bar, and an enter key."
+  },
+  {
+    "Id": "3ab2e6c1-2f61-4c5a-a84e-505292102a58",
+    "Date": "2026-06-30",
+    "Question": "A farmer has 17 sheep and all but 9 run away. How many are left?",
+    "Answer": "9; nine",
+    "Hint": "Read the question again, slowly.",
+    "Solution": "\u0022All but 9\u0022 run away, so 9 remain."
+  },
+  {
+    "Id": "893b92fc-eb80-4f39-9b08-1ef92ff09844",
+    "Date": "2026-07-03",
+    "Question": "What gets wetter the more it dries?",
+    "Answer": "a towel; towel",
+    "Hint": "You\u0027ll find one in the bathroom.",
+    "Solution": null
+  }
+]

@@ -1,0 +1,182 @@
+@page "/admin"
+@inject TeaserStore Store
+@inject StatsStore Stats
+
+<PageTitle>One a Day — Add a teaser</PageTitle>
+
+<div class="oad-admin">
+    <div class="oad-banner">@(_editingId is null ? "Add a brain teaser" : "Edit brain teaser")</div>
+
+    <div class="oad-box">
+        <div class="oad-field">
+            <label for="date">Show on date</label>
+            <InputDate id="date" @bind-Value="_form.Date" />
+            @if (_dateWarning is not null)
+            {
+                <span class="oad-warning">@_dateWarning</span>
+            }
+        </div>
+
+        <div class="oad-field">
+            <label for="question">Question *</label>
+            <textarea id="question" rows="4" placeholder="The brain teaser itself..."
+                      @bind="_form.Question"></textarea>
+        </div>
+
+        <div class="oad-field">
+            <label for="answer">Answer *</label>
+            <input id="answer" placeholder="Accepted answer — separate alternatives with ; (e.g. 9; nine)"
+                   @bind="_form.Answer" />
+        </div>
+
+        <div class="oad-field">
+            <label for="hint">Hint (optional)</label>
+            <input id="hint" placeholder="Concealed on the home page until the solver clicks to reveal it" @bind="_form.Hint" />
+        </div>
+
+        <div class="oad-field">
+            <label for="solution">Solution / explanation (optional)</label>
+            <textarea id="solution" rows="3" placeholder="Explanation revealed once solved or on past questions"
+                      @bind="_form.Solution"></textarea>
+        </div>
+
+        <div class="oad-admin-actions">
+            <button class="oad-btn-green" @onclick="SaveAsync"
+                    disabled="@(string.IsNullOrWhiteSpace(_form.Question) || string.IsNullOrWhiteSpace(_form.Answer))">
+                @(_editingId is null ? "Add teaser" : "Save changes")
+            </button>
+            @if (_editingId is not null)
+            {
+                <button class="oad-btn-plain" @onclick="ResetForm">Cancel edit</button>
+            }
+        </div>
+
+        @if (_savedMessage is not null)
+        {
+            <p class="oad-saved">@_savedMessage</p>
+        }
+    </div>
+
+    <div class="oad-banner">Scheduled &amp; past teasers</div>
+
+    <div class="oad-box">
+        @if (_all.Count == 0)
+        {
+            <p>No teasers yet — add your first one above.</p>
+        }
+        else
+        {
+            <table class="oad-admin-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Question</th>
+                        <th>Answer</th>
+                        <th>Stats</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var teaser in _all)
+                    {
+                        <tr class="@(teaser.Date == _today ? "oad-row-today" : teaser.Date > _today ? "oad-row-future" : "")">
+                            <td class="oad-cell-date">@teaser.Date.ToString("ddd d MMM yyyy")</td>
+                            <td>@Truncate(teaser.Question, 80)</td>
+                            <td>@Truncate(teaser.Answer, 30)</td>
+                            <td class="oad-cell-stats">@StatsSummary(teaser.Id)</td>
+                            <td class="oad-cell-actions">
+                                <button class="oad-btn-plain" @onclick="() => Edit(teaser)">Edit</button>
+                                <button class="oad-btn-danger" @onclick="() => Delete(teaser.Id)">Delete</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@code {
+    private BrainTeaser _form = new();
+    private Guid? _editingId;
+    private string? _savedMessage;
+    private string? _dateWarning;
+    private DateOnly _today;
+    private IReadOnlyList<BrainTeaser> _all = [];
+
+    protected override void OnInitialized()
+    {
+        _today = DateOnly.FromDateTime(DateTime.Now);
+        ResetForm();
+        Refresh();
+    }
+
+    private void Refresh() => _all = Store.GetAll();
+
+    private void ResetForm()
+    {
+        _editingId = null;
+        // Default to the first upcoming day that doesn't have a teaser yet.
+        var date = _today;
+        while (Store.GetForDate(date) is not null)
+        {
+            date = date.AddDays(1);
+        }
+        _form = new BrainTeaser { Date = date };
+        _dateWarning = null;
+    }
+
+    private void Edit(BrainTeaser teaser)
+    {
+        _editingId = teaser.Id;
+        _form = new BrainTeaser
+        {
+            Id = teaser.Id,
+            Date = teaser.Date,
+            Question = teaser.Question,
+            Answer = teaser.Answer,
+            Hint = teaser.Hint,
+            Solution = teaser.Solution,
+        };
+        _savedMessage = null;
+        _dateWarning = null;
+    }
+
+    private Task SaveAsync()
+    {
+        var existing = Store.GetForDate(_form.Date);
+        if (existing is not null && existing.Id != _form.Id)
+        {
+            _dateWarning = $"There is already a teaser on {_form.Date:d MMM yyyy}. Pick another date or edit that one below.";
+            return Task.CompletedTask;
+        }
+
+        Store.Save(_form);
+        _savedMessage = $"Saved! \"{Truncate(_form.Question, 50)}\" will show on {_form.Date:dddd d MMMM yyyy}.";
+        ResetForm();
+        Refresh();
+        return Task.CompletedTask;
+    }
+
+    private string StatsSummary(Guid teaserId)
+    {
+        var stats = Stats.Get(teaserId);
+        return stats.TotalSubmissions == 0
+            ? "—"
+            : $"{stats.UniqueAttempters:N0} {(stats.UniqueAttempters == 1 ? "mind" : "minds")} · {stats.SuccessfulSubmissions:N0}/{stats.TotalSubmissions:N0} successful";
+    }
+
+    private void Delete(Guid id)
+    {
+        Store.Delete(id);
+        Stats.Remove(id);
+        if (_editingId == id)
+        {
+            ResetForm();
+        }
+        Refresh();
+    }
+
+    private static string Truncate(string text, int max) =>
+        text.Length <= max ? text : text[..max] + "…";
+}
