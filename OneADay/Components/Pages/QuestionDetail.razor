@@ -1,0 +1,37 @@
+@page "/questions/{DateSlug}"
+@inject TeaserStore Store
+
+<PageTitle>One a Day — @(_teaser is null ? "Question not found" : $"Challenge from {_teaser.Date:d MMM yyyy}")</PageTitle>
+
+<div class="oad-detail">
+    <a class="oad-back" href="questions">← All questions</a>
+
+    @if (_teaser is null)
+    {
+        <div class="oad-banner">Question not found</div>
+        <div class="oad-box">
+            <p>There's no challenge for this date. It may not have been posted, or the link is wrong.</p>
+        </div>
+    }
+    else
+    {
+        <div class="oad-banner">Challenge from @_teaser.Date.ToString("dddd d MMMM yyyy")</div>
+        <ChallengeView Teaser="_teaser" CanReveal="@(_teaser.Date < _today)" />
+    }
+</div>
+
+@code {
+    [Parameter] public string DateSlug { get; set; } = string.Empty;
+
+    private BrainTeaser? _teaser;
+    private DateOnly _today;
+
+    protected override void OnParametersSet()
+    {
+        _today = AppTime.Today;
+        // Future teasers stay hidden even if someone guesses the URL.
+        _teaser = DateOnly.TryParseExact(DateSlug, "yyyy-MM-dd", out var date) && date <= _today
+            ? Store.GetForDate(date)
+            : null;
+    }
+}

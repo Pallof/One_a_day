@@ -21,30 +21,20 @@
             <ol class="oad-question-list" reversed>
                 @foreach (var teaser in Results)
                 {
-                    <li>
-                        <div class="oad-q-date">@teaser.Date.ToString("ddd d MMM yyyy")</div>
-                        <div class="oad-q-text">@teaser.Question</div>
+                    <li @key="teaser.Id">
                         @if (teaser.Date < _today)
                         {
-                            @if (_revealed.Contains(teaser.Id))
-                            {
-                                <div class="oad-q-solution">
-                                    <strong>Answer:</strong> @teaser.Answer.Split(';')[0].Trim()
-                                    @if (!string.IsNullOrWhiteSpace(teaser.Solution))
-                                    {
-                                        <br />
-                                        <span>@teaser.Solution</span>
-                                    }
-                                </div>
-                            }
-                            else
-                            {
-                                <button class="oad-reveal" @onclick="() => _revealed.Add(teaser.Id)">Show solution</button>
-                            }
+                            <a class="oad-q-link" href="questions/@teaser.Date.ToString("yyyy-MM-dd")">
+                                <span class="oad-q-date">@teaser.Date.ToString("ddd d MMM yyyy")</span>
+                                <span class="oad-q-text">@teaser.Question</span>
+                            </a>
                         }
                         else
                         {
-                            <span class="oad-q-today">Today's challenge — <a href="/">solve it on the home page!</a></span>
+                            <a class="oad-q-link" href="/">
+                                <span class="oad-q-date">@teaser.Date.ToString("ddd d MMM yyyy") · Today's challenge</span>
+                                <span class="oad-q-text">@teaser.Question</span>
+                            </a>
                         }
                     </li>
                 }
@@ -56,12 +46,11 @@
 @code {
     private string _searchTerm = string.Empty;
     private DateOnly _today;
-    private readonly HashSet<Guid> _revealed = [];
 
     private IReadOnlyList<BrainTeaser> Results => Store.Search(_searchTerm, _today);
 
     protected override void OnInitialized()
     {
-        _today = DateOnly.FromDateTime(DateTime.Now);
+        _today = AppTime.Today;
     }
 }

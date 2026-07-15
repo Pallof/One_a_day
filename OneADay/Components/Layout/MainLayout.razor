@@ -7,21 +7,18 @@
         </div>
 
         <div class="oad-menu-wrap">
-            <button class="oad-menu-button" title="Menu" @onclick="ToggleMenu">
+            <button class="oad-menu-button" title="Menu">
                 <span></span><span></span><span></span>
             </button>
-            @if (_menuOpen)
-            {
-                <nav class="oad-menu-panel" @onclick="CloseMenu">
-                    <ol>
-                        <li><NavLink href="/" Match="NavLinkMatch.All">Challenge of the day</NavLink></li>
-                        <li><NavLink href="questions">More questions</NavLink></li>
-                        <li><NavLink href="about">About us</NavLink></li>
-                        <li><NavLink href="contact">Contact us</NavLink></li>
-                        <li class="oad-menu-admin"><NavLink href="admin">Add a teaser (admin)</NavLink></li>
-                    </ol>
-                </nav>
-            }
+            <nav class="oad-menu-panel">
+                <ol>
+                    <li><NavLink href="/" Match="NavLinkMatch.All">Challenge of the day</NavLink></li>
+                    <li><NavLink href="questions">More questions</NavLink></li>
+                    <li><NavLink href="about">About us</NavLink></li>
+                    <li><NavLink href="contact">Contact us</NavLink></li>
+                    <li class="oad-menu-admin"><NavLink href="admin">Add a teaser (admin)</NavLink></li>
+                </ol>
+            </nav>
         </div>
     </header>
 
@@ -36,10 +33,3 @@
     <span class="dismiss">🗙</span>
 </div>
 
-@code {
-    private bool _menuOpen;
-
-    private void ToggleMenu() => _menuOpen = !_menuOpen;
-
-    private void CloseMenu() => _menuOpen = false;
-}
