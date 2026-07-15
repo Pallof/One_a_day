@@ -1,0 +1,225 @@
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject StatsStore Stats
+@inject ProtectedLocalStorage LocalStorage
+@inject NavigationManager Nav
+@implements IDisposable
+
+<div class="cv">
+    <div class="oad-box cv-question">
+        <h2>Question:</h2>
+        @if (!string.IsNullOrWhiteSpace(Note))
+        {
+            <p class="cv-note">@Note</p>
+        }
+        <p class="cv-question-text">@Teaser.Question</p>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Teaser.Hint) && !_solved && !_revealed)
+    {
+        <div class="cv-hint-section">
+            @if (_showHint)
+            {
+                <button class="cv-hint-revealed" @onclick="() => _showHint = false">
+                    <span>💡 Hint: @Teaser.Hint</span>
+                    <span class="cv-hint-hide">Click to hide</span>
+                </button>
+            }
+            else
+            {
+                <button class="cv-hint-toggle" @onclick="() => _showHint = true">
+                    💡 Stuck? Click to reveal a hint
+                </button>
+            }
+        </div>
+    }
+
+    <div class="oad-box">
+        <h2>Submission:</h2>
+        <textarea class="cv-input" rows="3" maxlength="@MaxSubmissionLength"
+                  placeholder="Type your answer here..."
+                  @bind="_submission" @bind:event="oninput"
+                  disabled="@(_solved || _revealed)"></textarea>
+
+        <div class="cv-submit-row">
+            <button class="oad-btn-green" @onclick="CheckAnswer"
+                    disabled="@(_solved || _revealed || string.IsNullOrWhiteSpace(_submission))">
+                Submit answer
+            </button>
+
+            @if (CanReveal && !_solved && !_revealed && _attempts >= MinAttemptsBeforeReveal)
+            {
+                <button class="cv-reveal" @onclick="() => _revealed = true">Reveal solution</button>
+            }
+        </div>
+
+        @if (_feedback is not null && !_revealed)
+        {
+            <p class="cv-feedback @(_solved ? "cv-correct" : "cv-incorrect")">@_feedback</p>
+        }
+
+        @if (_revealed || (_solved && !string.IsNullOrWhiteSpace(Teaser.Solution)))
+        {
+            <div class="cv-solution">
+                @if (_revealed)
+                {
+                    <span><strong>Answer:</strong> @Teaser.Answer.Split(';')[0].Trim()</span>
+                }
+                @if (!string.IsNullOrWhiteSpace(Teaser.Solution))
+                {
+                    <div>@Teaser.Solution</div>
+                }
+            </div>
+        }
+    </div>
+
+    @if (_solved && IsDaily)
+    {
+        <div class="cv-next">
+            <p class="cv-next-msg">Please come back soon for when the next challenge arrives!</p>
+            <div class="cv-next-timer">@FormatCountdown(AppTime.UntilNextChallenge)</div>
+            <p class="cv-next-sub">New challenge at midnight (Pacific Time)</p>
+        </div>
+    }
+
+    @if (_stats is not null && _stats.TotalSubmissions > 0)
+    {
+        <p class="cv-stats">
+            🧠 @_stats.UniqueAttempters.ToString("N0") @(_stats.UniqueAttempters == 1 ? "mind has" : "minds have") taken on this challenge
+            — @_stats.SuccessfulSubmissions.ToString("N0")/@_stats.TotalSubmissions.ToString("N0") successful attempts
+        </p>
+    }
+</div>
+
+@code {
+    private const int MinAttemptsBeforeReveal = 3;
+    private const int MaxSubmissionLength = 300;
+    private const string VisitorKey = "oad-visitor-id";
+
+    [Parameter, EditorRequired] public BrainTeaser Teaser { get; set; } = default!;
+
+    /// <summary>Italic note shown above the question (e.g. the home page fallback message).</summary>
+    [Parameter] public string? Note { get; set; }
+
+    /// <summary>Whether "Reveal solution" may appear after enough attempts. Keep false for today's challenge.</summary>
+    [Parameter] public bool CanReveal { get; set; }
+
+    /// <summary>Daily challenge only: after solving, show the countdown to the next challenge.</summary>
+    [Parameter] public bool IsDaily { get; set; }
+
+    private Guid _renderedTeaserId;
+    private string _submission = string.Empty;
+    private string? _feedback;
+    private bool _solved;
+    private bool _revealed;
+    private bool _showHint;
+    private int _attempts;
+    private Guid _visitorId;
+    private StatsSnapshot? _stats;
+    private Timer? _countdownTimer;
+    private DateOnly _solvedOn;
+
+    protected override void OnParametersSet()
+    {
+        if (_renderedTeaserId == Teaser.Id)
+        {
+            return;
+        }
+        _renderedTeaserId = Teaser.Id;
+        _submission = string.Empty;
+        _feedback = null;
+        _solved = false;
+        _revealed = false;
+        _showHint = false;
+        _attempts = 0;
+        _stats = Stats.Get(Teaser.Id);
+        StopCountdown();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+        // Anonymous device id so "unique minds" can be counted without accounts.
+        var stored = await LocalStorage.GetAsync<Guid>(VisitorKey);
+        if (stored.Success && stored.Value != Guid.Empty)
+        {
+            _visitorId = stored.Value;
+        }
+        else
+        {
+            _visitorId = Guid.NewGuid();
+            await LocalStorage.SetAsync(VisitorKey, _visitorId);
+        }
+    }
+
+    private void CheckAnswer()
+    {
+        if (string.IsNullOrWhiteSpace(_submission))
+        {
+            return;
+        }
+
+        // The maxlength attribute handles honest browsers; this backstops
+        // anything that bypasses it (e.g. crafted SignalR messages).
+        if (_submission.Length > MaxSubmissionLength)
+        {
+            _submission = _submission[..MaxSubmissionLength];
+        }
+
+        _attempts++;
+        if (Teaser.AcceptsAnswer(_submission))
+        {
+            _solved = true;
+            _feedback = $"Correct! Solved in {_attempts} attempt{(_attempts == 1 ? "" : "s")}. 🎉";
+            if (IsDaily)
+            {
+                StartCountdown();
+            }
+        }
+        else
+        {
+            _feedback = CanReveal && _attempts >= MinAttemptsBeforeReveal
+                ? "Not quite — try again, or reveal the solution."
+                : "Not quite — stretch that brain and try again!";
+        }
+
+        if (_visitorId == Guid.Empty)
+        {
+            _visitorId = Guid.NewGuid();
+        }
+        Stats.RecordSubmission(Teaser.Id, _visitorId, _solved);
+        _stats = Stats.Get(Teaser.Id);
+    }
+
+    private void StartCountdown()
+    {
+        _solvedOn = AppTime.Today;
+        _countdownTimer ??= new Timer(_ => InvokeAsync(OnCountdownTick), null,
+            TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+    }
+
+    private void OnCountdownTick()
+    {
+        // Midnight Pacific passed: the next challenge is live, load it.
+        if (AppTime.Today != _solvedOn)
+        {
+            StopCountdown();
+            Nav.NavigateTo(Nav.Uri, forceLoad: true);
+            return;
+        }
+        StateHasChanged();
+    }
+
+    private void StopCountdown()
+    {
+        _countdownTimer?.Dispose();
+        _countdownTimer = null;
+    }
+
+    private static string FormatCountdown(TimeSpan remaining) =>
+        $"{(int)remaining.TotalHours:D2}:{remaining.Minutes:D2}:{remaining.Seconds:D2}";
+
+    public void Dispose() => StopCountdown();
+}

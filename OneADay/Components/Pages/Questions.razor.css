@@ -24,37 +24,35 @@
 }
 
 .oad-question-list li {
-    margin-bottom: 1.4rem;
+    margin-bottom: 1rem;
+}
+
+.oad-q-link {
+    display: block;
+    text-decoration: none;
+    color: #1a1a1a;
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    margin-left: -0.75rem;
+}
+
+.oad-q-link:hover {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+.oad-q-link:hover .oad-q-text {
+    text-decoration: underline;
 }
 
 .oad-q-date {
+    display: block;
     font-size: 0.85rem;
     font-weight: 700;
     opacity: 0.75;
 }
 
 .oad-q-text {
+    display: block;
     font-size: 1.05rem;
-    margin: 0.25rem 0 0.4rem 0;
-}
-
-.oad-reveal {
-    background: none;
-    border: 2px solid #1a1a1a;
-    border-radius: 4px;
-    padding: 0.25rem 0.75rem;
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.oad-q-solution {
-    background: rgba(255, 255, 255, 0.55);
-    padding: 0.6rem 0.9rem;
-    border-radius: 4px;
-}
-
-.oad-q-today {
-    font-size: 0.9rem;
-    font-style: italic;
+    margin-top: 0.25rem;
 }

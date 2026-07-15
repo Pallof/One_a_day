@@ -1,0 +1,10 @@
+.oad-detail {
+    max-width: 720px;
+}
+
+.oad-back {
+    display: inline-block;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    color: #1a1a1a;
+}
