@@ -108,7 +108,7 @@ public class TeaserStore
 
     private static List<BrainTeaser> Seed()
     {
-        var today = DateOnly.FromDateTime(DateTime.Now);
+        var today = AppTime.Today;
         return
         [
             new BrainTeaser

@@ -64,7 +64,8 @@ accounts involved), so the "unique minds" number is per-device.
 | Route | Wireframe page |
 |---|---|
 | `/` | Home — welcome banner, Challenge of the day, submission box |
-| `/questions` | All Questions — search bar + past questions with reveal-able solutions |
+| `/questions` | All Questions — search bar + a clickable list of past questions |
+| `/questions/2026-07-01` | One question per page, same format as the daily challenge; "Reveal solution" appears after 3 attempts |
 | `/about` | About us |
 | `/contact` | Contact us |
 | `/admin` | Your input system for adding daily teasers |
