@@ -106,7 +106,7 @@
 
     protected override void OnInitialized()
     {
-        _today = DateOnly.FromDateTime(DateTime.Now);
+        _today = AppTime.Today;
         ResetForm();
         Refresh();
     }
