@@ -1,0 +1,40 @@
+.oad-contact-intro {
+    margin-bottom: 1.25rem;
+}
+
+.oad-contact-field {
+    margin-bottom: 1rem;
+}
+
+.oad-contact-field label {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+}
+
+.oad-contact-field select,
+.oad-contact-field textarea {
+    width: 100%;
+    border: none;
+    border-radius: 4px;
+    padding: 0.6rem 0.8rem;
+    font-size: 1rem;
+    font-family: inherit;
+    background: #fff;
+}
+
+.oad-contact-field select {
+    max-width: 220px;
+}
+
+.oad-contact-thanks p {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0;
+}
+
+.oad-contact-limit-note {
+    font-size: 0.85rem;
+    opacity: 0.7;
+    margin-top: 0.5rem;
+}

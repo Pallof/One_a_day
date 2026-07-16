@@ -67,5 +67,5 @@ accounts involved), so the "unique minds" number is per-device.
 | `/questions` | All Questions — search bar + a clickable list of past questions |
 | `/questions/2026-07-01` | One question per page, same format as the daily challenge; "Reveal solution" appears after 3 attempts |
 | `/about` | About us |
-| `/contact` | Contact us |
+| `/contact` | Contact us — suggest-a-teaser form (difficulty, teaser, solution + hint); submissions land in `App_Data/suggestions.json` and are reviewed in admin. Rate-limited to 1/day per device (and 3/day per hashed IP as a bot backstop) |
 | `/admin` | Your input system for adding daily teasers |
