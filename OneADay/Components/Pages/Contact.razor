@@ -1,14 +1,139 @@
 @page "/contact"
+@using System.Security.Cryptography
+@using System.Text
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject SuggestionStore Suggestions
+@inject ProtectedLocalStorage LocalStorage
+@inject IHttpContextAccessor HttpAccessor
 
 <PageTitle>One a Day — Contact us</PageTitle>
 
 <div class="oad-static">
     <div class="oad-banner">Contact us</div>
+
     <div class="oad-box">
-        <p>Questions, feedback, or a great teaser you'd like to see featured?</p>
-        <p>
-            Email us at
-            <a href="mailto:danielsingsong@gmail.com">danielsingsong@gmail.com</a>.
+        <p class="oad-contact-intro">
+            Got a great brain teaser you'd like to see featured? Send it in below —
+            if it stumps us, it might become a future Challenge of the day!
         </p>
+
+        @if (_limitReached)
+        {
+            <div class="oad-contact-thanks">
+                <p>🧠 You've already sent us a suggestion today — one per day keeps the inbox fresh. Come back tomorrow with your next stumper!</p>
+            </div>
+        }
+        else if (_submitted)
+        {
+            <div class="oad-contact-thanks">
+                <p>🎉 Thanks for your suggestion — we'll take a look! You can send another one tomorrow.</p>
+            </div>
+        }
+        else
+        {
+            <div class="oad-contact-field">
+                <label for="difficulty">Question difficulty</label>
+                <select id="difficulty" @bind="_difficulty">
+                    <option>Easy</option>
+                    <option>Medium</option>
+                    <option>Hard</option>
+                </select>
+            </div>
+
+            <div class="oad-contact-field">
+                <label for="teaser">The brain teaser *</label>
+                <textarea id="teaser" rows="4" maxlength="600"
+                          placeholder="Your riddle or puzzle..."
+                          @bind="_question" @bind:event="oninput"></textarea>
+            </div>
+
+            <div class="oad-contact-field">
+                <label for="solution">Solution + hint *</label>
+                <textarea id="solution" rows="3" maxlength="600"
+                          placeholder="The answer, and a hint we can offer to solvers who get stuck"
+                          @bind="_solutionAndHint" @bind:event="oninput"></textarea>
+            </div>
+
+            <button class="oad-btn-green" @onclick="Submit"
+                    disabled="@(string.IsNullOrWhiteSpace(_question) || string.IsNullOrWhiteSpace(_solutionAndHint))">
+                Submit suggestion
+            </button>
+            <p class="oad-contact-limit-note">One suggestion per day.</p>
+        }
     </div>
 </div>
+
+@code {
+    private const string VisitorKey = "oad-visitor-id";
+
+    private string _difficulty = "Medium";
+    private string _question = string.Empty;
+    private string _solutionAndHint = string.Empty;
+    private bool _submitted;
+    private bool _limitReached;
+    private Guid _visitorId;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+        var stored = await LocalStorage.GetAsync<Guid>(VisitorKey);
+        if (stored.Success && stored.Value != Guid.Empty)
+        {
+            _visitorId = stored.Value;
+        }
+        else
+        {
+            _visitorId = Guid.NewGuid();
+            await LocalStorage.SetAsync(VisitorKey, _visitorId);
+        }
+
+        if (Suggestions.HasReachedDailyLimit(_visitorId, GetIpHash(), AppTime.Today))
+        {
+            _limitReached = true;
+            StateHasChanged();
+        }
+    }
+
+    private void Submit()
+    {
+        if (string.IsNullOrWhiteSpace(_question) || string.IsNullOrWhiteSpace(_solutionAndHint))
+        {
+            return;
+        }
+        if (_visitorId == Guid.Empty)
+        {
+            _visitorId = Guid.NewGuid();
+        }
+
+        var accepted = Suggestions.TryAdd(
+            new TeaserSuggestion
+            {
+                SubmittedAt = AppTime.NowPacific,
+                Difficulty = _difficulty,
+                Question = _question.Trim(),
+                SolutionAndHint = _solutionAndHint.Trim(),
+            },
+            _visitorId, GetIpHash(), AppTime.Today);
+
+        if (accepted)
+        {
+            _submitted = true;
+        }
+        else
+        {
+            _limitReached = true;
+        }
+    }
+
+    /// <summary>Hashed client IP — never stored raw. Null if unavailable.</summary>
+    private string? GetIpHash()
+    {
+        var ip = HttpAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
+        return string.IsNullOrEmpty(ip)
+            ? null
+            : Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(ip)));
+    }
+}
