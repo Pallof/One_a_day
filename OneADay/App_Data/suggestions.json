@@ -1,0 +1,25 @@
+{
+  "Suggestions": [
+    {
+      "Id": "001e9218-f126-48ee-882e-e4ddf77e9240",
+      "SubmittedAt": "2026-07-15T17:08:23.197384",
+      "Difficulty": "Hard",
+      "Question": "The more you take, the more you leave behind. What am I?",
+      "SolutionAndHint": "Answer: footsteps. Hint: think about walking on a beach."
+    },
+    {
+      "Id": "45106b36-1075-44aa-a28d-69aa7b9b38aa",
+      "SubmittedAt": "2026-07-15T17:12:16.454453",
+      "Difficulty": "Easy",
+      "Question": "What runs but never walks?",
+      "SolutionAndHint": "Answer: a river. Hint: it has a mouth but never eats."
+    }
+  ],
+  "Log": [
+    {
+      "VisitorId": "fba05e59-c395-45bb-9161-e06601684f9a",
+      "IpHash": "EFF8E7CA506627FE15DDA5E0E512FCAAD70B6D520F37CC76597FDB4F2D83A1A3",
+      "Date": "2026-07-15"
+    }
+  ]
+}

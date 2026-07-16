@@ -9,6 +9,8 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddSingleton<TeaserStore>();
 builder.Services.AddSingleton<StatsStore>();
+builder.Services.AddSingleton<SuggestionStore>();
+builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 

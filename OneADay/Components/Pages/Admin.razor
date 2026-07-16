@@ -1,6 +1,7 @@
 @page "/admin"
 @inject TeaserStore Store
 @inject StatsStore Stats
+@inject SuggestionStore Suggestions
 
 <PageTitle>One a Day — Add a teaser</PageTitle>
 
@@ -94,6 +95,33 @@
             </table>
         }
     </div>
+
+    <div class="oad-banner">Visitor suggestions</div>
+
+    <div class="oad-box">
+        @if (_suggestions.Count == 0)
+        {
+            <p>No suggestions yet — they'll appear here when visitors submit one on the Contact us page.</p>
+        }
+        else
+        {
+            @foreach (var suggestion in _suggestions)
+            {
+                <div class="oad-suggestion" @key="suggestion.Id">
+                    <div class="oad-suggestion-meta">
+                        <span class="oad-suggestion-difficulty">@suggestion.Difficulty</span>
+                        <span>@suggestion.SubmittedAt.ToString("d MMM yyyy, h:mm tt") PT</span>
+                    </div>
+                    <p class="oad-suggestion-q">@suggestion.Question</p>
+                    <p class="oad-suggestion-s"><strong>Solution + hint:</strong> @suggestion.SolutionAndHint</p>
+                    <div class="oad-suggestion-actions">
+                        <button class="oad-btn-plain" @onclick="() => UseSuggestion(suggestion)">Use in form above</button>
+                        <button class="oad-btn-danger" @onclick="() => DeleteSuggestion(suggestion.Id)">Delete</button>
+                    </div>
+                </div>
+            }
+        }
+    </div>
 </div>
 
 @code {
@@ -103,6 +131,7 @@
     private string? _dateWarning;
     private DateOnly _today;
     private IReadOnlyList<BrainTeaser> _all = [];
+    private IReadOnlyList<TeaserSuggestion> _suggestions = [];
 
     protected override void OnInitialized()
     {
@@ -111,7 +140,11 @@
         Refresh();
     }
 
-    private void Refresh() => _all = Store.GetAll();
+    private void Refresh()
+    {
+        _all = Store.GetAll();
+        _suggestions = Suggestions.GetAll();
+    }
 
     private void ResetForm()
     {
@@ -174,6 +207,32 @@
         {
             ResetForm();
         }
+        Refresh();
+    }
+
+    private void UseSuggestion(TeaserSuggestion suggestion)
+    {
+        // Pre-fill the add form; the solution+hint lands in Solution for
+        // manual splitting into Answer/Hint/Solution before saving.
+        _editingId = null;
+        var date = _today;
+        while (Store.GetForDate(date) is not null)
+        {
+            date = date.AddDays(1);
+        }
+        _form = new BrainTeaser
+        {
+            Date = date,
+            Question = suggestion.Question,
+            Solution = suggestion.SolutionAndHint,
+        };
+        _savedMessage = null;
+        _dateWarning = null;
+    }
+
+    private void DeleteSuggestion(Guid id)
+    {
+        Suggestions.Delete(id);
         Refresh();
     }
 

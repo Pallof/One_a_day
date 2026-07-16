@@ -98,6 +98,47 @@
     background: rgba(251, 216, 93, 0.5);
 }
 
+.oad-suggestion {
+    padding: 0.9rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.oad-suggestion:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.oad-suggestion-meta {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    font-size: 0.85rem;
+    opacity: 0.8;
+    margin-bottom: 0.4rem;
+}
+
+.oad-suggestion-difficulty {
+    background: rgba(255, 255, 255, 0.55);
+    border-radius: 4px;
+    padding: 0.1rem 0.5rem;
+    font-weight: 700;
+}
+
+.oad-suggestion-q {
+    font-size: 1.05rem;
+    margin-bottom: 0.35rem;
+}
+
+.oad-suggestion-s {
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+}
+
+.oad-suggestion-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
 .oad-row-future {
     opacity: 0.75;
 }
