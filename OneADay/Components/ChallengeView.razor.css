@@ -2,6 +2,18 @@
     min-height: 220px;
 }
 
+.cv-question-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.cv-question-head h2 {
+    margin: 0;
+}
+
 .cv-note {
     font-size: 0.9rem;
     font-style: italic;
@@ -11,6 +23,15 @@
 .cv-question-text {
     font-size: 1.2rem;
     line-height: 1.6;
+}
+
+.cv-image {
+    display: block;
+    max-width: 100%;
+    max-height: 340px;
+    border-radius: 4px;
+    margin-top: 1rem;
+    background: #fff;
 }
 
 .cv-hint-section {

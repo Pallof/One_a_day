@@ -2,33 +2,229 @@
   {
     "Id": "d069c528-2987-42dc-bdd3-d68335ebe191",
     "Date": "2026-07-02",
+    "Difficulty": "Medium",
+    "Tags": [],
+    "ImageFileName": null,
     "Question": "I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?",
     "Answer": "an echo; echo",
     "Hint": "You might meet me in the mountains or an empty hall.",
-    "Solution": "An echo \u2014 it \u0022speaks\u0022 by repeating sound and needs no body to do it."
-  },
-  {
-    "Id": "9bf16cce-4a28-443e-ae9a-05facb1f816c",
-    "Date": "2026-07-01",
-    "Question": "What has keys but can\u0027t open locks, space but no room, and you can enter but not go inside?",
-    "Answer": "a keyboard; keyboard",
-    "Hint": "You are probably touching one right now.",
-    "Solution": "A keyboard \u2014 it has keys, a space bar, and an enter key."
+    "Solution": "An echo — it \"speaks\" by repeating sound and needs no body to do it."
   },
   {
     "Id": "3ab2e6c1-2f61-4c5a-a84e-505292102a58",
     "Date": "2026-06-30",
+    "Difficulty": "Medium",
+    "Tags": [],
+    "ImageFileName": null,
     "Question": "A farmer has 17 sheep and all but 9 run away. How many are left?",
     "Answer": "9; nine",
     "Hint": "Read the question again, slowly.",
-    "Solution": "\u0022All but 9\u0022 run away, so 9 remain."
+    "Solution": "\"All but 9\" run away, so 9 remain."
   },
   {
     "Id": "893b92fc-eb80-4f39-9b08-1ef92ff09844",
     "Date": "2026-07-03",
+    "Difficulty": "Medium",
+    "Tags": [],
+    "ImageFileName": null,
     "Question": "What gets wetter the more it dries?",
     "Answer": "a towel; towel",
-    "Hint": "You\u0027ll find one in the bathroom.",
+    "Hint": "You'll find one in the bathroom.",
     "Solution": null
+  },
+  {
+    "Id": "9bf16cce-4a28-443e-ae9a-05facb1f816c",
+    "Date": "2026-07-01",
+    "Difficulty": "Easy",
+    "Tags": [],
+    "ImageFileName": null,
+    "Question": "What has keys but can't open locks, space but no room, and you can enter but not go inside?",
+    "Answer": "a keyboard; keyboard",
+    "Hint": "You are probably touching one right now.",
+    "Solution": "A keyboard — it has keys, a space bar, and an enter key."
+  },
+  {
+    "Id": "a2b249f8-2271-40ad-a39e-f63799e851a4",
+    "Date": "2026-07-21",
+    "Difficulty": "Medium",
+    "Tags": [
+      "logic",
+      "wordplay"
+    ],
+    "ImageFileName": null,
+    "Question": "Forward I am heavy, but backward I am not. What am I?",
+    "Answer": "a ton; ton",
+    "Hint": null,
+    "Solution": null
+  },
+  {
+    "Id": "ce996d76-440e-4c6f-808e-6ae927128e4f",
+    "Date": "2026-07-22",
+    "Difficulty": "Medium",
+    "Tags": [
+      "24"
+    ],
+    "ImageFileName": null,
+    "Question": "Using only the basic operators (Addition, Subtraction, Multiplication, Division and Parenthesis) can you get the number 24 using these numbers (5, 5, 5, 1)? Write your solution as a formula/equation.",
+    "Answer": "5*(5-(1/5))",
+    "Hint": "Use decimals or fractions.",
+    "Solution": "5*(5-(1/5)) = 5 × 4.8 = 24"
+  },
+  {
+    "Id": "b5c81c76-2644-4ab6-b3d1-f79bc6d2a32c",
+    "Date": "2026-07-23",
+    "Difficulty": "Easy",
+    "Tags": [
+      "Formula"
+    ],
+    "ImageFileName": null,
+    "Question": "What is 255^2 minus 245^2? Please don't use a calculator!",
+    "Answer": "5000",
+    "Hint": "Difference of squares.",
+    "Solution": "255² − 245² = (255+245)(255−245) = 500 × 10 = 5000"
+  },
+  {
+    "Id": "9d47f2a8-7faa-43f6-aec8-b16f0c3bab7c",
+    "Date": "2026-07-24",
+    "Difficulty": "Easy",
+    "Tags": [
+      "Counting"
+    ],
+    "ImageFileName": null,
+    "Question": "What is the sum of all the digits from 0 to 10?",
+    "Answer": "46",
+    "Hint": "Use the summation formula.",
+    "Solution": "The digits 0–9 sum to 45, plus the 1 in 10 makes 46."
+  },
+  {
+    "Id": "84e0a0ce-2963-45fe-8b60-3d2c1d8ee0bc",
+    "Date": "2026-07-25",
+    "Difficulty": "Medium",
+    "Tags": [
+      "Counting"
+    ],
+    "ImageFileName": null,
+    "Question": "What is the summation of all of the values of the digits from 1-100? (e.g. 15 => 6 because 1+5, 10 => 1 because 1+0, 55 => 10 because 5+5, etc.)",
+    "Answer": "901",
+    "Hint": "Start with a basic case of 1-10. Count digits in each position (ones, tens, hundreds).",
+    "Solution": "The digits of 1–99 sum to 900; adding the 1 in 100 gives 901."
+  },
+  {
+    "Id": "a06b8ec4-7e65-4e3a-97e9-e6cd61f48e79",
+    "Date": "2026-07-26",
+    "Difficulty": "Medium",
+    "Tags": [
+      "Logic"
+    ],
+    "ImageFileName": null,
+    "Question": "A man is walking on a railroad and stumbles into a tunnel where the railroad goes. About a quarter of the way through, he hears a train approaching. The tunnel is just big enough to fit the train, so he cannot avoid it within the tunnel. If he runs to the far end, he reaches it exactly as the train does. If he runs back toward the train, he also escapes by a hair. How fast is the train relative to the man?",
+    "Answer": "2; 2:1; twice",
+    "Hint": "Try drawing both cases on paper and mapping where the train is.",
+    "Solution": "The train is twice as fast as the man (2:1)."
+  },
+  {
+    "Id": "96e52da5-86c6-4602-8d4b-de79d84d96b5",
+    "Date": "2026-07-27",
+    "Difficulty": "Hard",
+    "Tags": [
+      "24"
+    ],
+    "ImageFileName": null,
+    "Question": "Can you get 24 using only the basic operators (+, -, *, / and parentheses) with these four numbers: 3, 3, 8, 8?",
+    "Answer": "8 / (3 - (8/3))",
+    "Hint": "Use fractions.",
+    "Solution": "8 ÷ (3 − 8/3) = 8 ÷ (1/3) = 24"
+  },
+  {
+    "Id": "33ca55be-7a8e-43da-a1af-e6ff7f7b33ef",
+    "Date": "2026-07-28",
+    "Difficulty": "Easy",
+    "Tags": [],
+    "ImageFileName": null,
+    "Question": "What is the angle between the clock hands when the time shows 1:20?",
+    "Answer": "80; 80 degrees",
+    "Hint": "A circle has 360 degrees; break it into quadrants.",
+    "Solution": "Hour hand at 40°, minute hand at 120°; the difference is 80°."
+  },
+  {
+    "Id": "b0472bc8-0fdc-489e-8aaf-617ae0063980",
+    "Date": "2026-07-29",
+    "Difficulty": "Easy",
+    "Tags": [
+      "Word Puzzle"
+    ],
+    "ImageFileName": null,
+    "Question": "You are running a race. You pass the person in second place. What position are you in now?",
+    "Answer": "second; 2nd",
+    "Hint": null,
+    "Solution": "You take second place — you didn't pass first."
+  },
+  {
+    "Id": "27705521-0435-44e2-a9b6-3a376aa96906",
+    "Date": "2026-07-30",
+    "Difficulty": "Medium",
+    "Tags": [
+      "Word puzzle",
+      "logic"
+    ],
+    "ImageFileName": null,
+    "Question": "What comes next in this sequence? 1, 11, 21, 1211, 111221, _____",
+    "Answer": "312211",
+    "Hint": "Sound out the numbers in sequence.",
+    "Solution": "Look-and-say: 111221 reads as 'three 1s, two 2s, one 1' → 312211."
+  },
+  {
+    "Id": "2d5203f0-18e9-420c-91b7-7beda9b35e28",
+    "Date": "2026-07-31",
+    "Difficulty": "Medium",
+    "Tags": [
+      "Math"
+    ],
+    "ImageFileName": null,
+    "Question": "A car travels down a highway at an average of 40 miles per hour, then drives back the same distance at an average of 60 miles per hour. What was the man's average speed for the whole trip?",
+    "Answer": "48; 48 miles per hour; 48 mph",
+    "Hint": "Think about the overall time it takes.",
+    "Solution": "Equal distances at 40 and 60 mph average to 2·40·60/(40+60) = 48 mph."
+  },
+  {
+    "Id": "4fd53130-fdb2-48dd-b0b1-8c1983491167",
+    "Date": "2026-08-01",
+    "Difficulty": "Medium",
+    "Tags": [
+      "Math",
+      "Logic puzzle"
+    ],
+    "ImageFileName": null,
+    "Question": "A 2-mile racetrack is used for practice. If a driver covers the first half (1 mile) at 30 miles per hour, how fast must they drive the second half to average 60 miles per hour over the full lap?",
+    "Answer": "impossible; it's impossible; infinitely fast",
+    "Hint": "Zoom out.",
+    "Solution": "The first mile at 30 mph already uses all the time a 60 mph average allows — it's impossible."
+  },
+  {
+    "Id": "cd8fb219-3389-4336-bf51-19501a86b006",
+    "Date": "2026-08-02",
+    "Difficulty": "Medium",
+    "Tags": [
+      "Math"
+    ],
+    "ImageFileName": null,
+    "Question": "A car travels a highway stretch 60 miles long. On the way down it averages 40 mph, and on the way back it averages 60 mph. What was the average speed of the entire journey there and back?",
+    "Answer": "48; 48 mph",
+    "Hint": "Think about the overall time it takes.",
+    "Solution": "Equal distances at 40 and 60 mph average to 48 mph."
+  },
+  {
+    "Id": "30c6508f-c460-4500-a473-7f6c9378828e",
+    "Date": "2026-08-03",
+    "Difficulty": "Medium",
+    "Tags": [
+      "Math",
+      "Logical"
+    ],
+    "ImageFileName": null,
+    "Question": "In a field there are two poles that stand 50 meters tall. A rope 80 meters long is tethered between the tops of the two poles. If the middle of the rope is 10 meters off the ground, approximately how far apart are the poles?",
+    "Answer": "0; they are next to each other; next to each other",
+    "Hint": "Try drawing it out.",
+    "Solution": "Each 40 m half of the rope drops 40 m vertically (50 → 10), leaving no horizontal gap — the poles touch."
   }
 ]

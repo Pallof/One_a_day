@@ -1,0 +1,36 @@
+.diff-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.diff-dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.diff-easy {
+    background-color: #2e9e3f;   /* green */
+}
+
+.diff-medium {
+    background-color: #e0a92b;   /* yellow/amber */
+    color: #1a1a1a;
+}
+
+.diff-medium .diff-dot {
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.diff-hard {
+    background-color: #d23b34;   /* red */
+}
