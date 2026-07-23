@@ -17,6 +17,8 @@ public class TeaserStore
     {
         WriteIndented = true,
         PropertyNameCaseInsensitive = true,
+        // Store Difficulty as "Easy"/"Medium"/"Hard" so teasers.json stays hand-editable.
+        Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() },
     };
 
     public TeaserStore(IWebHostEnvironment env)
@@ -55,17 +57,21 @@ public class TeaserStore
         }
     }
 
-    public IReadOnlyList<BrainTeaser> Search(string? term, DateOnly today)
+    /// <summary>
+    /// All teasers (past, today, and upcoming) for the All Questions page,
+    /// newest first. The page labels each by date and protects upcoming answers.
+    /// </summary>
+    public IReadOnlyList<BrainTeaser> Search(string? term)
     {
         lock (_lock)
         {
-            var visible = _teasers.Where(t => t.Date <= today);
+            IEnumerable<BrainTeaser> matches = _teasers;
             if (!string.IsNullOrWhiteSpace(term))
             {
-                visible = visible.Where(t =>
+                matches = matches.Where(t =>
                     t.Question.Contains(term, StringComparison.OrdinalIgnoreCase));
             }
-            return visible.OrderByDescending(t => t.Date).ToList();
+            return matches.OrderByDescending(t => t.Date).ToList();
         }
     }
 
@@ -114,6 +120,7 @@ public class TeaserStore
             new BrainTeaser
             {
                 Date = today,
+                Difficulty = Difficulty.Medium,
                 Question = "I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?",
                 Answer = "an echo; echo",
                 Hint = "You might meet me in the mountains or an empty hall.",
@@ -122,6 +129,7 @@ public class TeaserStore
             new BrainTeaser
             {
                 Date = today.AddDays(-1),
+                Difficulty = Difficulty.Easy,
                 Question = "What has keys but can't open locks, space but no room, and you can enter but not go inside?",
                 Answer = "a keyboard; keyboard",
                 Hint = "You are probably touching one right now.",
@@ -130,6 +138,7 @@ public class TeaserStore
             new BrainTeaser
             {
                 Date = today.AddDays(-2),
+                Difficulty = Difficulty.Hard,
                 Question = "A farmer has 17 sheep and all but 9 run away. How many are left?",
                 Answer = "9; nine",
                 Hint = "Read the question again, slowly.",

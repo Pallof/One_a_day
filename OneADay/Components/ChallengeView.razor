@@ -2,16 +2,25 @@
 @inject StatsStore Stats
 @inject ProtectedLocalStorage LocalStorage
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 @implements IDisposable
 
 <div class="cv">
     <div class="oad-box cv-question">
-        <h2>Question:</h2>
+        <div class="cv-question-head">
+            <h2>Question:</h2>
+            <DifficultyBadge Level="Teaser.Difficulty" />
+        </div>
         @if (!string.IsNullOrWhiteSpace(Note))
         {
             <p class="cv-note">@Note</p>
         }
         <p class="cv-question-text">@Teaser.Question</p>
+
+        @if (!string.IsNullOrWhiteSpace(Teaser.ImageFileName))
+        {
+            <img class="cv-image" src="@($"{ImageStore.RequestPath}/{Teaser.ImageFileName}")" alt="Support image for this teaser" />
+        }
     </div>
 
     @if (!string.IsNullOrWhiteSpace(Teaser.Hint) && !_solved && !_revealed)
@@ -154,7 +163,7 @@
         }
     }
 
-    private void CheckAnswer()
+    private async Task CheckAnswer()
     {
         if (string.IsNullOrWhiteSpace(_submission))
         {
@@ -191,6 +200,11 @@
         }
         Stats.RecordSubmission(Teaser.Id, _visitorId, _solved);
         _stats = Stats.Get(Teaser.Id);
+
+        if (_solved)
+        {
+            await JS.InvokeVoidAsync("oadCelebrate");
+        }
     }
 
     private void StartCountdown()

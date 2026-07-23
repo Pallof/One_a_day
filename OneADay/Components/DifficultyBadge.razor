@@ -1,0 +1,7 @@
+<span class="diff-badge diff-@Level.ToString().ToLowerInvariant()">
+    <span class="diff-dot"></span>@Level
+</span>
+
+@code {
+    [Parameter, EditorRequired] public Difficulty Level { get; set; }
+}

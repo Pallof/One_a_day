@@ -40,6 +40,15 @@ Open the **menu (☰) → Add a teaser (admin)**, or go straight to `/admin`:
 
 These rules are pinned down by unit tests in `../OneADay.Tests` — run
 `dotnet test` from the parent folder after changing the matching logic.
+- **Difficulty** — Easy, Medium, or Hard, shown as a colour-coded badge
+  (green / yellow / red) on the challenge, the questions list, and the admin
+  table. Defaults to Medium.
+- **Tags** (optional) — comma-separated classification labels (e.g.
+  `logic, wordplay, math`). Backend-only: they are **not** shown to visitors,
+  appearing solely in the admin table to help you sort and organise teasers.
+- **Support image** (optional) — upload a PNG/JPG/GIF/WebP (max 3 MB) to
+  attach to a teaser. Stored in `App_Data/teaser-images/` under a random
+  filename and served from `/teaser-images`; shown below the question.
 - **Hint** (optional) appears as a concealed click-to-reveal bar between the
   question and the submission box.
 - **Solution** (optional) is shown once solved, and on past questions.

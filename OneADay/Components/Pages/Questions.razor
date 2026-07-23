@@ -8,7 +8,7 @@
 
     <label class="oad-search-label" for="search">Search Bar:</label>
     <input id="search" class="oad-search" type="search"
-           placeholder="Search past questions..."
+           placeholder="Search questions..."
            @bind="_searchTerm" @bind:event="oninput" />
 
     <div class="oad-box">
@@ -21,21 +21,22 @@
             <ol class="oad-question-list" reversed>
                 @foreach (var teaser in Results)
                 {
+                    var isToday = teaser.Date == _today;
+                    var isUpcoming = teaser.Date > _today;
+                    var href = isToday ? "/" : $"questions/{teaser.Date:yyyy-MM-dd}";
+                    var suffix = isToday ? " · Today's challenge" : isUpcoming ? " · Scheduled" : "";
                     <li @key="teaser.Id">
-                        @if (teaser.Date < _today)
-                        {
-                            <a class="oad-q-link" href="questions/@teaser.Date.ToString("yyyy-MM-dd")">
-                                <span class="oad-q-date">@teaser.Date.ToString("ddd d MMM yyyy")</span>
-                                <span class="oad-q-text">@teaser.Question</span>
-                            </a>
-                        }
-                        else
-                        {
-                            <a class="oad-q-link" href="/">
-                                <span class="oad-q-date">@teaser.Date.ToString("ddd d MMM yyyy") · Today's challenge</span>
-                                <span class="oad-q-text">@teaser.Question</span>
-                            </a>
-                        }
+                        <a class="oad-q-link" href="@href">
+                            <span class="oad-q-date">
+                                <span class="oad-q-datetext">@teaser.Date.ToString("ddd d MMM yyyy")@suffix</span>
+                                <DifficultyBadge Level="teaser.Difficulty" />
+                                @if (!string.IsNullOrWhiteSpace(teaser.ImageFileName))
+                                {
+                                    <span class="oad-q-imageicon" title="Includes an image">🖼️</span>
+                                }
+                            </span>
+                            <span class="oad-q-text">@teaser.Question</span>
+                        </a>
                     </li>
                 }
             </ol>
@@ -47,7 +48,7 @@
     private string _searchTerm = string.Empty;
     private DateOnly _today;
 
-    private IReadOnlyList<BrainTeaser> Results => Store.Search(_searchTerm, _today);
+    private IReadOnlyList<BrainTeaser> Results => Store.Search(_searchTerm);
 
     protected override void OnInitialized()
     {

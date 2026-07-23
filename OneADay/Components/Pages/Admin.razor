@@ -2,6 +2,7 @@
 @inject TeaserStore Store
 @inject StatsStore Stats
 @inject SuggestionStore Suggestions
+@inject ImageStore Images
 
 <PageTitle>One a Day — Add a teaser</PageTitle>
 
@@ -19,6 +20,18 @@
         </div>
 
         <div class="oad-field">
+            <label for="difficulty">Difficulty</label>
+            <div class="oad-difficulty-row">
+                <InputSelect id="difficulty" @bind-Value="_form.Difficulty">
+                    <option value="@Difficulty.Easy">Easy</option>
+                    <option value="@Difficulty.Medium">Medium</option>
+                    <option value="@Difficulty.Hard">Hard</option>
+                </InputSelect>
+                <DifficultyBadge Level="_form.Difficulty" />
+            </div>
+        </div>
+
+        <div class="oad-field">
             <label for="question">Question *</label>
             <textarea id="question" rows="4" placeholder="The brain teaser itself..."
                       @bind="_form.Question"></textarea>
@@ -28,6 +41,36 @@
             <label for="answer">Answer *</label>
             <input id="answer" placeholder="Accepted answer — separate alternatives with ; (e.g. 9; nine)"
                    @bind="_form.Answer" />
+        </div>
+
+        <div class="oad-field">
+            <label for="tags">Tags (optional)</label>
+            <input id="tags" placeholder="Comma-separated labels, e.g. logic, wordplay, math" @bind="_tagsText" @bind:event="oninput" />
+            @if (ParsedTags.Count > 0)
+            {
+                <div class="oad-tag-preview">
+                    @foreach (var tag in ParsedTags)
+                    {
+                        <span class="oad-tag-chip">@tag</span>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="oad-field">
+            <label for="image">Support image (optional)</label>
+            <InputFile id="image" OnChange="OnImageSelected" accept="image/png,image/jpeg,image/gif,image/webp" />
+            @if (_imageError is not null)
+            {
+                <span class="oad-warning">@_imageError</span>
+            }
+            @if (!string.IsNullOrWhiteSpace(_form.ImageFileName))
+            {
+                <div class="oad-image-preview">
+                    <img src="@($"{ImageStore.RequestPath}/{_form.ImageFileName}")" alt="Selected support image" />
+                    <button type="button" class="oad-btn-danger" @onclick="RemoveImage">Remove image</button>
+                </div>
+            }
         </div>
 
         <div class="oad-field">
@@ -48,7 +91,7 @@
             </button>
             @if (_editingId is not null)
             {
-                <button class="oad-btn-plain" @onclick="ResetForm">Cancel edit</button>
+                <button class="oad-btn-plain" @onclick="() => ResetForm()">Cancel edit</button>
             }
         </div>
 
@@ -71,7 +114,9 @@
                 <thead>
                     <tr>
                         <th>Date</th>
+                        <th>Difficulty</th>
                         <th>Question</th>
+                        <th>Tags</th>
                         <th>Answer</th>
                         <th>Stats</th>
                         <th></th>
@@ -82,7 +127,21 @@
                     {
                         <tr class="@(teaser.Date == _today ? "oad-row-today" : teaser.Date > _today ? "oad-row-future" : "")">
                             <td class="oad-cell-date">@teaser.Date.ToString("ddd d MMM yyyy")</td>
+                            <td><DifficultyBadge Level="teaser.Difficulty" /></td>
                             <td>@Truncate(teaser.Question, 80)</td>
+                            <td class="oad-cell-tags">
+                                @if (teaser.Tags.Count > 0)
+                                {
+                                    @foreach (var tag in teaser.Tags)
+                                    {
+                                        <span class="oad-tag-chip">@tag</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="oad-cell-muted">—</span>
+                                }
+                            </td>
                             <td>@Truncate(teaser.Answer, 30)</td>
                             <td class="oad-cell-stats">@StatsSummary(teaser.Id)</td>
                             <td class="oad-cell-actions">
@@ -129,9 +188,17 @@
     private Guid? _editingId;
     private string? _savedMessage;
     private string? _dateWarning;
+    private string _tagsText = string.Empty;
+    private string? _imageError;
+    private string? _originalImageName;   // image the teaser had when Edit was opened
     private DateOnly _today;
     private IReadOnlyList<BrainTeaser> _all = [];
     private IReadOnlyList<TeaserSuggestion> _suggestions = [];
+
+    private List<string> ParsedTags => _tagsText
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToList();
 
     protected override void OnInitialized()
     {
@@ -146,9 +213,16 @@
         _suggestions = Suggestions.GetAll();
     }
 
-    private void ResetForm()
+    private void ResetForm(bool discardStaged = true)
     {
+        if (discardStaged)
+        {
+            DiscardStagedImage();
+        }
         _editingId = null;
+        _originalImageName = null;
+        _tagsText = string.Empty;
+        _imageError = null;
         // Default to the first upcoming day that doesn't have a teaser yet.
         var date = _today;
         while (Store.GetForDate(date) is not null)
@@ -161,11 +235,17 @@
 
     private void Edit(BrainTeaser teaser)
     {
+        DiscardStagedImage();   // drop an un-saved upload from any in-progress form
         _editingId = teaser.Id;
+        _originalImageName = teaser.ImageFileName;
+        _tagsText = string.Join(", ", teaser.Tags);
         _form = new BrainTeaser
         {
             Id = teaser.Id,
             Date = teaser.Date,
+            Difficulty = teaser.Difficulty,
+            Tags = new List<string>(teaser.Tags),
+            ImageFileName = teaser.ImageFileName,
             Question = teaser.Question,
             Answer = teaser.Answer,
             Hint = teaser.Hint,
@@ -173,6 +253,7 @@
         };
         _savedMessage = null;
         _dateWarning = null;
+        _imageError = null;
     }
 
     private Task SaveAsync()
@@ -184,11 +265,53 @@
             return Task.CompletedTask;
         }
 
+        _form.Tags = ParsedTags;
         Store.Save(_form);
+
+        // Original image was replaced or removed during this edit → clean it up.
+        if (_originalImageName is not null && _originalImageName != _form.ImageFileName)
+        {
+            Images.Delete(_originalImageName);
+        }
+
         _savedMessage = $"Saved! \"{Truncate(_form.Question, 50)}\" will show on {_form.Date:dddd d MMMM yyyy}.";
-        ResetForm();
+        ResetForm(discardStaged: false);   // the image just saved is now committed
         Refresh();
         return Task.CompletedTask;
+    }
+
+    private async Task OnImageSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (!ImageStore.IsAllowedType(file.ContentType))
+        {
+            _imageError = "Please choose a PNG, JPG, GIF, or WebP image.";
+            return;
+        }
+        if (file.Size > ImageStore.MaxBytes)
+        {
+            _imageError = "Image must be under 3 MB.";
+            return;
+        }
+        _imageError = null;
+        DiscardStagedImage();   // replacing a previous un-saved upload
+        _form.ImageFileName = await Images.SaveAsync(file);
+    }
+
+    private void RemoveImage()
+    {
+        DiscardStagedImage();
+        _form.ImageFileName = null;
+        _imageError = null;
+    }
+
+    /// <summary>Deletes a just-uploaded image that hasn't been committed to a saved teaser.</summary>
+    private void DiscardStagedImage()
+    {
+        if (_form.ImageFileName is not null && _form.ImageFileName != _originalImageName)
+        {
+            Images.Delete(_form.ImageFileName);
+        }
     }
 
     private string StatsSummary(Guid teaserId)
@@ -201,6 +324,8 @@
 
     private void Delete(Guid id)
     {
+        var teaser = _all.FirstOrDefault(t => t.Id == id);
+        Images.Delete(teaser?.ImageFileName);
         Store.Delete(id);
         Stats.Remove(id);
         if (_editingId == id)
@@ -214,7 +339,11 @@
     {
         // Pre-fill the add form; the solution+hint lands in Solution for
         // manual splitting into Answer/Hint/Solution before saving.
+        DiscardStagedImage();
         _editingId = null;
+        _originalImageName = null;
+        _tagsText = string.Empty;
+        _imageError = null;
         var date = _today;
         while (Store.GetForDate(date) is not null)
         {
@@ -223,6 +352,7 @@
         _form = new BrainTeaser
         {
             Date = date,
+            Difficulty = Enum.TryParse<Difficulty>(suggestion.Difficulty, out var d) ? d : Difficulty.Medium,
             Question = suggestion.Question,
             Solution = suggestion.SolutionAndHint,
         };
