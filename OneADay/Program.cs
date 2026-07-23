@@ -1,3 +1,4 @@
+using Microsoft.Extensions.FileProviders;
 using OneADay.Components;
 using OneADay.Services;
 
@@ -10,6 +11,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddSingleton<TeaserStore>();
 builder.Services.AddSingleton<StatsStore>();
 builder.Services.AddSingleton<SuggestionStore>();
+builder.Services.AddSingleton<ImageStore>();
 builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
@@ -27,6 +29,15 @@ app.UseHttpsRedirection();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
+
+// Serve runtime-uploaded teaser images (MapStaticAssets only covers build-time wwwroot).
+var teaserImages = app.Services.GetRequiredService<ImageStore>();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(teaserImages.PhysicalDirectory),
+    RequestPath = ImageStore.RequestPath,
+});
+
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

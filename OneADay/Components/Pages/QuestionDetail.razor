@@ -15,8 +15,11 @@
     }
     else
     {
-        <div class="oad-banner">Challenge from @_teaser.Date.ToString("dddd d MMMM yyyy")</div>
-        <ChallengeView Teaser="_teaser" CanReveal="@(_teaser.Date < _today)" />
+        var upcoming = _teaser.Date > _today;
+        <div class="oad-banner">@(upcoming ? "Upcoming challenge" : "Challenge") — @_teaser.Date.ToString("dddd d MMMM yyyy")</div>
+        <ChallengeView Teaser="_teaser"
+                       CanReveal="@(_teaser.Date < _today)"
+                       Note="@(upcoming ? $"Scheduled for {_teaser.Date:dddd d MMMM yyyy} — a sneak peek! Have a go, but the solution stays hidden until it's the challenge of the day." : null)" />
     }
 </div>
 
@@ -29,8 +32,9 @@
     protected override void OnParametersSet()
     {
         _today = AppTime.Today;
-        // Future teasers stay hidden even if someone guesses the URL.
-        _teaser = DateOnly.TryParseExact(DateSlug, "yyyy-MM-dd", out var date) && date <= _today
+        // Upcoming teasers are viewable (and attemptable) but their answer can't
+        // be revealed until release — CanReveal below stays false for future dates.
+        _teaser = DateOnly.TryParseExact(DateSlug, "yyyy-MM-dd", out var date)
             ? Store.GetForDate(date)
             : null;
     }
