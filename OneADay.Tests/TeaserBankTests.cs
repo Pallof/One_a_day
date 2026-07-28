@@ -14,7 +14,7 @@ public class TeaserBankTests
     // Stored Answer strings, kept in sync with App_Data/teasers.json.
     private const string Q1 = "5*(5-(1/5))";
     private const string Q2 = "5000";
-    private const string Q3 = "46";
+    private const string Q3 = "45";
     private const string Q4 = "901";
     private const string Q5 = "2; 2:1; twice";
     private const string Q6 = "8 / (3 - (8/3))";
@@ -23,7 +23,7 @@ public class TeaserBankTests
     private const string Q9 = "312211";
     private const string Q10 = "48; 48 miles per hour; 48 mph";
     private const string Q11 = "impossible; it's impossible; infinitely fast";
-    private const string Q12 = "48; 48 mph";
+    // (The former Q12 was a duplicate of Q10 and has been removed from the teaser bank.)
     private const string Q13 = "0; they are next to each other; next to each other";
 
     [Theory]
@@ -34,7 +34,8 @@ public class TeaserBankTests
     [InlineData(Q2, "5000")]
     [InlineData(Q2, "5,000")]
     // 3 — sum of digits 0..10
-    [InlineData(Q3, "46")]
+    [InlineData(Q3, "45")]
+    [InlineData(Q3, "forty-five")]
     // 4 — digit-value summation 1..100
     [InlineData(Q4, "901")]
     // 5 — train/tunnel ratio
@@ -62,9 +63,6 @@ public class TeaserBankTests
     [InlineData(Q11, "impossible")]
     [InlineData(Q11, "Impossible!")]
     [InlineData(Q11, "infinitely fast")]
-    // 12 — highway 40/60 average speed
-    [InlineData(Q12, "48")]
-    [InlineData(Q12, "48mph")]
     // 13 — two poles / rope
     [InlineData(Q13, "0")]
     [InlineData(Q13, "they are next to each other")]
@@ -77,7 +75,7 @@ public class TeaserBankTests
     [InlineData(Q1, "24")]
     [InlineData(Q1, "5")]      // a formula fragment must NOT count as correct
     [InlineData(Q2, "6000")]
-    [InlineData(Q3, "45")]
+    [InlineData(Q3, "46")]
     [InlineData(Q4, "5050")]
     [InlineData(Q5, "3")]
     [InlineData(Q6, "24")]
@@ -87,7 +85,6 @@ public class TeaserBankTests
     [InlineData(Q9, "111221")]
     [InlineData(Q10, "50")]
     [InlineData(Q11, "60")]
-    [InlineData(Q12, "60")]
     [InlineData(Q13, "10")]
     [InlineData(Q1, "")]       // blank is never accepted
     public void Rejects_wrong_answer(string storedAnswer, string submission) =>

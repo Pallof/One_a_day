@@ -53,6 +53,16 @@
     filter: brightness(0.95);
 }
 
+.cv-hint-locked {
+    background-color: var(--oad-yellow);
+    border-radius: 4px;
+    padding: 0.7rem 1rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-align: center;
+    opacity: 0.65;
+}
+
 .cv-hint-revealed {
     width: 100%;
     display: flex;

@@ -33,11 +33,15 @@
                     <span class="cv-hint-hide">Click to hide</span>
                 </button>
             }
-            else
+            else if (_attempts >= MinAttemptsBeforeHint)
             {
                 <button class="cv-hint-toggle" @onclick="() => _showHint = true">
                     💡 Stuck? Click to reveal a hint
                 </button>
+            }
+            else
+            {
+                <div class="cv-hint-locked">🔒 Give it a try first — a hint unlocks after your first attempt.</div>
             }
         </div>
     }
@@ -90,7 +94,9 @@
         </div>
     }
 
-    @if (_stats is not null && _stats.TotalSubmissions > 0)
+    @* Stats stay hidden until this visitor solves it, so they can't gauge
+       the difficulty (or peek at the success rate) while still working on it. *@
+    @if (_solved && _stats is not null && _stats.TotalSubmissions > 0)
     {
         <p class="cv-stats">
             🧠 @_stats.UniqueAttempters.ToString("N0") @(_stats.UniqueAttempters == 1 ? "mind has" : "minds have") taken on this challenge
@@ -101,6 +107,7 @@
 
 @code {
     private const int MinAttemptsBeforeReveal = 3;
+    private const int MinAttemptsBeforeHint = 1;
     private const int MaxSubmissionLength = 300;
     private const string VisitorKey = "oad-visitor-id";
 
