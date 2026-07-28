@@ -78,7 +78,7 @@
       "Formula"
     ],
     "ImageFileName": null,
-    "Question": "What is 255^2 minus 245^2? Please don't use a calculator!",
+    "Question": "What is 255² − 245²? Please don't use a calculator!",
     "Answer": "5000",
     "Hint": "Difference of squares.",
     "Solution": "255² − 245² = (255+245)(255−245) = 500 × 10 = 5000"
@@ -91,10 +91,10 @@
       "Counting"
     ],
     "ImageFileName": null,
-    "Question": "What is the sum of all the digits from 0 to 10?",
-    "Answer": "46",
+    "Question": "What is the sum of all the digits from 0 to 9?",
+    "Answer": "45",
     "Hint": "Use the summation formula.",
-    "Solution": "The digits 0–9 sum to 45, plus the 1 in 10 makes 46."
+    "Solution": "The digits 0–9 sum to 45"
   },
   {
     "Id": "84e0a0ce-2963-45fe-8b60-3d2c1d8ee0bc",
@@ -196,22 +196,9 @@
     ],
     "ImageFileName": null,
     "Question": "A 2-mile racetrack is used for practice. If a driver covers the first half (1 mile) at 30 miles per hour, how fast must they drive the second half to average 60 miles per hour over the full lap?",
-    "Answer": "impossible; it's impossible; infinitely fast",
+    "Answer": "impossible; it's impossible; infinite",
     "Hint": "Zoom out.",
     "Solution": "The first mile at 30 mph already uses all the time a 60 mph average allows — it's impossible."
-  },
-  {
-    "Id": "cd8fb219-3389-4336-bf51-19501a86b006",
-    "Date": "2026-08-02",
-    "Difficulty": "Medium",
-    "Tags": [
-      "Math"
-    ],
-    "ImageFileName": null,
-    "Question": "A car travels a highway stretch 60 miles long. On the way down it averages 40 mph, and on the way back it averages 60 mph. What was the average speed of the entire journey there and back?",
-    "Answer": "48; 48 mph",
-    "Hint": "Think about the overall time it takes.",
-    "Solution": "Equal distances at 40 and 60 mph average to 48 mph."
   },
   {
     "Id": "30c6508f-c460-4500-a473-7f6c9378828e",
