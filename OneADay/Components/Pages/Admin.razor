@@ -3,6 +3,7 @@
 @inject StatsStore Stats
 @inject SuggestionStore Suggestions
 @inject ImageStore Images
+@inject IssueStore Issues
 
 <PageTitle>One a Day — Add a teaser</PageTitle>
 
@@ -181,6 +182,71 @@
             }
         }
     </div>
+
+    <div class="oad-banner">
+        Reported issues@(Issues.OpenCount > 0 ? $" ({Issues.OpenCount} open)" : "")
+    </div>
+
+    <div class="oad-box">
+        @if (_issues.Count == 0)
+        {
+            <p>No issues reported — they'll appear here when a visitor uses the "Report an issue" button.</p>
+        }
+        else
+        {
+            @foreach (var issue in _issues)
+            {
+                <div class="oad-issue @(IssueStatusInfo.IsOpen(issue.Status) ? "" : "oad-issue-closed")" @key="issue.Id">
+                    <div class="oad-issue-meta">
+                        <span class="oad-issue-status oad-status-@IssueStatusInfo.CssName(issue.Status)">
+                            @IssueStatusInfo.Label(issue.Status)
+                        </span>
+                        <span class="oad-issue-category">@issue.Category</span>
+                        <span>@issue.SubmittedAt.ToString("d MMM yyyy, h:mm tt") PT</span>
+                        @if (issue.StatusUpdatedAt is not null)
+                        {
+                            <span class="oad-issue-updated">updated @issue.StatusUpdatedAt.Value.ToString("d MMM")</span>
+                        }
+                    </div>
+
+                    <p class="oad-issue-details">@issue.Details</p>
+
+                    <p class="oad-issue-context">
+                        @if (issue.TeaserQuestion is not null)
+                        {
+                            <span>Question: <em>@Truncate(issue.TeaserQuestion, 90)</em></span>
+                            @if (issue.TeaserId is not null && _all.Any(t => t.Id == issue.TeaserId))
+                            {
+                                <button class="oad-btn-plain oad-issue-jump"
+                                        @onclick="() => EditById(issue.TeaserId.Value)">Edit that teaser</button>
+                            }
+                        }
+                        else
+                        {
+                            <span>Filed from @(issue.PageUrl ?? "unknown page")</span>
+                        }
+                    </p>
+
+                    <div class="oad-issue-actions">
+                        <label class="oad-issue-statuslabel" for="status-@issue.Id">Status:</label>
+                        @* Single source of truth for the selection: `selected` on the
+                           options. Adding `value` on the select as well can make the
+                           browser and Blazor disagree and fire a spurious change. *@
+                        <select id="status-@issue.Id" class="oad-issue-select"
+                                @onchange="e => SetIssueStatus(issue.Id, e.Value?.ToString())">
+                            @foreach (var status in IssueStatusInfo.All)
+                            {
+                                <option value="@status" selected="@(status == issue.Status)">
+                                    @IssueStatusInfo.Label(status)
+                                </option>
+                            }
+                        </select>
+                        <button class="oad-btn-danger" @onclick="() => DeleteIssue(issue.Id)">Delete</button>
+                    </div>
+                </div>
+            }
+        }
+    </div>
 </div>
 
 @code {
@@ -194,6 +260,7 @@
     private DateOnly _today;
     private IReadOnlyList<BrainTeaser> _all = [];
     private IReadOnlyList<TeaserSuggestion> _suggestions = [];
+    private IReadOnlyList<IssueReport> _issues = [];
 
     private List<string> ParsedTags => _tagsText
         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
@@ -211,6 +278,7 @@
     {
         _all = Store.GetAll();
         _suggestions = Suggestions.GetAll();
+        _issues = Issues.GetAll();
     }
 
     private void ResetForm(bool discardStaged = true)
@@ -364,6 +432,31 @@
     {
         Suggestions.Delete(id);
         Refresh();
+    }
+
+    private void SetIssueStatus(Guid id, string? statusName)
+    {
+        if (Enum.TryParse<IssueStatus>(statusName, out var status))
+        {
+            Issues.SetStatus(id, status);
+            Refresh();
+        }
+    }
+
+    private void DeleteIssue(Guid id)
+    {
+        Issues.Delete(id);
+        Refresh();
+    }
+
+    /// <summary>Jump straight from a report to editing the teaser it's about.</summary>
+    private void EditById(Guid teaserId)
+    {
+        var teaser = _all.FirstOrDefault(t => t.Id == teaserId);
+        if (teaser is not null)
+        {
+            Edit(teaser);
+        }
     }
 
     private static string Truncate(string text, int max) =>

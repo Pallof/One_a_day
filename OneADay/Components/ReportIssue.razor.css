@@ -1,0 +1,147 @@
+/* Floating action button, bottom right */
+.ri-fab {
+    position: fixed;
+    right: 1.25rem;
+    bottom: 1.25rem;
+    z-index: 900;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    background-color: #fff;
+    color: #1a1a1a;
+    border: 2px solid #1a1a1a;
+    border-radius: 999px;
+    padding: 0.55rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.22);
+}
+
+.ri-fab:hover {
+    background-color: var(--oad-yellow);
+}
+
+.ri-fab-icon {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+/* On narrow screens collapse to just the icon */
+@media (max-width: 520px) {
+    .ri-fab-label {
+        display: none;
+    }
+    .ri-fab {
+        padding: 0.7rem 0.8rem;
+    }
+}
+
+.ri-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 950;
+}
+
+.ri-modal {
+    position: fixed;
+    z-index: 960;
+    right: 1.25rem;
+    bottom: 1.25rem;
+    width: min(440px, calc(100vw - 2.5rem));
+    max-height: calc(100vh - 2.5rem);
+    overflow-y: auto;
+    background-color: var(--oad-blue);
+    border-radius: 6px;
+    padding: 1.1rem 1.25rem 1.25rem;
+    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.35);
+}
+
+.ri-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.ri-head h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.ri-close {
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0.2rem 0.4rem;
+}
+
+.ri-context {
+    font-size: 0.85rem;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 4px;
+    padding: 0.4rem 0.6rem;
+    margin-bottom: 0.85rem;
+}
+
+.ri-field {
+    margin-bottom: 0.9rem;
+}
+
+.ri-field label {
+    display: block;
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-bottom: 0.3rem;
+}
+
+.ri-field select,
+.ri-field textarea {
+    width: 100%;
+    border: none;
+    border-radius: 4px;
+    padding: 0.55rem 0.7rem;
+    font-size: 0.95rem;
+    font-family: inherit;
+    background: #fff;
+}
+
+.ri-field textarea {
+    resize: vertical;
+}
+
+.ri-counter {
+    display: block;
+    text-align: right;
+    font-size: 0.75rem;
+    opacity: 0.65;
+    margin-top: 0.15rem;
+}
+
+.ri-actions {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+}
+
+.ri-cancel {
+    background: none;
+    border: 2px solid #1a1a1a;
+    border-radius: 4px;
+    padding: 0.45rem 0.9rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.ri-thanks {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}

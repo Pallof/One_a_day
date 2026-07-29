@@ -12,6 +12,8 @@ builder.Services.AddSingleton<TeaserStore>();
 builder.Services.AddSingleton<StatsStore>();
 builder.Services.AddSingleton<SuggestionStore>();
 builder.Services.AddSingleton<ImageStore>();
+builder.Services.AddSingleton<IssueStore>();
+builder.Services.AddScoped<CurrentTeaserContext>();
 builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();

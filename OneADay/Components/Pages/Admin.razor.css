@@ -194,6 +194,119 @@
     gap: 0.5rem;
 }
 
+/* Reported issues */
+.oad-issue {
+    padding: 0.9rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.oad-issue:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.oad-issue-closed {
+    opacity: 0.6;
+}
+
+/* Status tag */
+.oad-issue-status {
+    border-radius: 999px;
+    padding: 0.1rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+}
+
+.oad-status-new {
+    background-color: #d23b34;   /* red — needs attention */
+}
+
+.oad-status-progress {
+    background-color: #e0a92b;   /* amber — being worked on */
+    color: #1a1a1a;
+}
+
+.oad-status-solved {
+    background-color: #2e9e3f;   /* green */
+}
+
+.oad-status-wontsolve {
+    background-color: #6b7280;   /* grey */
+}
+
+.oad-status-duplicate {
+    background-color: #577590;   /* slate blue */
+}
+
+.oad-issue-updated {
+    font-size: 0.75rem;
+    opacity: 0.7;
+    font-style: italic;
+}
+
+.oad-issue-statuslabel {
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.oad-issue-select {
+    border: none;
+    border-radius: 4px;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.85rem;
+    font-family: inherit;
+    background: #fff;
+}
+
+.oad-issue-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    align-items: center;
+    font-size: 0.85rem;
+    margin-bottom: 0.4rem;
+}
+
+.oad-issue-category {
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 4px;
+    padding: 0.1rem 0.5rem;
+    font-weight: 700;
+}
+
+.oad-issue-done {
+    font-weight: 700;
+    color: #0a5c1d;
+}
+
+.oad-issue-details {
+    font-size: 1rem;
+    margin-bottom: 0.35rem;
+    white-space: pre-wrap;
+}
+
+.oad-issue-context {
+    font-size: 0.85rem;
+    opacity: 0.85;
+    margin-bottom: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.oad-issue-jump {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.5rem;
+}
+
+.oad-issue-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
 .oad-row-future {
     opacity: 0.75;
 }
