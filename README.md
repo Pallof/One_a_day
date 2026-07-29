@@ -1,108 +1,168 @@
-# One_a_day
-Daily Brain Teasers Web App using React/ React Native
+# One a Day 🧠
 
+**A daily brain teaser to help people use and stretch their minds.**
 
-## Overview
+One new puzzle every day — no accounts, no sign-ups, no prerequisites. Just old
+fashioned pen, paper and good ol' effort. Type your answer, get instant feedback,
+unlock a hint if you're stuck, and come back tomorrow for the next one.
 
-My project is a brain teaser/ tenacious puzzle a day to help keep the mind sharp. 
-It will provide a new brain teaser each day with variations as to how to solve a problem. Will take suggestions from random users on the website as to what problem they would like  to see next or if they have a problem they would like to submit. Questions will have hints and a solutions button after a 'X' number of attempts. There will also be a QnA section where people can discuss the problem at hand possibly think up more variations for future problems. Will try to implement a images sections to better visualize the problems. There will be a home page and can filter by problem name and possibly number. Each user can have a unique profile with questions succesfully answersed out of the all the questions listed.
-This will be strictly mental strength training exercises, so no prequisites will be needed in order to solve a question. Just old fashioned pen, paper and good ol' effort
+Built with **C# / Blazor Server (.NET 10)**.
 
+---
 
+## Features
 
-## Data Model
+**For solvers**
+- **Challenge of the day** — one teaser per day, rolling over at midnight Pacific Time
+- **Smart answer checking** — accepts what a human would call correct:
+  - case and punctuation insensitive (`A Keyboard!` = `a keyboard`)
+  - numeric equivalence (`9` = `9.0`, `1,000` = `1000`)
+  - spelled-out numbers (`eighty` = `80`, `forty-eight mph` = `48 mph`)
+  - multiple accepted phrasings per question, separated by `;`
+- **Hints that must be earned** — locked until you've made at least one attempt
+- **Solutions after 3 attempts** — on past questions only; today's answer never leaks
+- **Every question gets its own page** — shareable, bookmarkable URLs by date
+- **Difficulty badges** — Easy / Medium / Hard, colour-coded green / yellow / red
+- **Confetti** on a correct answer 🎉
+- **Post-solve countdown** to the next challenge
+- **Community stats** — "466/13,502 successful attempts", revealed only after you solve
+- **Suggest a teaser** — visitors can submit their own (rate-limited to one per day)
 
+**For the author (`/admin`)**
+- Add, edit, delete, and schedule teasers; the date defaults to the next free day
+  so a whole week can be queued in one sitting
+- Set difficulty, attach a support image, and apply backend-only tags for sorting
+- Review visitor suggestions and promote good ones straight into the add form
+- Per-teaser stats: unique solvers and success rate
 
-The application will store Users, Questions, and Solutions
+---
 
-* users will have a list of what questions they have completed
-* Questions will all be a little different
-* Solutions will always have text and try to guide the user to understand the thought process. Some solutions may include images *Research how to implement .png*
+## Quickstart
 
-SAMPLE DOCUMENTS:
+Requires the .NET 10 SDK. If it's installed under `~/.dotnet` and isn't on your
+PATH yet:
 
-An Example User:
-
-```javascript
-{
-  username: "shannonshopper",
-  hash: // a password hash,
-}
+```bash
+export PATH="$HOME/.dotnet:$PATH"
 ```
 
-An Example List with Embedded Items:
+Run the app:
 
-```javascript
-{
-  user: // a reference to a User object
-  questions_num: //how many questions they have successfully answered
-  contribution_score: //how many questions they have suggested and been actually implemented
-  createdAt: // timestamp
-}
-//more will be added as this project flows along
+```bash
+dotnet run --project OneADay
 ```
 
+Then open the URL it prints (e.g. <http://localhost:5178>).
 
-## [Link to Commented First Draft Schema](db.js)
+Run the test suite (97 tests covering the answer-matching rules and the full
+teaser bank):
 
-(___TODO__: create a first draft of your Schemas in db.js and link to it_)
+```bash
+dotnet test OneADay.Tests
+```
 
-## Wireframes
+---
 
-###TODO
-(___TODO__: wireframes for all of the pages on your site; they can be as simple as photos of drawings or you can use a tool like Balsamiq, Omnigraffle, etc._)
+## Adding your daily teaser
 
-/cook/add adding a recipe to the homepage
+Open the **☰ menu → Add a teaser (admin)**, or go straight to `/admin`.
 
-![adding recipe](WireFraming/Add-Recipe.png)
+| Field | Notes |
+|---|---|
+| **Show on date** | The day it becomes the Challenge of the day. Defaults to the next free date. |
+| **Difficulty** | Easy / Medium / Hard — shown to solvers as a colour-coded badge. |
+| **Question** | The teaser itself. |
+| **Answer** | Separate alternative accepted answers with `;` — e.g. `48; 48 mph; forty-eight`. |
+| **Tags** | Comma-separated labels (`logic, math`) for your own sorting. Never shown to visitors. |
+| **Support image** | Optional PNG/JPG/GIF/WebP up to 3 MB, for puzzles that need a diagram. |
+| **Hint** | Unlocks for the solver after their first attempt. |
+| **Solution** | Shown once solved, or revealed on past questions after 3 attempts. |
 
-/home - page for showing all recipes
+---
 
-![homepage](WireFraming/HOMEPAGE.PNG)
+## How it's built
 
-/cook/login - login/user creation page
+```
+OneADay/                     the Blazor app
+  Components/
+    ChallengeView.razor      shared question + submission + hint + stats UI
+    DifficultyBadge.razor    colour-coded Easy/Medium/Hard badge
+    Pages/                   Home, Questions, QuestionDetail, About, Contact, Admin
+  Models/BrainTeaser.cs      the teaser + all answer-matching rules
+  Services/
+    TeaserStore.cs           reads/writes teasers.json
+    StatsStore.cs            anonymous attempt statistics
+    SuggestionStore.cs       visitor suggestions + rate limiting
+    ImageStore.cs            support-image uploads
+    AppTime.cs               pins "today" to midnight Pacific
+  App_Data/                  ← all data lives here (see below)
+OneADay.Tests/               xUnit tests for answer validation
+```
 
-![list](WireFraming/Login-Page.png)
+| Route | Page |
+|---|---|
+| `/` | Challenge of the day |
+| `/questions` | All Questions — searchable index |
+| `/questions/2026-07-28` | One question per page |
+| `/about` · `/contact` | About, and the suggest-a-teaser form |
+| `/admin` | Author tools |
 
-## Site map
+### Where the data lives
 
-(___TODO__: draw out a site map that shows how pages are related to each other_)
+There is **no database**. Everything is human-readable JSON in `OneADay/App_Data/`,
+so the whole site can be backed up by copying a folder or edited by hand:
 
-Here's a [complex example from wikipedia](https://upload.wikimedia.org/wikipedia/commons/2/20/Sitemap_google.jpg), but you can create one without the screenshots, drop shadows, etc. ... just names of pages and where they flow to.
+- `teasers.json` — the question bank
+- `stats.json` — attempts per teaser (anonymous device IDs, no personal data)
+- `suggestions.json` — visitor submissions and the daily rate-limit log
+- `teaser-images/` — uploaded support images
 
-![list](WireFraming/SiteMap.png)
+### Design decisions worth knowing
 
-## User Stories or Use Cases
+- **No accounts.** An early login page was removed — accounts accomplished nothing
+  here. Solvers are counted with an anonymous per-device ID, so "unique minds" works
+  without collecting anything personal.
+- **Pacific-pinned clock.** Every page and the post-solve countdown share one
+  `America/Los_Angeles` day boundary, so the timer hitting 00:00:00 and the new
+  teaser appearing are always the same moment.
+- **Answers are never trusted input.** Submissions are compared in memory and never
+  stored or interpolated anywhere; Blazor HTML-encodes everything it renders.
 
-1. As a non-registered user you can create an account
-2. As a non-registered user you can answer questions still but will not have a score
-3. As a user you can post in the comments section and maintain a score
-4. If your submitted question is selected, will receieve mention/shoutout for it
-5. As a user you can see what question you have contributed
+---
 
+## Design origins
 
+The app follows the original wireframes, kept in [`Picture Directory/`](Picture%20Directory):
 
-## Research Topics
+| Site map | Home page | All questions |
+|---|---|---|
+| ![site map](Picture%20Directory/One-a-Day-SiteMap.png) | ![home page](Picture%20Directory/Main%20Page.png) | ![all questions](Picture%20Directory/Search_Page--All_questions_page.png) |
 
+There is also a [login page wireframe](Picture%20Directory/login_Page.png) from the
+original design, kept for reference — the app deliberately has no accounts today.
 
-1. React Native
+> The project began in 2020 as a React sketch; it was rebuilt from these same
+> wireframes as a Blazor app.
 
-2. React Router 
+---
 
-3. Swift Implementation??? via IOS
+## Status & roadmap
 
-4. 
+Working today: everything in the feature list above, running locally.
 
+Before deploying publicly:
+- [ ] **Protect `/admin`** — it currently has no authentication, which is fine on
+      localhost but must be gated (a passphrase or host-level auth) before going live
+- [ ] Pick a host and deploy (`dotnet publish` runs on any cheap host)
 
-## [Link to Initial Main Project File](app.js) 
+Ideas after that:
+- [ ] Solve streaks and a share button ("One a Day #12 — solved in 2 attempts 🧠")
+- [ ] A "queue is running dry" warning when no teaser is scheduled for tomorrow
+- [ ] Bulk import so a week of teasers can be added at once
 
-(___TODO__: create a skeleton Express application with a package.json, app.js, views folder, etc. ... and link to your initial app.js_) (Done)
+---
 
-## Annotations / References Used
+## Docs
 
-(___TODO__: list any tutorials/references/etc. that you've based your code off of_)
-
-1. [passport.js authentication docs](http://passportjs.org/docs) - (add link to source code that was based on this)
-2. [tutorial on vue.js](https://vuejs.org/v2/guide/) - (add link to source code that was based on this)
-^^^ Will fix
-^^^ Please refer to the above 
+- [`OneADay/README.md`](OneADay/README.md) — deeper notes on the app, its data
+  files, and the answer-validation rules
