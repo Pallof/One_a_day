@@ -3,6 +3,7 @@
 @inject ProtectedLocalStorage LocalStorage
 @inject NavigationManager Nav
 @inject IJSRuntime JS
+@inject CurrentTeaserContext TeaserContext
 @implements IDisposable
 
 <div class="cv">
@@ -149,6 +150,8 @@
         _attempts = 0;
         _stats = Stats.Get(Teaser.Id);
         StopCountdown();
+        // Let "Report an issue" name the question being viewed.
+        TeaserContext.Set(Teaser);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -242,5 +245,10 @@
     private static string FormatCountdown(TimeSpan remaining) =>
         $"{(int)remaining.TotalHours:D2}:{remaining.Minutes:D2}:{remaining.Seconds:D2}";
 
-    public void Dispose() => StopCountdown();
+    public void Dispose()
+    {
+        StopCountdown();
+        // Navigating away: stop attributing issue reports to this question.
+        TeaserContext.Clear(_renderedTeaserId);
+    }
 }

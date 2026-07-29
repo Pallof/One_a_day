@@ -1,0 +1,108 @@
+@inject IssueStore Issues
+@inject CurrentTeaserContext TeaserContext
+@inject NavigationManager Nav
+
+<button class="ri-fab" title="Report an issue" @onclick="Open">
+    <span class="ri-fab-icon">⚠️</span>
+    <span class="ri-fab-label">Report an issue</span>
+</button>
+
+@if (_open)
+{
+    <div class="ri-backdrop" @onclick="Close"></div>
+
+    <div class="ri-modal" role="dialog" aria-modal="true" aria-labelledby="ri-title">
+        <div class="ri-head">
+            <h2 id="ri-title">Report an issue</h2>
+            <button class="ri-close" title="Close" @onclick="Close">✕</button>
+        </div>
+
+        @if (_submitted)
+        {
+            <p class="ri-thanks">✅ Thanks for letting us know — we'll take a look!</p>
+            <div class="ri-actions">
+                <button class="oad-btn-green" @onclick="Close">Done</button>
+            </div>
+        }
+        else
+        {
+            @if (_teaserQuestion is not null)
+            {
+                <p class="ri-context">About: <em>@Truncate(_teaserQuestion, 90)</em></p>
+            }
+
+            <div class="ri-field">
+                <label for="ri-category">What was the issue?</label>
+                <select id="ri-category" @bind="_category">
+                    @foreach (var category in IssueCategories.All)
+                    {
+                        <option value="@category">@category</option>
+                    }
+                </select>
+            </div>
+
+            <div class="ri-field">
+                <label for="ri-details">Describe the issue *</label>
+                <textarea id="ri-details" rows="5" maxlength="1000"
+                          placeholder="Tell us what happened — e.g. what you typed, what you expected, or what looked wrong."
+                          @bind="_details" @bind:event="oninput"></textarea>
+                <span class="ri-counter">@_details.Length / 1000</span>
+            </div>
+
+            <div class="ri-actions">
+                <button class="oad-btn-green" @onclick="Submit"
+                        disabled="@string.IsNullOrWhiteSpace(_details)">
+                    Send report
+                </button>
+                <button class="ri-cancel" @onclick="Close">Cancel</button>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private bool _open;
+    private bool _submitted;
+    private string _category = IssueCategories.Wording;
+    private string _details = string.Empty;
+    private Guid? _teaserId;
+    private string? _teaserQuestion;
+
+    private void Open()
+    {
+        // Snapshot the question being viewed, so the report is actionable.
+        var teaser = TeaserContext.Current;
+        _teaserId = teaser?.Id;
+        _teaserQuestion = teaser?.Question;
+
+        _category = IssueCategories.Wording;
+        _details = string.Empty;
+        _submitted = false;
+        _open = true;
+    }
+
+    private void Close() => _open = false;
+
+    private void Submit()
+    {
+        if (string.IsNullOrWhiteSpace(_details))
+        {
+            return;
+        }
+
+        Issues.Add(new IssueReport
+        {
+            SubmittedAt = AppTime.NowPacific,
+            Category = _category,
+            Details = _details.Trim(),
+            PageUrl = Nav.ToBaseRelativePath(Nav.Uri) is var path && path.Length > 0 ? "/" + path : "/",
+            TeaserId = _teaserId,
+            TeaserQuestion = _teaserQuestion,
+        });
+
+        _submitted = true;
+    }
+
+    private static string Truncate(string text, int max) =>
+        text.Length <= max ? text : text[..max] + "…";
+}
