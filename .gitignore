@@ -8,3 +8,7 @@ obj/
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# App data — never commit. Contains the question bank (questions, answers,
+# hints, solutions) plus visitor-submitted content. Back it up separately.
+OneADay/App_Data/
