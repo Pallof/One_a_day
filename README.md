@@ -115,7 +115,14 @@ so the whole site can be backed up by copying a folder or edited by hand:
 - `teasers.json` — the question bank
 - `stats.json` — attempts per teaser (anonymous device IDs, no personal data)
 - `suggestions.json` — visitor submissions and the daily rate-limit log
+- `issues.json` — reported issues and their triage status
 - `teaser-images/` — uploaded support images
+
+> **`App_Data/` is deliberately not in version control.** It holds the question
+> bank — including every answer and unpublished teaser — plus visitor-submitted
+> text, none of which belongs in a public repo. Back the folder up out-of-band;
+> it is the app's only datastore. A fresh clone starts with a few sample teasers
+> generated on first run.
 
 ### Design decisions worth knowing
 
@@ -164,5 +171,7 @@ Ideas after that:
 
 ## Docs
 
+- [`docs/prd/`](docs/prd) — product requirements: a spec of record for everything
+  built, plus proposals for what's next
 - [`OneADay/README.md`](OneADay/README.md) — deeper notes on the app, its data
   files, and the answer-validation rules
