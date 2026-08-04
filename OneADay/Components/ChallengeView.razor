@@ -60,7 +60,8 @@
                 Submit answer
             </button>
 
-            @if (CanReveal && !_solved && !_revealed && _attempts >= MinAttemptsBeforeReveal)
+            @* Solutions unlock the day after a challenge runs — never while it's live. *@
+            @if (CanReveal && !_solved && !_revealed)
             {
                 <button class="cv-reveal" @onclick="() => _revealed = true">Reveal solution</button>
             }
@@ -69,6 +70,13 @@
         @if (_feedback is not null && !_revealed)
         {
             <p class="cv-feedback @(_solved ? "cv-correct" : "cv-incorrect")">@_feedback</p>
+        }
+
+        @* While a challenge is live its answer stays sealed — set expectations
+           rather than leaving solvers hunting for a reveal button. *@
+        @if (!CanReveal && !_solved && _attempts > 0)
+        {
+            <p class="cv-locked-note">🔒 No peeking today — the solution unlocks tomorrow.</p>
         }
 
         @if (_revealed || (_solved && !string.IsNullOrWhiteSpace(Teaser.Solution)))
@@ -107,7 +115,6 @@
 </div>
 
 @code {
-    private const int MinAttemptsBeforeReveal = 3;
     private const int MinAttemptsBeforeHint = 1;
     private const int MaxSubmissionLength = 300;
     private const string VisitorKey = "oad-visitor-id";
@@ -199,7 +206,7 @@
         }
         else
         {
-            _feedback = CanReveal && _attempts >= MinAttemptsBeforeReveal
+            _feedback = CanReveal
                 ? "Not quite — try again, or reveal the solution."
                 : "Not quite — stretch that brain and try again!";
         }

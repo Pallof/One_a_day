@@ -131,6 +131,12 @@
     color: #8f1a00;
 }
 
+.cv-locked-note {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    opacity: 0.75;
+}
+
 .cv-solution {
     margin-top: 0.9rem;
     background: rgba(255, 255, 255, 0.55);

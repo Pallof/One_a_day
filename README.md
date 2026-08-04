@@ -20,7 +20,7 @@ Built with **C# / Blazor Server (.NET 10)**.
   - spelled-out numbers (`eighty` = `80`, `forty-eight mph` = `48 mph`)
   - multiple accepted phrasings per question, separated by `;`
 - **Hints that must be earned** — locked until you've made at least one attempt
-- **Solutions after 3 attempts** — on past questions only; today's answer never leaks
+- **Solutions unlock the next day** — never while a challenge is live, however many attempts you make
 - **Every question gets its own page** — shareable, bookmarkable URLs by date
 - **Difficulty badges** — Easy / Medium / Hard, colour-coded green / yellow / red
 - **Confetti** on a correct answer 🎉
@@ -54,7 +54,7 @@ dotnet run --project OneADay
 
 Then open the URL it prints (e.g. <http://localhost:5178>).
 
-Run the test suite (97 tests covering the answer-matching rules and the full
+Run the test suite (144 tests covering the answer-matching rules and the full
 teaser bank):
 
 ```bash
@@ -76,7 +76,7 @@ Open the **☰ menu → Add a teaser (admin)**, or go straight to `/admin`.
 | **Tags** | Comma-separated labels (`logic, math`) for your own sorting. Never shown to visitors. |
 | **Support image** | Optional PNG/JPG/GIF/WebP up to 3 MB, for puzzles that need a diagram. |
 | **Hint** | Unlocks for the solver after their first attempt. |
-| **Solution** | Shown once solved, or revealed on past questions after 3 attempts. |
+| **Solution** | Shown once solved, or revealable the day after the challenge runs. |
 
 ---
 
