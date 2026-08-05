@@ -33,7 +33,7 @@ was earned.
   fully playable, not just readable.
 - An **"← All questions"** link sits at the **top** of the page, directly beneath the
   header.
-- **Past** teaser: solution may be revealed after 3 attempts ([PRD 03](03-hints-and-solutions.md)).
+- **Past** teaser: the solution may be revealed, since the challenge has closed ([PRD 03](03-hints-and-solutions.md)).
 - **Scheduled** teaser: viewable as a sneak peek with an "Upcoming challenge" banner
   and an explanatory note; attempts are allowed, but the solution can **never** be
   revealed before its date.

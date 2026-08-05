@@ -15,9 +15,12 @@
     }
     else
     {
+        @* The Challenge of the day never gives its answer away — not even when
+           the queue is dry and an older teaser is standing in for today. Its
+           solution is reachable from the archive once the day has passed. *@
         <ChallengeView Teaser="_teaser"
                        IsDaily="true"
-                       CanReveal="@(_teaser.Date < _today)"
+                       CanReveal="false"
                        Note="@(_teaser.Date != _today ? $"From {_teaser.Date:dddd d MMMM yyyy} — today's teaser hasn't been posted yet." : null)" />
     }
 </div>

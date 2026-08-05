@@ -1,12 +1,17 @@
 # PRD 00 — Product overview
 
-**Status:** Spec of record · **Last updated:** 2026-07-29
+**Status:** Spec of record · **Last updated:** 2026-08-05
 
-## Vision
+## Vision and Problem
 
 One a Day serves a single brain teaser every day to help people use and stretch
-their minds. Little and often beats cramming: one good puzzle a day keeps the
-cobwebs away.
+their minds. I think that in this day and age it's too easy to rely on AI and it
+can make our minds lazy and reduces our processing abilities. I believe that solving 
+a challenge a day can help retain our mental sharpness. Even if you aren't able to
+solve it, it's the process of trying and attempting to put the pieces together.
+Challenges will vary from simple word riddles, to tougher math questions or simply 
+taking a step back and looking at the bigger picture. Regardless of the user, anyone
+can benefit from it or enjoy solving a quick challenge.
 
 It is deliberately **small, anonymous, and frictionless**. No sign-up wall, no
 prerequisites, no leaderboard pressure — just today's puzzle, an answer box, and
@@ -55,7 +60,6 @@ per-user profiles and scores, and any leaderboard.
 - **No database.** JSON files in `OneADay/App_Data/`: `teasers.json`,
   `stats.json`, `suggestions.json`, `issues.json`, plus `teaser-images/`
 - **One clock.** `AppTime` pins every day boundary to `America/Los_Angeles`
-- **97 unit tests**, concentrated on answer-matching rules
 
 Storage is intentionally the simplest thing that works. All reads and writes funnel
 through the `*Store` services, so swapping JSON for SQLite later is a contained
