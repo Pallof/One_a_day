@@ -2,9 +2,14 @@
 
 **A daily brain teaser to help people use and stretch their minds.**
 
-One new puzzle every day — no accounts, no sign-ups, no prerequisites. Just old
-fashioned pen, paper and good ol' effort. Type your answer, get instant feedback,
-unlock a hint if you're stuck, and come back tomorrow for the next one.
+One a Day serves a single brain teaser every day to help people use and stretch
+their minds. I think that in this day and age it's too easy to rely on AI and it
+can make our minds lazy and reduces our processing abilities. I believe that solving 
+a challenge a day can help retain our mental sharpness. Even if you aren't able to
+solve it, it's the process of trying and attempting to put the pieces together.
+Challenges will vary from simple word riddles, to tougher math questions or simply 
+taking a step back and looking at the bigger picture. Regardless of the user, anyone
+can benefit from it or enjoy solving a quick challenge.
 
 Built with **C# / Blazor Server (.NET 10)**.
 
@@ -18,7 +23,7 @@ Built with **C# / Blazor Server (.NET 10)**.
   - case and punctuation insensitive (`A Keyboard!` = `a keyboard`)
   - numeric equivalence (`9` = `9.0`, `1,000` = `1000`)
   - spelled-out numbers (`eighty` = `80`, `forty-eight mph` = `48 mph`)
-  - multiple accepted phrasings per question, separated by `;`
+  - multiple accepted phrasings per question
 - **Hints that must be earned** — locked until you've made at least one attempt
 - **Solutions unlock the next day** — never while a challenge is live, however many attempts you make
 - **Every question gets its own page** — shareable, bookmarkable URLs by date
@@ -111,12 +116,6 @@ OneADay.Tests/               xUnit tests for answer validation
 
 There is **no database**. Everything is human-readable JSON in `OneADay/App_Data/`,
 so the whole site can be backed up by copying a folder or edited by hand:
-
-- `teasers.json` — the question bank
-- `stats.json` — attempts per teaser (anonymous device IDs, no personal data)
-- `suggestions.json` — visitor submissions and the daily rate-limit log
-- `issues.json` — reported issues and their triage status
-- `teaser-images/` — uploaded support images
 
 > **`App_Data/` is deliberately not in version control.** It holds the question
 > bank — including every answer and unpublished teaser — plus visitor-submitted

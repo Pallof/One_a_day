@@ -26,7 +26,7 @@ to it.
 | **Tags** | no | Comma-separated labels for the author's own classification. **Never shown to solvers** — admin-only, for sorting and spotting themes. |
 | **Support image** | no | For puzzles needing a diagram. |
 | **Hint** | no | Unlocks after the solver's first attempt. |
-| **Solution** | no | Shown on solve, or on reveal after 3 attempts. |
+| **Solution** | no | Shown on solve, or revealable the day after the challenge runs. |
 
 ### Scheduling rules
 

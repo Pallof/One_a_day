@@ -27,14 +27,22 @@ product needs a middle path: available, but earned.
 - A solution/explanation is optional per teaser.
 - On a **correct answer**, the solution is shown immediately (the puzzle is over).
   If the author wrote no solution, no empty container may render.
-- A **"Reveal solution"** button appears only when **all** of these hold:
-  1. the teaser is a **past** teaser (not today's, not scheduled),
-  2. the solver has made **at least 3 attempts**,
-  3. they have not already solved it.
+- **Solutions unlock the day after a challenge runs — never while it is live.**
+  A puzzle has to actually be solved on its own day; no amount of effort or
+  persistence opens the answer early.
+- A **"Reveal solution"** button therefore appears when **both** hold:
+  1. the teaser's date is **before today** (Pacific), and
+  2. the solver has not already solved it.
+
+  There is deliberately **no attempt threshold** — effort is not what earns the
+  answer, time is.
 - Revealing shows the primary accepted answer plus the explanation, and locks the
   submission box.
-- After the third failed attempt the retry message must change to signpost the
-  option (*"Not quite — try again, or reveal the solution."*).
+- On a **live** challenge, once the solver has attempted at least once, show a note
+  setting expectations (*"🔒 No peeking today — the solution unlocks tomorrow."*)
+  rather than leaving them hunting for a button that isn't there.
+- On a past challenge the retry message signposts the option
+  (*"Not quite — try again, or reveal the solution."*).
 
 ### Spoiler protection
 
@@ -53,15 +61,17 @@ product needs a middle path: available, but earned.
 
 - [x] Hint locked before the first attempt, unlocked after it
 - [x] Revealed hint re-conceals on click
-- [x] Reveal button hidden at attempts 1–2, shown at 3, on past questions only
-- [x] Reveal button never appears on today's or a scheduled teaser (verified with
-      3 failed attempts on a future-dated question)
+- [x] Reveal button available immediately on a past challenge, with no attempt
+      threshold
+- [x] Reveal button **never** appears on a live challenge, however many attempts
+      are made (verified with 4 failed attempts on a teaser dated today)
+- [x] Live challenge shows the "unlocks tomorrow" note after the first attempt
+- [x] Scheduled (future) teasers never reveal
 - [x] Solved teasers with no written solution render no empty panel
 
 ## Implementation notes
 
-`Components/ChallengeView.razor` holds both gates as constants —
-`MinAttemptsBeforeHint = 1` and `MinAttemptsBeforeReveal = 3` — and the reveal is
-additionally gated by the `CanReveal` parameter, which callers set to
-`Teaser.Date < today`. Both the daily page and archived question pages use this same
+`Components/ChallengeView.razor` holds the hint gate as `MinAttemptsBeforeHint = 1`.
+The reveal is gated solely by the `CanReveal` parameter, which callers set to
+`Teaser.Date < today` — so it is a function of the calendar, not of effort. Both the daily page and archived question pages use this same
 component, so the rules cannot diverge between them.
