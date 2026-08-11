@@ -46,7 +46,7 @@ Brain Teaser's
     Difficulty: Easy
 
 8.  Question: You are running a race. You pass the person in second place. What position are you in now?
-    Hint: 
+    Hint: No hints for this one
     Solution: Second
     Tag: Word Puzzle, Reasoning
     Difficulty: Easy
@@ -65,7 +65,7 @@ Brain Teaser's
 
 11. Question: A 2 miles racetrack exists for drivers to practices racing. If a driver drives the first half of the track at 30 miles per hour, how fast does he need to drive to the end of the track (1 lap) average 60 miles to per hour?
     Hint: Zoom out
-    Solution: It's impossible or infinitely fast
+    Solution: It's impossible or infinitely fast or Infinite
     Tag: Math, Logic puzzle
     Difficulty: Medium
 
@@ -74,3 +74,56 @@ Brain Teaser's
     Solution: 0 or They are next to each other
     Tag: Math, Logical
     Difficulty: Medium
+
+13. Question: A frog is stuck at the bottom of a 30 foot well. It musters the courage to escape. Each day the frog is able to climb 3 feet. But at night when it sleeps it slips 1 feet.
+    The weather is also forecasted to rain every 5 days, which means the frog will slip 2 feet instead of 1 on rainy days. How many days will it take the frog to escape?
+    Hint: Try visualizing it on a piece of paper
+    Solution: 16 or 16 days
+    Tag: Math
+    Difficulty: Easy
+
+14. Question: A group of nomads is trying to get across the dessert. To cross, it will take 9 days. However, each person that attempts to cross can only carry 6 days worth of food and water.
+    What is the fewest amount of people needed to get one person across the desert?
+    Hint: You can give supplies to one another during the trek
+    Solution: 3 or 3 people
+    Tag: Word puzzle, logic 
+    Difficulty: Medium
+
+15. Question: The algae in a pond doubles every minute and within the hour the pond is completely filled. How many minutes would it take to fill half the pond?
+    Hint: Think exponents!
+    Solution: 59 or 59 minutes or 59 mins
+    Tag: Math, Logical
+    Difficulty: Easy
+
+16. Question: I am a number when divided by the product of my digits my quotient is 3. When I add 18 to this number, the digits would be inverted. 
+    Hint: No hints for this one
+    Solution: 24 or twenty four 
+    Tag: Word puzzle, logic 
+    Difficulty: Hard
+
+17. Question: What is the minimum of people needed in a room in order to have a probabilty of ~50% that two people share a birthday?
+    Hint: Birthday Problem! You can reframe the problem as what are the odds that two people in the rooms don't have the same birthday. Add those probabilities!
+    Solution: 23 or 23 people
+    Tag: Word puzzle, logic, Math, Probability
+    Difficulty: Hard
+
+18. Question: There are nine people in a room. If everyone shakes hands with each invidual once. How many total handshakes were there?
+    Hint: If person 1 and person 2 shakes hands. Its the same vice versa. Make sure not to double count!
+    Solution: 36 or 36 handshakes or thirty six 
+    Tag: Word puzzle, logic, Math, Probability
+    Difficulty: Easy
+
+19. Question: There is a local 1 versus basketball tournaments that takes 100 players. If there are no losers brackets, how many matches do you need in total to crown 1 champion?
+    Hint: No hints for this one
+    Solution: 99
+    Tag: Word puzzle, logic, Math
+    Difficulty: Easy
+
+20. Question: A group of 30 students sit in class for their final exam. The teacher makes a surprise announcement. She asks everyone to write down a number of their choosing on a piece of paper without speaking and fold it up.
+    She says that she will sum all numbers given to her and divide it by the total number of people in the class. If you wrote that number rounded up or down, then you get a 100% on the exam without having to take it.
+    What number should you and the rest of the class write without speakign to one another to ensure everyone gets a perfect score?
+    Hint:  There are two viable answers! But everyone has to cooperate
+    Solution: 0, 1, zero, one
+    Tag: Logical, Math, Word puzzle
+    Difficulty: Medium
+

@@ -63,8 +63,6 @@ see [PRD 06](06-community-feedback.md#statistics).
 
 ## Non-goals
 
-- Limiting the number of attempts
-- Timing how long a solve takes
 - Any notion of "missing" a day (there is no streak penalty; see [PRD 12](12-streaks-and-sharing.md))
 
 ## Acceptance criteria
