@@ -69,7 +69,7 @@ generally. Escalation path if abused: a CAPTCHA on the form.
 ### Requirements
 
 - A floating **"Report an issue"** button, bottom-right, on the **Challenge of the
-  day page only** — not on archive, question, About, Contact, or admin pages.
+  day page only** — not on the Twenty Four, About, Contact, or admin pages.
 - Opens a dialog containing:
   - a **dropdown** with exactly three options:
     1. *Question is poorly worded or written incorrectly*

@@ -17,7 +17,7 @@ Two kinds of document live here:
 | [01 — Daily challenge](01-daily-challenge.md) | Spec of record |
 | [02 — Answer evaluation](02-answer-evaluation.md) | Spec of record |
 | [03 — Hints & solutions](03-hints-and-solutions.md) | Spec of record |
-| [04 — Archive & discovery](04-archive-and-discovery.md) | Spec of record |
+| [04 — No archive](04-archive-and-discovery.md) | Spec of record |
 | [05 — Authoring & admin](05-authoring-and-admin.md) | Spec of record |
 | [06 — Community feedback](06-community-feedback.md) | Spec of record |
 | [10 — Admin authentication](10-admin-authentication.md) | **Proposed — blocker for launch** |

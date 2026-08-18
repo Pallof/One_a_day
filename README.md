@@ -26,7 +26,6 @@ Built with **C# / Blazor Server (.NET 10)**.
   - multiple accepted phrasings per question
 - **Hints that must be earned** — locked until you've made at least one attempt
 - **Solutions unlock the next day** — never while a challenge is live, however many attempts you make
-- **Every question gets its own page** — shareable, bookmarkable URLs by date
 - **Difficulty badges** — Easy / Medium / Hard, colour-coded green / yellow / red
 - **Confetti** on a correct answer 🎉
 - **Post-solve countdown** to the next challenge
@@ -59,7 +58,7 @@ dotnet run --project OneADay
 
 Then open the URL it prints (e.g. <http://localhost:5178>).
 
-Run the test suite (144 tests covering the answer-matching rules and the full
+Run the test suite (188 tests covering the answer-matching rules and the full
 teaser bank):
 
 ```bash
@@ -92,7 +91,7 @@ OneADay/                     the Blazor app
   Components/
     ChallengeView.razor      shared question + submission + hint + stats UI
     DifficultyBadge.razor    colour-coded Easy/Medium/Hard badge
-    Pages/                   Home, Questions, QuestionDetail, About, Contact, Admin
+    Pages/                   Home, TwentyFour, About, Contact, Admin
   Models/BrainTeaser.cs      the teaser + all answer-matching rules
   Services/
     TeaserStore.cs           reads/writes teasers.json
@@ -107,8 +106,7 @@ OneADay.Tests/               xUnit tests for answer validation
 | Route | Page |
 |---|---|
 | `/` | Challenge of the day |
-| `/questions` | All Questions — searchable index |
-| `/questions/2026-07-28` | One question per page |
+| `/twentyfour` | Twenty Four — placeholder, under maintenance |
 | `/about` · `/contact` | About, and the suggest-a-teaser form |
 | `/admin` | Author tools |
 
@@ -140,9 +138,12 @@ so the whole site can be backed up by copying a folder or edited by hand:
 
 The app follows the original wireframes, kept in [`Picture Directory/`](Picture%20Directory):
 
-| Site map | Home page | All questions |
-|---|---|---|
-| ![site map](Picture%20Directory/One-a-Day-SiteMap.png) | ![home page](Picture%20Directory/Main%20Page.png) | ![all questions](Picture%20Directory/Search_Page--All_questions_page.png) |
+| Site map | Home page |
+|---|---|
+| ![site map](Picture%20Directory/One-a-Day-SiteMap.png) | ![home page](Picture%20Directory/Main%20Page.png) |
+
+The original design also included an [all-questions page](Picture%20Directory/Search_Page--All_questions_page.png);
+that archive was built and later removed — see [PRD 04](docs/prd/04-archive-and-discovery.md).
 
 There is also a [login page wireframe](Picture%20Directory/login_Page.png) from the
 original design, kept for reference — the app deliberately has no accounts today.

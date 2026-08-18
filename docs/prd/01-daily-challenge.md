@@ -22,7 +22,7 @@ for everyone, and if finishing it leaves the solver with a reason to return.
 
 - Days roll over at **midnight `America/Los_Angeles`**, regardless of where the
   server runs, and the boundary must be DST-correct (PDT/PST).
-- Every surface that reasons about "today" — home, archive, question pages, admin
+- Every surface that reasons about "today" — home, admin
   defaults, the countdown — must share this one clock. A single source
   (`AppTime`) is required; per-page `DateTime.Now` is a defect.
 
@@ -53,8 +53,8 @@ After solving today's challenge, show:
 - When the countdown reaches zero, the page must **reload itself** and serve the
   new challenge, so a tab left open overnight is correct.
 
-The countdown belongs to the daily challenge only — it must not appear on archived
-question pages, where there is nothing to wait for.
+The countdown belongs to the daily challenge, which since [PRD 04](04-archive-and-discovery.md)
+is the only place a teaser is playable.
 
 ### Statistics
 

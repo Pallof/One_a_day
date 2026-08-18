@@ -73,5 +73,9 @@ product needs a middle path: available, but earned.
 
 `Components/ChallengeView.razor` holds the hint gate as `MinAttemptsBeforeHint = 1`.
 The reveal is gated solely by the `CanReveal` parameter, which callers set to
-`Teaser.Date < today` — so it is a function of the calendar, not of effort. Both the daily page and archived question pages use this same
-component, so the rules cannot diverge between them.
+`Teaser.Date < today` — so it is a function of the calendar, not of effort.
+
+> Since [PRD 04](04-archive-and-discovery.md) removed the archive, the daily page is
+> the only caller, and it passes `CanReveal="false"` unconditionally: the Challenge
+> of the day never gives its answer away, even when an older teaser is standing in
+> for an unposted today.
