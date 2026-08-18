@@ -30,9 +30,10 @@ already used for statistics is enough to track a streak locally.
 ### Streaks
 
 1. Track per device: **current streak**, **longest streak**, **total solved**.
-2. A day counts toward the streak when the solver **solves that day's challenge** —
-   solving an archived puzzle must not extend it (otherwise the archive trivially
-   inflates streaks).
+2. A day counts toward the streak when the solver **solves that day's challenge**.
+   (Since [PRD 04](04-archive-and-discovery.md) removed the archive this is the only
+   way to solve anything — but the rule must be kept explicit so a future archive
+   cannot silently inflate streaks.)
 3. Solving on consecutive Pacific days increments; a missed day resets the current
    streak to zero and preserves the longest.
 4. Show the streak in the post-solve state (e.g. *"🔥 6 days in a row — your best is 9"*).
@@ -55,13 +56,13 @@ already used for statistics is enough to track a streak locally.
 
 - Should the share include attempt count? It's the interesting part, but it may
   discourage sharing after a scrappy 8-attempt solve. Suggest including it, revisit.
-- Should a revealed solution break the streak? Proposal: **no** — reveals are only
-  possible on past questions, which don't count anyway.
+- Should a revealed solution break the streak? Moot today: the daily challenge never
+  offers a reveal ([PRD 03](03-hints-and-solutions.md)). Revisit only if an archive returns.
 
 ## Acceptance criteria
 
 - [ ] Solving on consecutive days increments; skipping a day resets current, keeps longest
-- [ ] Archived solves never affect the streak
+- [ ] Only daily-challenge solves affect the streak
 - [ ] Streak survives a page reload and a server restart
 - [ ] Cleared browser storage is handled without error
 - [ ] Share text contains no spoilers and copies with confirmation

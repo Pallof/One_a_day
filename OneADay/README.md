@@ -51,7 +51,8 @@ These rules are pinned down by unit tests in `../OneADay.Tests` — run
   filename and served from `/teaser-images`; shown below the question.
 - **Hint** (optional) appears as a concealed click-to-reveal bar between the
   question and the submission box.
-- **Solution** (optional) is shown once solved, and on past questions.
+- **Solution** (optional) is shown once solved. The daily challenge never reveals
+  it otherwise — there is no archive to browse ([PRD 04](../docs/prd/04-archive-and-discovery.md)).
 
 The table below the form lists everything scheduled and past, with edit/delete.
 
@@ -73,8 +74,7 @@ accounts involved), so the "unique minds" number is per-device.
 | Route | Wireframe page |
 |---|---|
 | `/` | Home — welcome banner, Challenge of the day, submission box |
-| `/questions` | All Questions — search bar + a clickable list of past questions |
-| `/questions/2026-07-01` | One question per page, same format as the daily challenge; "Reveal solution" unlocks the day after the challenge runs |
+| `/twentyfour` | Twenty Four — placeholder page, under maintenance (also answers the legacy `/questions`) |
 | `/about` | About us |
 | `/contact` | Contact us — suggest-a-teaser form (difficulty, teaser, solution + hint); submissions land in `App_Data/suggestions.json` and are reviewed in admin. Rate-limited to 1/day per device (and 3/day per hashed IP as a bot backstop) |
 | `/admin` | Your input system for adding daily teasers |

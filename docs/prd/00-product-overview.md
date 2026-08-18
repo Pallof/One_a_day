@@ -46,8 +46,8 @@ Shipped and covered by the specs of record:
 
 - Daily challenge with midnight-Pacific rollover, post-solve countdown, confetti
 - Answer evaluation (numeric, word-number, formula, and multi-phrasing matching)
-- Earned hints and a 3-attempt solution reveal on past questions
-- Searchable archive with one page per question
+- Earned hints, and solutions that unlock the day after a challenge runs
+- **No archive** — only today's puzzle is reachable ([PRD 04](04-archive-and-discovery.md))
 - Authoring tools: scheduling, difficulty, backend tags, support images
 - Community feedback: teaser suggestions and issue reports with triage
 
