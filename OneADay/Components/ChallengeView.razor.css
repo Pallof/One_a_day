@@ -131,6 +131,65 @@
     color: #8f1a00;
 }
 
+/* Its own container below the submission box — the padding comes from the
+   button itself, so the box hugs it. */
+.cv-yesterday-box {
+    padding: 0.75rem;
+}
+
+/* Glossy blue link to yesterday's answer. */
+.cv-yesterday {
+    position: relative;
+    overflow: hidden;
+    display: block;
+    padding: 0.7rem 1.1rem;
+    border-radius: 6px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 1rem;
+    color: #fff;
+    text-decoration: none;
+    background: linear-gradient(180deg, #4aa8ea 0%, #1c73c4 55%, #175fa3 100%);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.cv-yesterday:hover {
+    background: linear-gradient(180deg, #5cb6f2 0%, #2380d4 55%, #1a6bb5 100%);
+}
+
+.cv-yesterday:active {
+    transform: translateY(1px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.cv-yesterday:focus-visible {
+    outline: 2px solid #1a1a1a;
+    outline-offset: 2px;
+}
+
+/* Sweeping highlight — the "shine". */
+.cv-yesterday-shine {
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+    transform: skewX(-20deg);
+    animation: cv-shine 3.5s ease-in-out infinite;
+}
+
+@keyframes cv-shine {
+    0%, 65% { left: -60%; }
+    100%    { left: 130%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cv-yesterday-shine {
+        animation: none;
+    }
+}
+
 .cv-locked-note {
     margin-top: 0.5rem;
     font-size: 0.9rem;

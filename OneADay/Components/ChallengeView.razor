@@ -94,6 +94,18 @@
         }
     </div>
 
+    @* Its own container, outside the submission box — the way to yesterday's
+       answer, which is the one solution it's fair to publish. Daily page only. *@
+    @if (IsDaily)
+    {
+        <div class="oad-box cv-yesterday-box">
+            <a class="cv-yesterday" href="yesterday">
+                <span class="cv-yesterday-shine"></span>
+                <span>See yesterday's solution</span>
+            </a>
+        </div>
+    }
+
     @if (_solved && IsDaily)
     {
         <div class="cv-next">
