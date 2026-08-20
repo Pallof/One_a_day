@@ -20,6 +20,7 @@ Two kinds of document live here:
 | [04 — No archive](04-archive-and-discovery.md) | Spec of record |
 | [05 — Authoring & admin](05-authoring-and-admin.md) | Spec of record |
 | [06 — Community feedback](06-community-feedback.md) | Spec of record |
+| [07 — Twenty Four game](07-twenty-four.md) | Spec of record |
 | [10 — Admin authentication](10-admin-authentication.md) | **Proposed — blocker for launch** |
 | [11 — Deployment](11-deployment.md) | Proposed |
 | [12 — Streaks & sharing](12-streaks-and-sharing.md) | Proposed |

@@ -1,23 +1,164 @@
-@* Replaces the old All Questions archive. Browsing every past and future
-   teaser let people binge the whole bank in one sitting, which is the exact
-   opposite of one a day. The route "/questions" is kept so old links and
-   bookmarks land here rather than on a 404. *@
+@* Replaces the old All Questions archive. The route "/questions" is kept so old
+   links and bookmarks land here rather than on a 404. *@
 @page "/twentyfour"
 @page "/questions"
+@inject IJSRuntime JS
+@implements IAsyncDisposable
 
 <PageTitle>One a Day — Twenty Four</PageTitle>
 
-<div class="oad-static">
+<div class="tf-page">
     <div class="oad-banner">Twenty Four</div>
 
     <div class="oad-box">
-        <p class="tf-lead">🚧 This page is under maintenance.</p>
-        <p>
-            Something new is being built here. Check back soon!
+        <p class="tf-lead">
+            Make <strong>24</strong> from all four numbers, using only
+            <strong>+ &minus; &times; &divide;</strong> and parentheses.
         </p>
-        <p>
-            In the meantime, <a href="">today's challenge</a> is waiting for you —
-            one a day, every day.
+        <p class="tf-rules">
+            Each number must be used exactly once. Numbers run 1–10, like a deck of cards
+            with the face cards counting as 10 — so duplicates happen.
         </p>
     </div>
+
+    <div class="oad-box tf-hand-box">
+        <div class="tf-hand">
+            @foreach (var n in _hand)
+            {
+                <span class="tf-card">@n</span>
+            }
+        </div>
+    </div>
+
+    <div class="oad-box">
+        <h2>Your expression:</h2>
+        <input class="tf-input" placeholder="Type your expression"
+               maxlength="120"
+               @bind="_expression" @bind:event="oninput"
+               @onkeydown="OnKeyDown"
+               disabled="@(_state is RoundState.Solved)" />
+
+        <div class="tf-buttons">
+            <button class="oad-btn-green" @onclick="Submit"
+                    disabled="@(_state is RoundState.Solved || string.IsNullOrWhiteSpace(_expression))">
+                Submit
+            </button>
+            <button class="tf-pass" @onclick="Pass" disabled="@(_state is RoundState.Solved)">
+                Pass
+            </button>
+        </div>
+
+        @if (_message is not null)
+        {
+            <p class="tf-message @(_state switch {
+                    RoundState.Solved => "tf-correct",
+                    RoundState.Passed => "tf-passed",
+                    _ => "tf-wrong" })">@_message</p>
+        }
+
+    </div>
+
+    @if (_state is RoundState.Solved)
+    {
+        <div class="oad-box tf-next-box">
+            <button class="tf-next" @onclick="() => NewHand()">Deal a new hand</button>
+            <p class="tf-next-hint">or press the space bar</p>
+        </div>
+    }
+
+    <p class="tf-score">
+        Solved @_solvedCount of @_playedCount @(_playedCount == 1 ? "hand" : "hands") this visit.
+    </p>
 </div>
+
+@code {
+    private enum RoundState { Playing, Wrong, Solved, Passed }
+
+    private readonly Random _random = new();
+    private int[] _hand = [];
+    private string _expression = string.Empty;
+    private string? _message;
+    private RoundState _state = RoundState.Playing;
+    private DotNetObjectReference<TwentyFour>? _selfRef;
+    private int _solvedCount;
+    private int _playedCount;
+
+    protected override void OnInitialized() => NewHand();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _selfRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("oadTwentyFour.register", _selfRef);
+        }
+    }
+
+    /// <summary>Space bar shortcut for "Deal a new hand" — only once a round is over.</summary>
+    [JSInvokable]
+    public Task DealFromSpaceBar()
+    {
+        if (_state is not RoundState.Solved)
+        {
+            return Task.CompletedTask;
+        }
+        return InvokeAsync(() =>
+        {
+            NewHand();
+            StateHasChanged();
+        });
+    }
+
+    private void NewHand(string? note = null)
+    {
+        _hand = TwentyFourGame.Deal(_random);
+        _expression = string.Empty;
+        _message = note;
+        _state = note is null ? RoundState.Playing : RoundState.Passed;
+        _playedCount++;
+    }
+
+    private async Task Submit()
+    {
+        var check = TwentyFourGame.Check(_expression, _hand);
+        _message = check.Message;
+
+        if (check.IsCorrect)
+        {
+            _state = RoundState.Solved;
+            _solvedCount++;
+            await JS.InvokeVoidAsync("oadCelebrate");
+        }
+        else
+        {
+            _state = RoundState.Wrong;
+        }
+    }
+
+    // Passing deals again and says nothing else. Showing the solution would hand
+    // over the answer to a puzzle the player is still capable of cracking, and the
+    // whole point is that they work it out themselves.
+    private void Pass() => NewHand("Passed — here's a fresh hand.");
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && _state is RoundState.Playing or RoundState.Wrong
+            && !string.IsNullOrWhiteSpace(_expression))
+        {
+            await Submit();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("oadTwentyFour.unregister");
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is already gone; nothing left to unhook.
+        }
+        _selfRef?.Dispose();
+    }
+}

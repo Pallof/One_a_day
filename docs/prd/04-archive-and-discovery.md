@@ -40,14 +40,15 @@ solver can reach is the one live today.
    visible in admin — only the public browsing surface is gone, so a curated
    archive can be reintroduced later without re-authoring anything.
 
-### Placeholder page — "Twenty Four"
+### The Twenty Four game
 
-- Lives at `/twentyfour`, and also answers `/questions`.
-- Reachable from the dropdown menu, replacing the old "More questions" entry.
-- Currently states plainly that it is **under maintenance**, with a link back to
-  today's challenge.
-- The name reserves the slot for a Twenty Four feature; its behaviour is not yet
-  specified.
+The slot vacated by the archive now holds a small game, specified in
+[PRD 07](07-twenty-four.md). It lives at `/twentyfour`, also answers the legacy
+`/questions`, and is reachable from the dropdown menu.
+
+Unlike the archive it replaced, it is **endlessly replayable without touching the
+teaser bank** — it generates its own puzzles, so playing it all afternoon cannot
+exhaust the one-a-day content.
 
 ## Consequences
 
