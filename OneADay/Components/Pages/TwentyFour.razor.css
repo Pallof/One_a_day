@@ -1,5 +1,162 @@
+.tf-page {
+    max-width: 720px;
+}
+
 .tf-lead {
-    font-size: 1.15rem;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+.tf-rules {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.tf-eg {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    background: rgba(255, 255, 255, 0.55);
+    border-radius: 3px;
+    padding: 0.05rem 0.35rem;
+}
+
+/* --- the dealt hand ----------------------------------------------------- */
+
+.tf-hand-box {
+    padding: 1.25rem 1rem;
+}
+
+.tf-hand {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.tf-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 4rem;
+    height: 5.25rem;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    font-size: 2rem;
     font-weight: 700;
-    margin-bottom: 0.75rem;
+    color: #1a1a1a;
+}
+
+@media (max-width: 420px) {
+    .tf-card {
+        width: 3.2rem;
+        height: 4.2rem;
+        font-size: 1.6rem;
+    }
+}
+
+/* --- input and buttons -------------------------------------------------- */
+
+.tf-input {
+    width: 100%;
+    border: none;
+    border-radius: 4px;
+    padding: 0.7rem 0.9rem;
+    font-size: 1.1rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.tf-buttons {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.9rem;
+}
+
+.tf-pass {
+    background: none;
+    border: 2px solid #1a1a1a;
+    border-radius: 4px;
+    padding: 0.6rem 1.4rem;
+    font-weight: 600;
+    font-family: inherit;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.tf-pass:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+.tf-pass:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* --- feedback ----------------------------------------------------------- */
+
+.tf-message {
+    margin-top: 0.9rem;
+    margin-bottom: 0;
+    font-weight: 700;
+    font-size: 1.02rem;
+}
+
+.tf-correct {
+    color: #0a5c1d;
+}
+
+.tf-wrong {
+    color: #8f1a00;
+}
+
+.tf-passed {
+    color: #1a1a1a;
+}
+
+.tf-worked {
+    margin-top: 0.5rem;
+    margin-bottom: 0;
+    background: rgba(255, 255, 255, 0.55);
+    padding: 0.55rem 0.85rem;
+    border-radius: 4px;
+    font-size: 0.98rem;
+}
+
+/* --- next hand ---------------------------------------------------------- */
+
+.tf-next-box {
+    padding: 0.75rem;
+}
+
+.tf-next {
+    display: block;
+    width: 100%;
+    padding: 0.7rem 1.1rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: inherit;
+    color: #fff;
+    cursor: pointer;
+    background: linear-gradient(180deg, #4aa8ea 0%, #1c73c4 55%, #175fa3 100%);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.tf-next:hover {
+    background: linear-gradient(180deg, #5cb6f2 0%, #2380d4 55%, #1a6bb5 100%);
+}
+
+.tf-next-hint {
+    text-align: center;
+    font-size: 0.8rem;
+    opacity: 0.7;
+    margin: 0.4rem 0 0 0;
+}
+
+.tf-score {
+    text-align: center;
+    font-size: 0.9rem;
+    font-weight: 600;
+    opacity: 0.75;
 }
