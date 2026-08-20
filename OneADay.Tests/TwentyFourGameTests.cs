@@ -88,6 +88,26 @@ public class TwentyFourGameTests
     }
 
     [Fact]
+    public void Rejects_an_oversized_submission_server_side()
+    {
+        // The input's maxlength only binds honest browsers. A flat expression is not
+        // limited by the parser's depth guard, so length must be capped here or a
+        // crafted message could hand us a megabyte to chew through.
+        var huge = string.Join("+", Enumerable.Repeat("1", 100_000));
+        var check = TwentyFourGame.Check(huge, Hand3588);
+        Assert.Equal(TwentyFourResult.TooLong, check.Result);
+    }
+
+    [Fact]
+    public void Accepts_submissions_at_the_length_limit()
+    {
+        // A legitimate answer is nowhere near the cap; make sure the cap isn't tight
+        // enough to reject real play.
+        Assert.True(TwentyFourGame.Check("(3 + 5) * (8 - 5)", [3, 5, 8, 5]).IsCorrect);
+        Assert.True("(3 + 5) * (8 - 5)".Length < TwentyFourGame.MaxExpressionLength);
+    }
+
+    [Fact]
     public void Rejects_an_empty_submission()
     {
         Assert.Equal(TwentyFourResult.Empty, TwentyFourGame.Check("", Hand3588).Result);

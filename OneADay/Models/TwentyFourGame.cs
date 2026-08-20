@@ -5,6 +5,7 @@ public enum TwentyFourResult
 {
     Correct,
     Empty,
+    TooLong,
     IllegalCharacter,
     UnbalancedParentheses,
     Malformed,
@@ -27,6 +28,15 @@ public static class TwentyFourGame
     public const int HandSize = 4;
     public const int LowestCard = 1;
     public const int HighestCard = 10;
+
+    /// <summary>
+    /// Longest submission accepted. The input's maxlength attribute covers honest
+    /// browsers; this is the backstop for anything that bypasses it (a crafted
+    /// SignalR message, say). Without it a megabyte-long flat expression like
+    /// "1+1+1+…" would parse happily — the depth guard only limits *nesting*, not
+    /// length — and burn CPU proportional to its size on every submission.
+    /// </summary>
+    public const int MaxExpressionLength = 120;
 
     /// <summary>Slack when deciding whether a value "is" 24 — see <see cref="Arithmetic"/>.</summary>
     private const decimal SolverTolerance = 0.0000001m;
@@ -133,6 +143,12 @@ public static class TwentyFourGame
         if (string.IsNullOrWhiteSpace(expression))
         {
             return new(TwentyFourResult.Empty, "Type an expression first.");
+        }
+
+        if (expression.Length > MaxExpressionLength)
+        {
+            return new(TwentyFourResult.TooLong,
+                $"That's far longer than four numbers need — keep it under {MaxExpressionLength} characters.");
         }
 
         var offending = expression.FirstOrDefault(c => !char.IsDigit(c) && !AllowedCharacters.Contains(c));

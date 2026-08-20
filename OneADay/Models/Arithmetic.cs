@@ -83,10 +83,9 @@ public static class Arithmetic
 
     /// <summary>
     /// Numeric answers are compared at the thousandths place. Puzzle arithmetic
-    /// rarely divides evenly — 8/3 and 1/3 run forever — so both sides are
+    /// rarely divides evenly, 1/3 run forever — so both sides are
     /// rounded to 3 decimals before comparing. That makes "1/3" match a stored
-    /// "0.333", and stops division residue (8/(3-8/3) lands a hair off 24) from
-    /// failing an answer that is plainly correct.
+    /// "0.333" failing an answer that is plainly correct.
     /// </summary>
     public const int ComparisonDecimals = 3;
 
