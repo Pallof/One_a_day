@@ -1,0 +1,109 @@
+.ys-page {
+    max-width: 720px;
+}
+
+.ys-spoiler-warning {
+    background-color: var(--oad-yellow);
+    border-left: 5px solid #b8860b;
+    border-radius: 4px;
+    padding: 0.8rem 1rem;
+    margin-bottom: 1.25rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.ys-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.ys-head h2 {
+    margin: 0;
+}
+
+/* --- the blurred veil -------------------------------------------------- */
+
+.ys-veil {
+    position: relative;
+    border-radius: 4px;
+}
+
+.ys-content {
+    filter: blur(7px);
+    user-select: none;            /* can't select-and-read through the blur */
+    pointer-events: none;
+    transition: filter 0.35s ease;
+}
+
+.ys-open .ys-content {
+    filter: none;
+    user-select: auto;
+    pointer-events: auto;
+}
+
+/* Sits over the blurred text until tapped */
+.ys-unveil {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    background: rgba(255, 255, 255, 0.35);
+    border: 2px dashed rgba(0, 0, 0, 0.45);
+    border-radius: 4px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    font-family: inherit;
+    color: #1a1a1a;
+    cursor: pointer;
+}
+
+.ys-unveil:hover {
+    background: rgba(255, 255, 255, 0.55);
+}
+
+.ys-question-text {
+    font-size: 1.15rem;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.ys-image {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    border-radius: 4px;
+    margin-top: 0.9rem;
+    background: #fff;
+}
+
+.ys-hint {
+    margin-top: 1rem;
+    background: rgba(255, 255, 255, 0.55);
+    padding: 0.6rem 0.9rem;
+    border-radius: 4px;
+    font-size: 0.95rem;
+}
+
+.ys-answer {
+    font-size: 1.1rem;
+    margin: 0 0 0.5rem 0;
+}
+
+.ys-explanation {
+    line-height: 1.6;
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+.ys-back {
+    display: inline-block;
+    margin-top: 0.5rem;
+    font-weight: 600;
+    color: #1a1a1a;
+}

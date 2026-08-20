@@ -79,3 +79,21 @@ The reveal is gated solely by the `CanReveal` parameter, which callers set to
 > the only caller, and it passes `CanReveal="false"` unconditionally: the Challenge
 > of the day never gives its answer away, even when an older teaser is standing in
 > for an unposted today.
+
+### Yesterday's solution (`/yesterday`)
+
+With no archive, this is the one place a solution is published. It shows the teaser
+that ran immediately **before the one currently on the daily page** — deliberately
+relative to the live challenge rather than to the calendar, so a dry queue can never
+serve the puzzle people are still solving as "yesterday's solution".
+
+- Reached from a glossy blue link under the submission box (daily challenge only)
+  and from the dropdown menu.
+- **No submission box** — it is for reading, not replaying.
+- Opens with a **spoiler warning**, and both the question and the solution are
+  **blurred behind separate tap-to-reveal veils**, so someone who missed the day can
+  still attempt the puzzle before comparing. Blurred text is `user-select: none`, so
+  it cannot be read by selecting through it.
+- Shows the difficulty badge, support image, and hint alongside the answer and
+  explanation.
+- If no earlier teaser exists, says so rather than erroring.

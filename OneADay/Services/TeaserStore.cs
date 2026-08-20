@@ -58,6 +58,27 @@ public class TeaserStore
     }
 
     /// <summary>
+    /// The teaser that ran immediately before <paramref name="date"/> — "yesterday's"
+    /// puzzle, whose solution is now fair to publish.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately relative to the teaser currently on the daily page rather than to
+    /// the calendar. When the queue runs dry the daily page falls back to an older
+    /// teaser, and comparing against today's date would then serve that same live
+    /// puzzle as "yesterday's solution" — spoiling the challenge people are solving.
+    /// </remarks>
+    public BrainTeaser? GetPreviousBefore(DateOnly date)
+    {
+        lock (_lock)
+        {
+            return _teasers
+                .Where(t => t.Date < date)
+                .OrderByDescending(t => t.Date)
+                .FirstOrDefault();
+        }
+    }
+
+    /// <summary>
     /// All teasers (past, today, and upcoming) for the All Questions page,
     /// newest first. The page labels each by date and protects upcoming answers.
     /// </summary>

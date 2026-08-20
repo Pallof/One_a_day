@@ -1,0 +1,90 @@
+@page "/yesterday"
+@inject TeaserStore Store
+
+<PageTitle>One a Day — Yesterday's solution</PageTitle>
+
+<div class="ys-page">
+    <div class="oad-banner">Yesterday's solution</div>
+
+    @if (_teaser is null)
+    {
+        <div class="oad-box">
+            <p>There's no earlier challenge to show yet — today's is the first one. Check back tomorrow!</p>
+            <p><a href="">← Back to the Challenge of the day</a></p>
+        </div>
+    }
+    else
+    {
+        <div class="ys-spoiler-warning">
+            <strong>Spoilers ahead.</strong>
+            This is the challenge from @_teaser.Date.ToString("dddd d MMMM yyyy") and its full solution.
+            If you haven't tried it yet, have a go first — the question is hidden below too, so you can
+            attempt it before comparing.
+        </div>
+
+        <div class="oad-box">
+            <div class="ys-head">
+                <h2>Question:</h2>
+                <DifficultyBadge Level="_teaser.Difficulty" />
+            </div>
+
+            <div class="ys-veil @(_showQuestion ? "ys-open" : "")">
+                <div class="ys-content">
+                    <p class="ys-question-text">@_teaser.Question</p>
+                    @if (!string.IsNullOrWhiteSpace(_teaser.ImageFileName))
+                    {
+                        <img class="ys-image" src="@($"{ImageStore.RequestPath}/{_teaser.ImageFileName}")"
+                             alt="Support image for this teaser" />
+                    }
+                </div>
+                @if (!_showQuestion)
+                {
+                    <button class="ys-unveil" @onclick="() => _showQuestion = true">
+                        Tap to show the question
+                    </button>
+                }
+            </div>
+
+            @if (_showQuestion && !string.IsNullOrWhiteSpace(_teaser.Hint))
+            {
+                <p class="ys-hint">Hint: @_teaser.Hint</p>
+            }
+        </div>
+
+        <div class="oad-box">
+            <h2>Solution:</h2>
+
+            <div class="ys-veil @(_showSolution ? "ys-open" : "")">
+                <div class="ys-content">
+                    <p class="ys-answer"><strong>Answer:</strong> @_teaser.Answer.Split(';')[0].Trim()</p>
+                    @if (!string.IsNullOrWhiteSpace(_teaser.Solution))
+                    {
+                        <p class="ys-explanation">@_teaser.Solution</p>
+                    }
+                </div>
+                @if (!_showSolution)
+                {
+                    <button class="ys-unveil" @onclick="() => _showSolution = true">
+                        Tap to reveal the solution
+                    </button>
+                }
+            </div>
+        </div>
+
+        <a class="ys-back" href="">← Back to today's challenge</a>
+    }
+</div>
+
+@code {
+    private BrainTeaser? _teaser;
+    private bool _showQuestion;
+    private bool _showSolution;
+
+    protected override void OnInitialized()
+    {
+        // Relative to the teaser currently on the daily page, not to the calendar —
+        // see TeaserStore.GetPreviousBefore.
+        var current = Store.GetCurrent(AppTime.Today);
+        _teaser = current is null ? null : Store.GetPreviousBefore(current.Date);
+    }
+}

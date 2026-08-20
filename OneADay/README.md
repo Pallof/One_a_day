@@ -74,6 +74,7 @@ accounts involved), so the "unique minds" number is per-device.
 | Route | Wireframe page |
 |---|---|
 | `/` | Home — welcome banner, Challenge of the day, submission box |
+| `/yesterday` | Yesterday's solution — the previous challenge and its answer, both behind blur veils |
 | `/twentyfour` | Twenty Four — placeholder page, under maintenance (also answers the legacy `/questions`) |
 | `/about` | About us |
 | `/contact` | Contact us — suggest-a-teaser form (difficulty, teaser, solution + hint); submissions land in `App_Data/suggestions.json` and are reviewed in admin. Rate-limited to 1/day per device (and 3/day per hashed IP as a bot backstop) |

@@ -26,6 +26,7 @@ Built with **C# / Blazor Server (.NET 10)**.
   - multiple accepted phrasings per question
 - **Hints that must be earned** — locked until you've made at least one attempt
 - **Solutions unlock the next day** — never while a challenge is live, however many attempts you make
+- **Yesterday's solution page** — spoiler warning plus separate blur veils over the question and the answer, so you can still attempt it first
 - **Difficulty badges** — Easy / Medium / Hard, colour-coded green / yellow / red
 - **Confetti** on a correct answer 🎉
 - **Post-solve countdown** to the next challenge
@@ -91,7 +92,7 @@ OneADay/                     the Blazor app
   Components/
     ChallengeView.razor      shared question + submission + hint + stats UI
     DifficultyBadge.razor    colour-coded Easy/Medium/Hard badge
-    Pages/                   Home, TwentyFour, About, Contact, Admin
+    Pages/                   Home, Yesterday, TwentyFour, About, Contact, Admin
   Models/BrainTeaser.cs      the teaser + all answer-matching rules
   Services/
     TeaserStore.cs           reads/writes teasers.json
@@ -106,6 +107,7 @@ OneADay.Tests/               xUnit tests for answer validation
 | Route | Page |
 |---|---|
 | `/` | Challenge of the day |
+| `/yesterday` | Yesterday's solution — spoiler-veiled question and answer |
 | `/twentyfour` | Twenty Four — placeholder, under maintenance |
 | `/about` · `/contact` | About, and the suggest-a-teaser form |
 | `/admin` | Author tools |
