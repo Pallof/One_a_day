@@ -1,5 +1,5 @@
 @page "/yesterday"
-@inject TeaserStore Store
+@inject DailySchedule Schedule
 
 <PageTitle>One a Day — Yesterday's solution</PageTitle>
 
@@ -82,9 +82,8 @@
 
     protected override void OnInitialized()
     {
-        // Relative to the teaser currently on the daily page, not to the calendar —
-        // see TeaserStore.GetPreviousBefore.
-        var current = Store.GetCurrent(AppTime.Today);
-        _teaser = current is null ? null : Store.GetPreviousBefore(current.Date);
+        // Whatever actually ran yesterday, which with recycling is not simply the
+        // teaser dated yesterday — see DailySchedule.PreviousBefore.
+        _teaser = Schedule.PreviousBefore(AppTime.Today);
     }
 }

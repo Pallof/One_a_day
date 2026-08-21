@@ -1,5 +1,5 @@
 @page "/"
-@inject TeaserStore Store
+@inject DailySchedule Schedule
 
 <PageTitle>One a Day — Challenge of the day</PageTitle>
 
@@ -15,13 +15,11 @@
     }
     else
     {
-        @* The Challenge of the day never gives its answer away — not even when
-           the queue is dry and an older teaser is standing in for today. Its
-           solution is reachable from the archive once the day has passed. *@
-        <ChallengeView Teaser="_teaser"
-                       IsDaily="true"
-                       CanReveal="false"
-                       Note="@(_teaser.Date != _today ? $"From {_teaser.Date:dddd d MMMM yyyy} — today's teaser hasn't been posted yet." : null)" />
+        @* No date note any more: with the recycling box there is always a challenge
+           for today, and saying "from 3 July" would both read as an apology and give
+           away that the puzzle is a repeat. The Challenge of the day never reveals
+           its own answer either — that surfaces on /yesterday tomorrow. *@
+        <ChallengeView Teaser="_teaser" IsDaily="true" CanReveal="false" />
     }
 </div>
 
@@ -35,6 +33,6 @@
     protected override void OnInitialized()
     {
         _today = AppTime.Today;
-        _teaser = Store.GetCurrent(_today);
+        _teaser = Schedule.ForDay(_today);
     }
 }

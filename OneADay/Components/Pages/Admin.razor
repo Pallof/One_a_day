@@ -4,6 +4,7 @@
 @inject SuggestionStore Suggestions
 @inject ImageStore Images
 @inject IssueStore Issues
+@inject RotationStore Rotation
 
 <PageTitle>One a Day — Add a teaser</PageTitle>
 
@@ -120,6 +121,7 @@
                         <th>Tags</th>
                         <th>Answer</th>
                         <th>Stats</th>
+                        <th>Shown</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -145,6 +147,7 @@
                             </td>
                             <td>@Truncate(teaser.Answer, 30)</td>
                             <td class="oad-cell-stats">@StatsSummary(teaser.Id)</td>
+                            <td class="oad-cell-stats">@ShowSummary(teaser.Id)</td>
                             <td class="oad-cell-actions">
                                 <button class="oad-btn-plain" @onclick="() => Edit(teaser)">Edit</button>
                                 <button class="oad-btn-danger" @onclick="() => Delete(teaser.Id)">Delete</button>
@@ -181,6 +184,42 @@
                 </div>
             }
         }
+    </div>
+
+    <div class="oad-banner">Recycling box</div>
+
+    <div class="oad-box">
+        <p class="oad-rotation-lead">
+            New teasers always run on their own date. Once the queue is empty, past
+            teasers are drawn from a box without replacement, so none repeats until the
+            box refills. Teasers shown less often are weighted to come up sooner.
+        </p>
+        <p class="oad-rotation-state">
+            <strong>@_boxRemaining</strong> of <strong>@_bankSize</strong> still in the box
+            &middot; refills at @TeaserRotation.RefillThreshold(_bankSize) left
+            &middot; <strong>@_queueAhead</strong> new teaser@(_queueAhead == 1 ? "" : "s") scheduled ahead
+        </p>
+
+        @if (_recentRuns.Count > 0)
+        {
+            <table class="oad-admin-table oad-rotation-table">
+                <thead><tr><th>Day</th><th>Ran</th><th>Source</th></tr></thead>
+                <tbody>
+                    @foreach (var run in _recentRuns)
+                    {
+                        <tr>
+                            <td class="oad-cell-date">@run.Date.ToString("ddd d MMM")</td>
+                            <td>@Truncate(Store.GetById(run.TeaserId)?.Question ?? "(deleted)", 60)</td>
+                            <td>@(run.Recycled ? "recycled" : "new")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        <div class="oad-rotation-actions">
+            <button class="oad-btn-plain" @onclick="ResetBox">Reset the box now</button>
+        </div>
     </div>
 
     <div class="oad-banner">
@@ -261,6 +300,24 @@
     private IReadOnlyList<BrainTeaser> _all = [];
     private IReadOnlyList<TeaserSuggestion> _suggestions = [];
     private IReadOnlyList<IssueReport> _issues = [];
+    private IReadOnlyList<DailyRun> _recentRuns = [];
+    private IReadOnlyDictionary<Guid, int> _showCounts = new Dictionary<Guid, int>();
+
+    /// <summary>Times shown, and the draw weight that follows from it.</summary>
+    private string ShowSummary(Guid teaserId)
+    {
+        var shows = _showCounts.GetValueOrDefault(teaserId);
+        return $"{shows}x (weight {TeaserRotation.WeightFor(shows):0.00})";
+    }
+    private int _boxRemaining;
+    private int _bankSize;
+    private int _queueAhead;
+
+    private void ResetBox()
+    {
+        Rotation.ResetBox();
+        Refresh();
+    }
 
     private List<string> ParsedTags => _tagsText
         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
@@ -279,6 +336,13 @@
         _all = Store.GetAll();
         _suggestions = Suggestions.GetAll();
         _issues = Issues.GetAll();
+
+        var snapshot = Rotation.Snapshot();
+        _boxRemaining = snapshot.Remaining;
+        _recentRuns = snapshot.Recent;
+        _showCounts = snapshot.ShowCounts;
+        _bankSize = Store.ReleasedOn(_today).Count;
+        _queueAhead = _all.Count(t => t.Date > _today);
     }
 
     private void ResetForm(bool discardStaged = true)
