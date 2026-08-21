@@ -21,6 +21,7 @@ Two kinds of document live here:
 | [05 — Authoring & admin](05-authoring-and-admin.md) | Spec of record |
 | [06 — Community feedback](06-community-feedback.md) | Spec of record |
 | [07 — Twenty Four game](07-twenty-four.md) | Spec of record |
+| [08 — Recycling rotation](08-recycling-rotation.md) | Spec of record |
 | [10 — Admin authentication](10-admin-authentication.md) | **Proposed — blocker for launch** |
 | [11 — Deployment](11-deployment.md) | Proposed |
 | [12 — Streaks & sharing](12-streaks-and-sharing.md) | Proposed |

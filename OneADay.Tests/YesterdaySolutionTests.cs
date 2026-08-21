@@ -17,6 +17,21 @@ public class YesterdaySolutionTests : BunitContext
 {
     private readonly TestEnvironment _env = new();
 
+    /// <summary>
+    /// A bank big enough for the rotation to tell days apart. With only one or two
+    /// teasers the refill threshold trips instantly and the cooldown rounds to zero,
+    /// so yesterday can land on today's teaser — which the schedule then suppresses.
+    /// </summary>
+    private TeaserStore StoreWithBank(int size = 6)
+    {
+        var teasers = Enumerable.Range(1, size)
+            .Select(i => TeaserFactory.On(
+                new DateOnly(2026, 8, 1).AddDays(i).ToString("yyyy-MM-dd"),
+                $"question {i}", answer: $"{i}", solution: $"solution {i}"))
+            .ToArray();
+        return StoreWith(teasers);
+    }
+
     private TeaserStore StoreWith(params BrainTeaser[] teasers)
     {
         _env.SeedTeasers(teasers);
@@ -24,17 +39,19 @@ public class YesterdaySolutionTests : BunitContext
     }
 
     /// <summary>Registers everything ChallengeView and Yesterday need to render.</summary>
-    private void RegisterAppServices(TeaserStore store)
+    private DailySchedule RegisterAppServices(TeaserStore store)
     {
         JSInterop.Mode = JSRuntimeMode.Loose;   // confetti + storage interop are fire-and-forget here
         Services.AddSingleton(store);
         Services.AddSingleton(_env.NewStatsStore());
         var rotation = _env.NewRotationStore();
         Services.AddSingleton(rotation);
-        Services.AddSingleton(new DailySchedule(store, rotation));
+        var schedule = new DailySchedule(store, rotation);
+        Services.AddSingleton(schedule);
         Services.AddScoped<CurrentTeaserContext>();
         Services.AddDataProtection();
         Services.AddScoped<ProtectedLocalStorage>();
+        return schedule;
     }
 
     // ---- which teaser counts as "yesterday's" ---------------------------------
@@ -134,27 +151,39 @@ public class YesterdaySolutionTests : BunitContext
     // ---- the page itself -------------------------------------------------------
 
     [Fact]
-    public void Page_publishes_the_previous_teaser_not_the_live_one()
+    public void Page_never_publishes_the_teaser_running_today()
     {
-        var store = StoreWith(
-            TeaserFactory.On("2026-08-11", "the older question", solution: "older solution"),
-            TeaserFactory.On("2026-08-12", "the live question", solution: "live solution"));
+        // With recycling, "yesterday" is whichever teaser the rotation drew for that
+        // day — not simply the one dated earliest. The invariant that matters is that
+        // it is never the challenge people are being asked to solve right now.
+        var schedule = RegisterAppServices(StoreWithBank());
+
+        var today = schedule.ForDay(AppTime.Today);
+        var cut = Render<Yesterday>();
+
+        foreach (var b in cut.FindAll("button.ys-unveil").ToList()) { b.Click(); }
+        Assert.DoesNotContain(today!.Question, cut.Find(".ys-question-text").TextContent);
+    }
+
+    [Fact]
+    public void Page_shows_nothing_when_the_bank_holds_only_todays_teaser()
+    {
+        // A single teaser would have to serve as both today's challenge and yesterday's
+        // solution — which would hand over the live answer.
+        var store = StoreWith(TeaserFactory.On("2026-08-12", "the only one", solution: "s"));
         RegisterAppServices(store);
 
         var cut = Render<Yesterday>();
 
-        foreach (var b in cut.FindAll("button.ys-unveil").ToList()) { b.Click(); }   // open both veils
-        Assert.Contains("the older question", cut.Markup);
-        Assert.DoesNotContain("the live question", cut.Markup);
+        Assert.Empty(cut.FindAll(".ys-veil"));
+        Assert.Contains("no earlier challenge", cut.Markup);
+        Assert.DoesNotContain("the only one", cut.Markup);
     }
 
     [Fact]
     public void Page_has_no_submission_box()
     {
-        var store = StoreWith(
-            TeaserFactory.On("2026-08-11", "older"),
-            TeaserFactory.On("2026-08-12", "live"));
-        RegisterAppServices(store);
+        RegisterAppServices(StoreWithBank());
 
         var cut = Render<Yesterday>();
 
@@ -165,10 +194,7 @@ public class YesterdaySolutionTests : BunitContext
     [Fact]
     public void Page_warns_about_spoilers()
     {
-        var store = StoreWith(
-            TeaserFactory.On("2026-08-11", "older"),
-            TeaserFactory.On("2026-08-12", "live"));
-        RegisterAppServices(store);
+        RegisterAppServices(StoreWithBank());
 
         var cut = Render<Yesterday>();
 
@@ -178,10 +204,7 @@ public class YesterdaySolutionTests : BunitContext
     [Fact]
     public void Both_veils_start_closed()
     {
-        var store = StoreWith(
-            TeaserFactory.On("2026-08-11", "older", solution: "because"),
-            TeaserFactory.On("2026-08-12", "live"));
-        RegisterAppServices(store);
+        RegisterAppServices(StoreWithBank());
 
         var cut = Render<Yesterday>();
 
@@ -194,10 +217,7 @@ public class YesterdaySolutionTests : BunitContext
     [Fact]
     public void Opening_the_question_veil_leaves_the_solution_hidden()
     {
-        var store = StoreWith(
-            TeaserFactory.On("2026-08-11", "older", solution: "because"),
-            TeaserFactory.On("2026-08-12", "live"));
-        RegisterAppServices(store);
+        RegisterAppServices(StoreWithBank());
 
         var cut = Render<Yesterday>();
         cut.FindAll("button.ys-unveil")[0].Click();   // question only
@@ -212,31 +232,23 @@ public class YesterdaySolutionTests : BunitContext
     [Fact]
     public void Opening_both_veils_reveals_the_answer_and_explanation()
     {
-        var store = StoreWith(
-            TeaserFactory.On("2026-08-11", "older", answer: "42; forty two", solution: "because maths"),
-            TeaserFactory.On("2026-08-12", "live"));
+        // Either teaser may be drawn for yesterday, so assert the answer and
+        // explanation belong to whichever question actually appeared.
+        var store = StoreWithBank();
         RegisterAppServices(store);
 
         var cut = Render<Yesterday>();
         foreach (var b in cut.FindAll("button.ys-unveil").ToList()) { b.Click(); }
 
         Assert.All(cut.FindAll(".ys-veil"), v => Assert.Contains("ys-open", v.ClassName));
-        Assert.Contains("42", cut.Find(".ys-answer").TextContent);
-        Assert.Contains("because maths", cut.Find(".ys-explanation").TextContent);
+
+        // Any teaser in the bank may be drawn, so check the revealed answer and
+        // explanation belong to the question that actually appeared.
+        var shownQuestion = cut.Find(".ys-question-text").TextContent.Trim();
+        var shown = store.GetAll().Single(x => x.Question == shownQuestion);
+        Assert.Contains(shown.Answer, cut.Find(".ys-answer").TextContent);
+        Assert.Contains(shown.Solution!, cut.Find(".ys-explanation").TextContent);
         Assert.Empty(cut.FindAll("button.ys-unveil"));
-    }
-
-    [Fact]
-    public void Page_explains_itself_when_there_is_no_earlier_teaser()
-    {
-        var store = StoreWith(TeaserFactory.On("2026-08-12", "the only one"));
-        RegisterAppServices(store);
-
-        var cut = Render<Yesterday>();
-
-        Assert.Empty(cut.FindAll(".ys-veil"));
-        Assert.Contains("no earlier challenge", cut.Markup);
-        Assert.DoesNotContain("the only one", cut.Markup);   // must not leak the live puzzle
     }
 
     protected override void Dispose(bool disposing)
