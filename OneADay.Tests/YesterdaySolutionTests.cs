@@ -29,6 +29,9 @@ public class YesterdaySolutionTests : BunitContext
         JSInterop.Mode = JSRuntimeMode.Loose;   // confetti + storage interop are fire-and-forget here
         Services.AddSingleton(store);
         Services.AddSingleton(_env.NewStatsStore());
+        var rotation = _env.NewRotationStore();
+        Services.AddSingleton(rotation);
+        Services.AddSingleton(new DailySchedule(store, rotation));
         Services.AddScoped<CurrentTeaserContext>();
         Services.AddDataProtection();
         Services.AddScoped<ProtectedLocalStorage>();

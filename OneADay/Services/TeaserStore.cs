@@ -45,6 +45,27 @@ public class TeaserStore
         }
     }
 
+    public BrainTeaser? GetById(Guid id)
+    {
+        lock (_lock)
+        {
+            return _teasers.FirstOrDefault(t => t.Id == id);
+        }
+    }
+
+    /// <summary>
+    /// Every teaser released on or before <paramref name="date"/> — the pool the
+    /// recycling box draws from. Future-dated teasers are excluded so a draw can
+    /// never front-run the queue.
+    /// </summary>
+    public IReadOnlyList<BrainTeaser> ReleasedOn(DateOnly date)
+    {
+        lock (_lock)
+        {
+            return _teasers.Where(t => t.Date <= date).OrderBy(t => t.Date).ToList();
+        }
+    }
+
     /// <summary>Today's teaser, or the most recent past one if none is set for today.</summary>
     public BrainTeaser? GetCurrent(DateOnly today)
     {

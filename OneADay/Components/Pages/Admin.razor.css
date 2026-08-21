@@ -153,6 +153,29 @@
     background: rgba(251, 216, 93, 0.5);
 }
 
+.oad-rotation-lead {
+    font-size: 0.95rem;
+    margin-bottom: 0.6rem;
+}
+
+.oad-rotation-state {
+    background: rgba(255, 255, 255, 0.55);
+    border-radius: 4px;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.95rem;
+    margin-bottom: 0.9rem;
+}
+
+.oad-rotation-table {
+    font-size: 0.9rem;
+    margin-bottom: 0.9rem;
+}
+
+.oad-rotation-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
 .oad-suggestion {
     padding: 0.9rem 0;
     border-bottom: 1px solid rgba(0, 0, 0, 0.2);
