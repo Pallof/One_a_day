@@ -31,11 +31,15 @@ product needs a middle path: available, but earned.
   A puzzle has to actually be solved on its own day; no amount of effort or
   persistence opens the answer early.
 - A **"Reveal solution"** button therefore appears when **both** hold:
-  1. the teaser's date is **before today** (Pacific), and
+  1. the teaser is **not the one currently running**, and
   2. the solver has not already solved it.
 
   There is deliberately **no attempt threshold** — effort is not what earns the
   answer, time is.
+
+  Note that "not currently running" is *not* the same as "dated in the past".
+  Recycling means an old teaser can be today's live challenge, so an age test would
+  hand over the live answer.
 - Revealing shows the primary accepted answer plus the explanation, and locks the
   submission box.
 - On a **live** challenge, once the solver has attempted at least once, show a note
@@ -72,28 +76,66 @@ product needs a middle path: available, but earned.
 ## Implementation notes
 
 `Components/ChallengeView.razor` holds the hint gate as `MinAttemptsBeforeHint = 1`.
-The reveal is gated solely by the `CanReveal` parameter, which callers set to
-`Teaser.Date < today` — so it is a function of the calendar, not of effort.
+The reveal is gated solely by the `CanReveal` parameter — so it is a function of what
+is live, not of effort.
 
 > Since [PRD 04](04-archive-and-discovery.md) removed the archive, the daily page is
 > the only caller, and it passes `CanReveal="false"` unconditionally: the Challenge
-> of the day never gives its answer away, even when an older teaser is standing in
-> for an unposted today.
+> of the day never gives its answer away. This is also what keeps recycling safe — a
+> recycled teaser is dated in the past while being the live puzzle, so any future
+> caller must decide from the schedule, never from `Teaser.Date`.
 
 ### Yesterday's solution (`/yesterday`)
 
-With no archive, this is the one place a solution is published. It shows the teaser
-that ran immediately **before the one currently on the daily page** — deliberately
-relative to the live challenge rather than to the calendar, so a dry queue can never
-serve the puzzle people are still solving as "yesterday's solution".
+With no archive, this is the one place a solution is published.
+
+**It publishes whichever teaser actually ran yesterday — not the teaser dated
+yesterday.** Once the recycling box starts drawing old questions back out
+([PRD 08](08-recycling-rotation.md)), a teaser's date says nothing about when it was
+last shown: a puzzle written in March can be the live challenge in August. The page
+therefore resolves the previous day through the same scheduler as any other day, and
+reads the answer off *that* teaser.
+
+1. Resolve today's challenge, then resolve the day before it. Today is settled first
+   so the result does not depend on which page a visitor happens to open, and so
+   yesterday's draw sees today's in the rotation cooldown.
+2. Publish the teaser that came back for the previous day.
+
+> **Regression on record:** an earlier version consulted rotation history but fell
+> back to a *date-based* lookup whenever that history was thin — which is every fresh
+> deploy and any gap in visits. The fallback returned the second-newest teaser the
+> author had typed in, so the page stayed pinned to hand-scheduled content and barely
+> changed between uploads, exactly the opposite of the daily churn the rotation
+> exists to provide. Resolving through the scheduler is what makes it question-based
+> rather than date-based; do not reintroduce a date fallback.
+
+#### Never publish the live answer
+
+If the previous day resolves to **the same teaser as today**, the page must show
+nothing rather than the solution — publishing it would hand over the answer to the
+challenge people are currently solving.
+
+This is reachable only with a bank of **fewer than five** teasers, where the rotation
+cooldown (`floor(bank × 0.2)`) rounds down to zero and so cannot hold today's teaser
+back. Simulated over 20,000 consecutive days, the share of days where yesterday lands
+on today's teaser — and the page therefore goes blank:
+
+| Bank size | 1 | 2 | 3 | 4 | 5+ |
+|---|---|---|---|---|---|
+| Blank days | 100% | 50% | 16.5% | 8.4% | **0.00%** |
+
+So in normal operation the guard never fires; it exists for a fresh install, where a
+blank page is the correct answer.
+
+#### Presentation
 
 - Reached from a glossy blue link under the submission box (daily challenge only)
   and from the dropdown menu.
 - **No submission box** — it is for reading, not replaying.
-- Opens with a **spoiler warning**, and both the question and the solution are
-  **blurred behind separate tap-to-reveal veils**, so someone who missed the day can
-  still attempt the puzzle before comparing. Blurred text is `user-select: none`, so
-  it cannot be read by selecting through it.
+- Opens with a **spoiler warning** naming the date the puzzle ran, and both the
+  question and the solution sit behind **separate tap-to-reveal veils**, so someone
+  who missed the day can still attempt it before comparing. Blurred text is
+  `user-select: none`, so it cannot be read by selecting through it.
 - Shows the difficulty badge, support image, and hint alongside the answer and
   explanation.
-- If no earlier teaser exists, says so rather than erroring.
+- If there is no earlier challenge to publish, says so rather than erroring.

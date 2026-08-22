@@ -47,25 +47,32 @@ public class DailySchedule(TeaserStore teasers, RotationStore rotation)
     }
 
     /// <summary>
-    /// What ran on the most recent day before <paramref name="date"/> — the source for
-    /// "yesterday's solution". Reads history rather than dates, because with recycling
-    /// the teaser that ran yesterday is not simply the one dated yesterday.
+    /// The challenge from the day before <paramref name="date"/> — the source for
+    /// "yesterday's solution".
     /// </summary>
+    /// <remarks>
+    /// Resolved through the same path as any other day, so it follows the recycling
+    /// rotation rather than the hand-written schedule. An earlier version read the
+    /// schedule when history was thin, which anchored the page to whichever teasers
+    /// had been typed in most recently — so it barely changed between new uploads,
+    /// exactly the opposite of the daily churn the rotation exists to provide.
+    ///
+    /// Today is settled first so the outcome does not depend on which page a visitor
+    /// happens to open. That ordering also guarantees yesterday's draw sees today's in
+    /// the cooldown, so the two can never be the same teaser.
+    /// </remarks>
     public BrainTeaser? PreviousBefore(DateOnly date)
     {
-        var run = rotation.MostRecentBefore(date);
-        if (run is not null)
+        var today = ForDay(date);
+        var yesterday = ForDay(date.AddDays(-1));
+
+        // Never publish the answer to the challenge people are solving right now.
+        // The cooldown normally keeps the two days apart, but a bank too small for it
+        // to bite (one or two teasers) can land the same one on both days.
+        if (yesterday is null || (today is not null && yesterday.Id == today.Id))
         {
-            var known = teasers.GetById(run.TeaserId);
-            if (known is not null)
-            {
-                return known;
-            }
+            return null;
         }
-        // No recorded history yet (a fresh install, or days nobody visited). Fall back
-        // to the schedule — but relative to whatever is running today, never to the
-        // calendar, or the live challenge would be published as "yesterday's".
-        var current = teasers.GetCurrent(date);
-        return current is null ? null : teasers.GetPreviousBefore(current.Date);
+        return yesterday;
     }
 }

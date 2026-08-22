@@ -37,21 +37,23 @@ Four numbers are dealt. Combine **all four**, each used exactly once, with
    Some hands genuinely cannot make 24 (`1 1 1 1` never can), and that is the point:
    not knowing whether a hand is crackable is part of the challenge. Screening would
    also mean running the full search on every deal purely to discard hands.
-3. The solver is therefore consulted **only when the player presses Pass**, never on
-   the dealing path.
+3. **The solver is never consulted on any player-facing path** — not when dealing, and
+   not when the player passes. Nothing the player can do makes the game reveal whether
+   a hand was possible.
 
 ### Playing
 
-3. An expression box, a **Submit** button, and a **Pass** button.
-4. Submit is disabled while the box is empty; **Enter** submits.
-5. **Pass** deals a fresh hand immediately and reveals **nothing** — no solution, no
-   verdict on whether the hand was even possible. Handing over the answer to a puzzle
-   the player could still crack defeats the game. Passing counts as a hand played but
-   not solved.
-6. After a **solve** the round locks (input and buttons disabled) and a **Deal a new
+4. An expression box, a **Submit** button, and a **Pass** button.
+5. Submit is disabled while the box is empty; **Enter** submits.
+6. <a id="pass-rule"></a>**Pass** deals a fresh hand immediately and reveals
+   **nothing** — no solution, and no verdict on whether the hand was even possible.
+   Handing over the answer to a puzzle the player could still crack defeats the game,
+   and telling them a hand was impossible is its own spoiler: it retroactively says
+   the time they spent was wasted. Passing counts as a hand played but not solved.
+7. After a **solve** the round locks (input and buttons disabled) and a **Deal a new
    hand** button appears. Passing needs no such step — it has already moved on.
-7. A correct answer triggers the same confetti as the daily challenge.
-8. A per-visit tally ("Solved 3 of 5 hands this visit") sits at the foot of the page.
+8. A correct answer triggers the same confetti as the daily challenge.
+9. A per-visit tally ("Solved 3 of 5 hands this visit") sits at the foot of the page.
    It is deliberately **not persisted** — this is a diversion, not a second streak to
    maintain.
 
@@ -89,14 +91,15 @@ Checked in this order, each failure naming what actually went wrong:
 
 - [x] Dealing does **not** screen for solvability (impossible hands still appear)
 - [x] Dealing never invokes the solver (20k deals stay well under a second)
-- [x] Pass on an impossible hand says so instead of showing nothing
 - [x] Hands stay within 1–10 and duplicates occur
 - [x] Illegal operators (`^ % ! sqrt`) and decimal points are rejected by name
 - [x] Unbalanced parentheses rejected, including right-count-wrong-order
 - [x] Expressions not using exactly the dealt numbers are rejected
 - [x] `8 / (3 - 8/3)` is accepted for `3 3 8 8`; near-misses are not
 - [x] A wrong total reports the value actually reached
-- [x] Pass reveals nothing and moves straight to a new hand
+- [x] Pass reveals nothing — no solution, and no verdict on whether the hand was
+      possible — and moves straight to a new hand
+- [x] The solver is unreachable from the UI: no player action invokes it
 - [x] Correct answers fire confetti and lock the round
 - [x] Nothing in the UI or the error messages reveals that fractions are viable
 
@@ -112,7 +115,8 @@ the two drift apart, and the fraction rule is exactly the kind of subtlety that 
 drift silently.
 
 > The solver (`FindSolution`/`HasSolution`) is **not on any player-facing path** —
-> dealing doesn't screen and Pass doesn't reveal. It survives as a test oracle: every
-> solution it finds is fed back through `Check`, so the two cannot disagree about what
-> a valid answer looks like. If it ever gets wired into the UI, re-read requirement 5
-> first.
+> dealing doesn't screen and Pass doesn't reveal. It survives purely as a test oracle:
+> every solution it finds is fed back through `Check`, so the two cannot disagree about
+> what a valid answer looks like. If it ever gets wired into the UI, re-read
+> [the Pass rule](#pass-rule) first — an earlier draft of this document had it running
+> on Pass, and that is exactly the change this note exists to prevent.
