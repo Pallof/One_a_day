@@ -12,3 +12,8 @@ obj/
 # App data — never commit. Contains the question bank (questions, answers,
 # hints, solutions) plus visitor-submitted content. Back it up separately.
 OneADay/App_Data/
+
+# Authoring source for the question bank — same reason as App_Data: it holds
+# questions with their hints and solutions. Nothing in the app reads it; it is
+# the hand-written draft the bank is imported from. Back it up separately.
+OneADay/BrainTeaserQuestions.txt
