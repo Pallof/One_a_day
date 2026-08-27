@@ -202,6 +202,15 @@
     font-weight: 700;
 }
 
+.oad-suggestion-blocked {
+    font-size: 0.9rem;
+    background: #fff6e5;
+    border-left: 3px solid #e0a020;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+}
+
 .oad-suggestion-q {
     font-size: 1.05rem;
     margin-bottom: 0.35rem;

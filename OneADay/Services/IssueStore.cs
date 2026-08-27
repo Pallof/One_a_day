@@ -80,15 +80,29 @@ public class IssueReport
     public bool? LegacyResolved { get; set; }
 }
 
+internal sealed class IssueData
+{
+    public List<IssueReport> Issues { get; set; } = [];
+
+    /// <summary>Running total of reports dropped by <see cref="OneADay.Models.SubmissionGuard"/>.</summary>
+    public int BlockedCount { get; set; }
+}
+
 /// <summary>
 /// File-backed store for visitor issue reports (App_Data/issues.json),
 /// reviewed and triaged in the admin page.
+///
+/// Reports are deliberately <b>not</b> rate limited — a solver may legitimately hit
+/// several problems in one sitting, and a report that goes unfiled is a bug that stays
+/// broken. The only gate is <see cref="OneADay.Models.SubmissionGuard"/>, which screens
+/// out automation without capping how much a person may send.
 /// </summary>
 public class IssueStore
 {
     private readonly string _filePath;
     private readonly object _lock = new();
-    private readonly List<IssueReport> _issues;
+    private readonly IssueData _data;
+    private List<IssueReport> _issues => _data.Issues;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -102,7 +116,7 @@ public class IssueStore
         var dataDir = Path.Combine(env.ContentRootPath, "App_Data");
         Directory.CreateDirectory(dataDir);
         _filePath = Path.Combine(dataDir, "issues.json");
-        _issues = Load();
+        _data = Load();
     }
 
     /// <summary>Open reports first (New, then In progress), newest first within each group.</summary>
@@ -154,22 +168,47 @@ public class IssueStore
         }
     }
 
-    private List<IssueReport> Load()
+    /// <summary>
+    /// Counts one report dropped as automated. The guard rejects silently, so without
+    /// a count there is no way to tell "no bots" apart from "quietly eating real
+    /// reports" — and an eaten report means a broken question nobody hears about.
+    /// </summary>
+    public void RecordBlocked()
+    {
+        lock (_lock)
+        {
+            _data.BlockedCount++;
+            Persist();
+        }
+    }
+
+    public int BlockedCount
+    {
+        get { lock (_lock) { return _data.BlockedCount; } }
+    }
+
+    private IssueData Load()
     {
         if (!File.Exists(_filePath))
         {
-            return [];
+            return new IssueData();
         }
-        var issues = JsonSerializer.Deserialize<List<IssueReport>>(File.ReadAllText(_filePath), JsonOptions) ?? [];
+        var json = File.ReadAllText(_filePath);
+
+        // Migrate the original format, which was a bare array of reports.
+        var data = json.TrimStart().StartsWith('[')
+            ? new IssueData { Issues = JsonSerializer.Deserialize<List<IssueReport>>(json, JsonOptions) ?? [] }
+            : JsonSerializer.Deserialize<IssueData>(json, JsonOptions) ?? new IssueData();
+
         // Migrate any pre-Status reports that only had the Resolved boolean.
-        foreach (var issue in issues.Where(i => i.LegacyResolved is not null))
+        foreach (var issue in data.Issues.Where(i => i.LegacyResolved is not null))
         {
             issue.Status = issue.LegacyResolved == true ? IssueStatus.Solved : IssueStatus.New;
             issue.LegacyResolved = null;
         }
-        return issues;
+        return data;
     }
 
     private void Persist() =>
-        File.WriteAllText(_filePath, JsonSerializer.Serialize(_issues, JsonOptions));
+        File.WriteAllText(_filePath, JsonSerializer.Serialize(_data, JsonOptions));
 }

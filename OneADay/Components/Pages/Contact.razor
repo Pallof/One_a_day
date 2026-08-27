@@ -54,6 +54,13 @@
                           @bind="_solutionAndHint" @bind:event="oninput"></textarea>
             </div>
 
+            @* Decoy field. Hidden from sight, from the tab order, and from screen
+               readers, so no person ever fills it in — but a script filling every
+               input will. Do not add a <label>, and do not remove aria-hidden. *@
+            <input class="oad-hp" id="website" name="website" type="text"
+                   tabindex="-1" autocomplete="off" aria-hidden="true"
+                   @bind="_honeypot" @bind:event="oninput" />
+
             <button class="oad-btn-green" @onclick="Submit"
                     disabled="@(string.IsNullOrWhiteSpace(_question) || string.IsNullOrWhiteSpace(_solutionAndHint))">
                 Submit suggestion
@@ -73,12 +80,23 @@
     private bool _limitReached;
     private Guid _visitorId;
 
+    /// <summary>Decoy field — see the markup. Anything here means a script filled it.</summary>
+    private string _honeypot = string.Empty;
+
+    /// <summary>
+    /// When the form became interactive. Held server-side in the circuit, so the
+    /// client can neither read nor backdate it.
+    /// </summary>
+    private DateTime _formShownAt;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender)
         {
             return;
         }
+        _formShownAt = DateTime.UtcNow;
+
         var stored = await LocalStorage.GetAsync<Guid>(VisitorKey);
         if (stored.Success && stored.Value != Guid.Empty)
         {
@@ -103,6 +121,15 @@
         {
             return;
         }
+        // Looks scripted? Show the normal thank-you and quietly drop it. Telling a bot
+        // it was caught only teaches whoever wrote it which check to work around.
+        if (SubmissionGuard.LooksAutomated(_honeypot, DateTime.UtcNow - _formShownAt))
+        {
+            Suggestions.RecordBlocked();
+            _submitted = true;
+            return;
+        }
+
         if (_visitorId == Guid.Empty)
         {
             _visitorId = Guid.NewGuid();

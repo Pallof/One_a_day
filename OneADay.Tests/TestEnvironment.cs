@@ -32,11 +32,23 @@ public sealed class TestEnvironment : IWebHostEnvironment, IDisposable
             JsonSerializer.Serialize(teasers, options));
     }
 
+    /// <summary>Writes a raw App_Data file, for exercising on-disk formats directly.</summary>
+    public void WriteDataFile(string name, string contents) =>
+        File.WriteAllText(Path.Combine(ContentRootPath, "App_Data", name), contents);
+
+    /// <summary>Reads an App_Data file back, to check what a store actually persisted.</summary>
+    public string ReadDataFile(string name) =>
+        File.ReadAllText(Path.Combine(ContentRootPath, "App_Data", name));
+
     public TeaserStore NewTeaserStore() => new(this);
 
     public StatsStore NewStatsStore() => new(this);
 
     public RotationStore NewRotationStore() => new(this);
+
+    public SuggestionStore NewSuggestionStore() => new(this);
+
+    public IssueStore NewIssueStore() => new(this);
 
     public string ContentRootPath { get; set; }
     public string WebRootPath { get; set; } = string.Empty;

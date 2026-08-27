@@ -19,6 +19,10 @@ public class TeaserSuggestion
 /// <see cref="MaxPerIpPerDay"/> per IP per day as a bot backstop. The limit
 /// log is kept separately from the inbox so deleting a suggestion doesn't
 /// reset anyone's limit. IPs are stored only as hashes.
+///
+/// These caps govern *volume*. Whether a submission looks automated at all is
+/// decided earlier by <see cref="OneADay.Models.SubmissionGuard"/>; anything it
+/// rejects never reaches <see cref="TryAdd"/> and so never consumes a quota.
 /// </summary>
 public class SuggestionStore
 {
@@ -35,6 +39,9 @@ public class SuggestionStore
     {
         public List<TeaserSuggestion> Suggestions { get; set; } = [];
         public List<SubmissionLogEntry> Log { get; set; } = [];
+
+        /// <summary>Running total of submissions dropped by <see cref="OneADay.Models.SubmissionGuard"/>.</summary>
+        public int BlockedCount { get; set; }
     }
 
     private readonly string _filePath;
@@ -91,6 +98,25 @@ public class SuggestionStore
             _data.Suggestions.RemoveAll(s => s.Id == id);
             Persist();
         }
+    }
+
+    /// <summary>
+    /// Counts one submission dropped as automated. Worth surfacing in admin: the
+    /// honeypot and timing checks reject silently, so without a count there is no way
+    /// to tell "no bots" apart from "quietly eating real suggestions".
+    /// </summary>
+    public void RecordBlocked()
+    {
+        lock (_lock)
+        {
+            _data.BlockedCount++;
+            Persist();
+        }
+    }
+
+    public int BlockedCount
+    {
+        get { lock (_lock) { return _data.BlockedCount; } }
     }
 
     private bool ReachedLimit(Guid visitorId, string? ipHash, DateOnly today)

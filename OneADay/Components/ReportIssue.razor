@@ -49,6 +49,12 @@
                 <span class="ri-counter">@_details.Length / 1000</span>
             </div>
 
+            @* Decoy field — see Contact.razor for the full reasoning. Hidden from
+               sight, tab order, and screen readers; only a script fills it. *@
+            <input class="ri-hp" id="ri-website" name="website" type="text"
+                   tabindex="-1" autocomplete="off" aria-hidden="true"
+                   @bind="_honeypot" @bind:event="oninput" />
+
             <div class="ri-actions">
                 <button class="oad-btn-green" @onclick="Submit"
                         disabled="@string.IsNullOrWhiteSpace(_details)">
@@ -68,6 +74,16 @@
     private Guid? _teaserId;
     private string? _teaserQuestion;
 
+    /// <summary>Decoy field — see the markup. Anything here means a script filled it.</summary>
+    private string _honeypot = string.Empty;
+
+    /// <summary>
+    /// When the dialog opened — the moment this form became available, which is the
+    /// right clock for a modal. Anchoring to page load instead would punish someone
+    /// who reads a puzzle for ten minutes and only then reports a problem with it.
+    /// </summary>
+    private DateTime _dialogShownAt;
+
     private void Open()
     {
         // Snapshot the question being viewed, so the report is actionable.
@@ -77,6 +93,8 @@
 
         _category = IssueCategories.Wording;
         _details = string.Empty;
+        _honeypot = string.Empty;
+        _dialogShownAt = DateTime.UtcNow;
         _submitted = false;
         _open = true;
     }
@@ -87,6 +105,16 @@
     {
         if (string.IsNullOrWhiteSpace(_details))
         {
+            return;
+        }
+
+        // Looks scripted? Show the normal confirmation and drop it silently, the same
+        // way the suggestion form does. Note this caps *automation*, not volume — a
+        // person may still file as many reports as they hit problems.
+        if (SubmissionGuard.LooksAutomated(_honeypot, DateTime.UtcNow - _dialogShownAt))
+        {
+            Issues.RecordBlocked();
+            _submitted = true;
             return;
         }
 

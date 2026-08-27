@@ -162,6 +162,16 @@
     <div class="oad-banner">Visitor suggestions</div>
 
     <div class="oad-box">
+        @if (_blockedCount > 0)
+        {
+            <p class="oad-suggestion-blocked">
+                <strong>@_blockedCount</strong> @Wording.Plural(_blockedCount, "submission")
+                dropped as automated (honeypot or faster than
+                @SubmissionGuard.MinComposeSeconds seconds). These are rejected silently
+                and never appear below.
+            </p>
+        }
+
         @if (_suggestions.Count == 0)
         {
             <p>No suggestions yet — they'll appear here when visitors submit one on the Contact us page.</p>
@@ -197,7 +207,7 @@
         <p class="oad-rotation-state">
             <strong>@_boxRemaining</strong> of <strong>@_bankSize</strong> still in the box
             &middot; refills at @TeaserRotation.RefillThreshold(_bankSize) left
-            &middot; <strong>@_queueAhead</strong> new teaser@(_queueAhead == 1 ? "" : "s") scheduled ahead
+            &middot; <strong>@_queueAhead</strong> new @Wording.Plural(_queueAhead, "teaser") scheduled ahead
         </p>
 
         @if (_recentRuns.Count > 0)
@@ -227,6 +237,16 @@
     </div>
 
     <div class="oad-box">
+        @if (_issuesBlockedCount > 0)
+        {
+            <p class="oad-suggestion-blocked">
+                <strong>@_issuesBlockedCount</strong> @Wording.Plural(_issuesBlockedCount, "report")
+                dropped as automated (honeypot or faster than
+                @SubmissionGuard.MinComposeSeconds seconds). Reports are never rate
+                limited — this only screens out scripts.
+            </p>
+        }
+
         @if (_issues.Count == 0)
         {
             <p>No issues reported — they'll appear here when a visitor uses the "Report an issue" button.</p>
@@ -299,7 +319,9 @@
     private DateOnly _today;
     private IReadOnlyList<BrainTeaser> _all = [];
     private IReadOnlyList<TeaserSuggestion> _suggestions = [];
+    private int _blockedCount;
     private IReadOnlyList<IssueReport> _issues = [];
+    private int _issuesBlockedCount;
     private IReadOnlyList<DailyRun> _recentRuns = [];
     private IReadOnlyDictionary<Guid, int> _showCounts = new Dictionary<Guid, int>();
 
@@ -335,7 +357,9 @@
     {
         _all = Store.GetAll();
         _suggestions = Suggestions.GetAll();
+        _blockedCount = Suggestions.BlockedCount;
         _issues = Issues.GetAll();
+        _issuesBlockedCount = Issues.BlockedCount;
 
         var snapshot = Rotation.Snapshot();
         _boxRemaining = snapshot.Remaining;
