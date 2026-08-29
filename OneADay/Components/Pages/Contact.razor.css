@@ -38,3 +38,21 @@
     opacity: 0.7;
     margin-top: 0.5rem;
 }
+
+/* Decoy field for the honeypot check.
+
+   Deliberately NOT display:none, visibility:hidden, or type="hidden" — every
+   scraper library skips those, which would make the trap useless. Moving it off
+   the canvas keeps it "visible" to anything reading the DOM while no sighted
+   user can reach it. tabindex="-1" and aria-hidden in the markup cover keyboard
+   and screen-reader users. */
+.oad-hp {
+    position: absolute;
+    left: -9999px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
