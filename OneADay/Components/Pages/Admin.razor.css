@@ -1,5 +1,14 @@
+/* Width is the layout's job — MainLayout applies .oad-measure-wide on this route.
+   A max-width here would cap without centring, which is the bug that used to make
+   the whole site hug the left edge on a wide monitor. */
 .oad-admin {
-    max-width: 840px;
+    width: 100%;
+}
+
+/* Tables can out-grow even the wide measure; let them scroll in place rather
+   than pushing the page sideways. */
+.oad-admin-table-scroll {
+    overflow-x: auto;
 }
 
 .oad-field {

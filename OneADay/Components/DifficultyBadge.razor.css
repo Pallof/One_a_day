@@ -1,12 +1,13 @@
+/* Tinted pill rather than a solid block: at this size a saturated fill next to the
+   question competes with it, and the tint + coloured dot still reads at a glance. */
 .diff-badge {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    padding: 0.2rem 0.6rem;
+    gap: 0.45rem;
+    padding: 0.25rem 0.75rem;
     border-radius: 999px;
-    font-size: 0.8rem;
+    font-size: 0.88rem;
     font-weight: 700;
-    color: #fff;
     white-space: nowrap;
     vertical-align: middle;
 }
@@ -15,22 +16,26 @@
     width: 0.55rem;
     height: 0.55rem;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.9);
+    flex: none;
 }
 
 .diff-easy {
-    background-color: #2e9e3f;   /* green */
+    background: var(--green-tint);
+    color: var(--green-deep);
 }
+
+.diff-easy .diff-dot { background: var(--green); }
 
 .diff-medium {
-    background-color: #e0a92b;   /* yellow/amber */
-    color: #1a1a1a;
+    background: var(--gold-tint);
+    color: var(--amber);
 }
 
-.diff-medium .diff-dot {
-    background: rgba(0, 0, 0, 0.55);
-}
+.diff-medium .diff-dot { background: var(--gold); }
 
 .diff-hard {
-    background-color: #d23b34;   /* red */
+    background: var(--red-tint);
+    color: var(--red);
 }
+
+.diff-hard .diff-dot { background: var(--red); }

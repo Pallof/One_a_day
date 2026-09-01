@@ -1,5 +1,11 @@
-.cv-question {
-    min-height: 220px;
+/* "Question:" and "Submission:" — the two card labels on the daily challenge.
+   Deliberately set here rather than on the global .oad-box h2, so the bump is
+   confined to this component and doesn't also inflate the labels on Yesterday's
+   solution or the admin panels. app.css sets these to 1.05rem. */
+.cv-question-head h2,
+.oad-box h2 {
+    font-size: 1.45rem;
+    font-weight: 700;
 }
 
 .cv-question-head {
@@ -7,7 +13,7 @@
     justify-content: space-between;
     align-items: center;
     gap: 0.75rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.9rem;
 }
 
 .cv-question-head h2 {
@@ -17,223 +23,218 @@
 .cv-note {
     font-size: 0.9rem;
     font-style: italic;
+    color: var(--ink-soft);
     margin-bottom: 0.5rem;
 }
 
 .cv-question-text {
     font-size: 1.2rem;
-    line-height: 1.6;
+    line-height: 1.65;
 }
 
 .cv-image {
     display: block;
     max-width: 100%;
     max-height: 340px;
-    border-radius: 4px;
-    margin-top: 1rem;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    margin-top: 1.1rem;
     background: #fff;
 }
+
+/* ------------------------------------------------------------------- hint --- */
 
 .cv-hint-section {
     margin-bottom: 1.25rem;
 }
 
-.cv-hint-toggle {
-    width: 100%;
-    background-color: var(--oad-yellow);
-    border: none;
-    border-radius: 4px;
-    padding: 0.7rem 1rem;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.cv-hint-toggle:hover {
-    filter: brightness(0.95);
-}
-
-.cv-hint-locked {
-    background-color: var(--oad-yellow);
-    border-radius: 4px;
-    padding: 0.7rem 1rem;
-    font-size: 0.95rem;
-    font-weight: 600;
-    text-align: center;
-    opacity: 0.65;
-}
-
+/* One shared shape for all three hint states — locked, offered, revealed — so
+   the bar doesn't jump as it changes. */
+.cv-hint-toggle,
+.cv-hint-locked,
 .cv-hint-revealed {
     width: 100%;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    gap: 1rem;
-    background-color: var(--oad-yellow);
-    border: none;
-    border-radius: 4px;
-    padding: 0.7rem 1rem;
+    gap: 0.75rem;
+    border-radius: var(--radius);
+    padding: 0.9rem 1.15rem;
     font-size: 1rem;
     font-family: inherit;
     text-align: left;
+    line-height: 1.5;
+}
+
+/* Locked: dashed, muted — visibly not a button yet. */
+.cv-hint-locked {
+    background: var(--gold-tint);
+    border: 1px dashed var(--gold);
+    color: var(--amber);
+    justify-content: center;
+    font-size: 0.95rem;
+}
+
+/* Offered: solid and clickable. */
+.cv-hint-toggle {
+    background: var(--gold-tint);
+    border: 1px solid var(--gold);
+    color: var(--amber);
+    font-weight: 700;
+    justify-content: center;
     cursor: pointer;
+    min-height: 48px;
+    transition: background-color .15s ease;
+}
+
+.cv-hint-toggle:hover {
+    background: #FBEBC4;
+}
+
+/* Revealed: switches to blue so it reads as information rather than an offer. */
+.cv-hint-revealed {
+    justify-content: space-between;
+    background: var(--blue-tint);
+    border: 1px solid var(--blue);
+    color: var(--blue-deep);
+    cursor: pointer;
+    transition: background-color .15s ease;
 }
 
 .cv-hint-revealed:hover {
-    filter: brightness(0.95);
+    background: #DCEBF8;
 }
 
 .cv-hint-hide {
     flex-shrink: 0;
     font-size: 0.8rem;
-    font-weight: 600;
-    opacity: 0.65;
+    font-weight: 700;
+    opacity: 0.7;
     white-space: nowrap;
 }
 
+/* ------------------------------------------------------------- submission --- */
+
 .cv-input {
     width: 100%;
-    border: none;
-    border-radius: 4px;
-    padding: 0.7rem 0.9rem;
+    min-height: 110px;
     font-size: 1.05rem;
-    font-family: inherit;
-    resize: vertical;
 }
 
 .cv-submit-row {
     display: flex;
     gap: 0.75rem;
-    margin-top: 0.9rem;
+    margin-top: 1rem;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 .cv-reveal {
-    background: none;
-    border: 2px solid #1a1a1a;
-    border-radius: 4px;
-    padding: 0.5rem 1rem;
-    font-weight: 600;
+    background: var(--blue-tint);
+    color: var(--blue-deep);
+    border: none;
+    border-radius: 10px;
+    padding: 0.75rem 1.3rem;
+    font-weight: 700;
+    min-height: 48px;
     cursor: pointer;
 }
 
+.cv-reveal:hover {
+    background: #DCEBF8;
+}
+
 .cv-feedback {
-    margin-top: 0.9rem;
+    margin-top: 1rem;
     font-weight: 700;
     font-size: 1.05rem;
 }
 
 .cv-correct {
-    color: #0a5c1d;
+    color: var(--green-deep);
 }
 
 .cv-incorrect {
-    color: #8f1a00;
-}
-
-/* Its own container below the submission box — the padding comes from the
-   button itself, so the box hugs it. */
-.cv-yesterday-box {
-    padding: 0.75rem;
-}
-
-/* Glossy blue link to yesterday's answer. */
-.cv-yesterday {
-    position: relative;
-    overflow: hidden;
-    display: block;
-    padding: 0.7rem 1.1rem;
-    border-radius: 6px;
-    text-align: center;
-    font-weight: 700;
-    font-size: 1rem;
-    color: #fff;
-    text-decoration: none;
-    background: linear-gradient(180deg, #4aa8ea 0%, #1c73c4 55%, #175fa3 100%);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.45);
-}
-
-.cv-yesterday:hover {
-    background: linear-gradient(180deg, #5cb6f2 0%, #2380d4 55%, #1a6bb5 100%);
-}
-
-.cv-yesterday:active {
-    transform: translateY(1px);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.35);
-}
-
-.cv-yesterday:focus-visible {
-    outline: 2px solid #1a1a1a;
-    outline-offset: 2px;
-}
-
-/* Sweeping highlight — the "shine". */
-.cv-yesterday-shine {
-    position: absolute;
-    top: 0;
-    left: -60%;
-    width: 40%;
-    height: 100%;
-    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
-    transform: skewX(-20deg);
-    animation: cv-shine 3.5s ease-in-out infinite;
-}
-
-@keyframes cv-shine {
-    0%, 65% { left: -60%; }
-    100%    { left: 130%; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .cv-yesterday-shine {
-        animation: none;
-    }
+    color: var(--red);
 }
 
 .cv-locked-note {
-    margin-top: 0.5rem;
+    margin-top: 0.6rem;
     font-size: 0.9rem;
-    opacity: 0.75;
+    color: var(--ink-soft);
 }
 
 .cv-solution {
-    margin-top: 0.9rem;
-    background: rgba(255, 255, 255, 0.55);
-    padding: 0.6rem 0.9rem;
-    border-radius: 4px;
+    margin-top: 1rem;
+    background: var(--green-tint);
+    border-left: 4px solid var(--green);
+    padding: 0.9rem 1.1rem;
+    border-radius: 0 10px 10px 0;
 }
 
-.cv-next {
-    background-color: var(--oad-yellow);
-    border-radius: 4px;
+/* --------------------------------------------------- yesterday's solution --- */
+
+/* Its own container below the submission box — the padding comes from the
+   link itself, so the box hugs it. */
+.cv-yesterday-box {
+    padding: 0.6rem;
+}
+
+/* Was a glossy gradient with an animated shine. Now a calm blue panel: the
+   editorial design has no other gradient in it, and a sweeping highlight next to
+   a puzzle competes with the puzzle. */
+.cv-yesterday {
+    display: block;
+    padding: 0.95rem 1.2rem;
+    border-radius: 10px;
     text-align: center;
-    padding: 1.1rem 1rem;
+    font-weight: 700;
+    font-size: 1.02rem;
+    color: var(--blue-deep);
+    text-decoration: none;
+    background: var(--blue-tint);
+    transition: background-color .15s ease;
+}
+
+.cv-yesterday:hover {
+    background: #DCEBF8;
+}
+
+/* ------------------------------------------------------------- post-solve --- */
+
+.cv-next {
+    background: var(--gold-tint);
+    border: 1px solid var(--gold);
+    border-radius: var(--radius);
+    text-align: center;
+    padding: 1.4rem 1rem;
     margin-bottom: 1.25rem;
+    color: var(--amber);
 }
 
 .cv-next-msg {
     font-size: 1.05rem;
-    font-weight: 600;
+    font-weight: 700;
     margin-bottom: 0.5rem;
 }
 
 .cv-next-timer {
-    font-size: 2.4rem;
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 2.6rem;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
+    color: var(--ink);
 }
 
 .cv-next-sub {
     font-size: 0.85rem;
-    opacity: 0.75;
-    margin-top: 0.35rem;
+    opacity: 0.8;
+    margin-top: 0.4rem;
 }
 
 .cv-stats {
     text-align: center;
     font-size: 0.95rem;
-    font-weight: 600;
-    opacity: 0.8;
-    margin-top: -0.25rem;
+    color: var(--ink-soft);
+    margin-top: 0.25rem;
 }

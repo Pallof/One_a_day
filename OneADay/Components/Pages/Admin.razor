@@ -112,6 +112,9 @@
         }
         else
         {
+            @* Wide table scrolls inside its own box — otherwise it drags the whole
+               page sideways and breaks the centred column. *@
+            <div class="oad-admin-table-scroll">
             <table class="oad-admin-table">
                 <thead>
                     <tr>
@@ -156,6 +159,7 @@
                     }
                 </tbody>
             </table>
+            </div>
         }
     </div>
 
@@ -212,6 +216,7 @@
 
         @if (_recentRuns.Count > 0)
         {
+            <div class="oad-admin-table-scroll">
             <table class="oad-admin-table oad-rotation-table">
                 <thead><tr><th>Day</th><th>Ran</th><th>Source</th></tr></thead>
                 <tbody>
@@ -225,6 +230,7 @@
                     }
                 </tbody>
             </table>
+            </div>
         }
 
         <div class="oad-rotation-actions">
