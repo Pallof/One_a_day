@@ -23,9 +23,16 @@
 
     <div class="oad-box tf-hand-box">
         <div class="tf-hand">
-            @foreach (var n in _hand)
+            @{ var used = UsedCards(); }
+            @for (var i = 0; i < _hand.Length; i++)
             {
-                <span class="tf-card">@n</span>
+                @* Corner ranks and suits are decorative repeats of the pip — hidden from
+                   screen readers so a card announces "3", not "3 spade 3 3 spade". *@
+                <span class="tf-card @SuitColour(i) @(used[i] ? "tf-card-used" : "")">
+                    <span class="tf-rank" aria-hidden="true">@_hand[i]<span class="tf-suit">@Suit(i)</span></span>
+                    <span class="tf-pip">@_hand[i]</span>
+                    <span class="tf-rank tf-rank-br" aria-hidden="true">@_hand[i]<span class="tf-suit">@Suit(i)</span></span>
+                </span>
             }
         </div>
     </div>
@@ -84,6 +91,65 @@
     private int _playedCount;
 
     protected override void OnInitialized() => NewHand();
+
+    /// <summary>
+    /// Which dealt cards the current expression has spent.
+    /// </summary>
+    /// <remarks>
+    /// Recomputed on every render, and the expression box binds on <c>oninput</c>, so
+    /// this follows deleting exactly as it follows typing — erase a number and its
+    /// card lights straight back up. There is no separate "used" state to fall out of
+    /// sync, because there is no stored state at all: it is derived from the text.
+    ///
+    /// Parsing goes through <see cref="Arithmetic.Operands"/>, the same parser
+    /// <see cref="TwentyFourGame.Check"/> validates with, so what the cards show can
+    /// never disagree with what the game accepts.
+    /// </remarks>
+    private bool[] UsedCards()
+    {
+        var flags = new bool[_hand.Length];
+
+        // On a solve every card is spent — dimming the whole hand under the confetti
+        // would read as a loss. Show the winning hand lit.
+        if (_state is RoundState.Solved || string.IsNullOrWhiteSpace(_expression))
+        {
+            return flags;
+        }
+
+        var remaining = new Dictionary<decimal, int>();
+        foreach (var operand in Arithmetic.Operands(_expression))
+        {
+            remaining[operand] = remaining.GetValueOrDefault(operand) + 1;
+        }
+
+        // Spend duplicates left to right: with a pair of 3s, typing one 3 dims the
+        // first card only, so the player can still see they have another in hand.
+        for (var i = 0; i < _hand.Length; i++)
+        {
+            var value = (decimal)_hand[i];
+            if (remaining.GetValueOrDefault(value) > 0)
+            {
+                remaining[value]--;
+                flags[i] = true;
+            }
+        }
+        return flags;
+    }
+
+    /// <summary>
+    /// Suit for the card in this position. Purely cosmetic — the game has no suits and
+    /// nothing reads them — but giving duplicates different suits makes them tellable
+    /// apart, which starts to matter once one of a pair dims and the other doesn't.
+    /// </summary>
+    private static string Suit(int index) => index switch
+    {
+        0 => "♠",
+        1 => "♥",
+        2 => "♣",
+        _ => "♦",
+    };
+
+    private static string SuitColour(int index) => index is 1 or 3 ? "tf-card-red" : "tf-card-black";
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

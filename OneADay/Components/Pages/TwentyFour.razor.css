@@ -33,29 +33,88 @@
     gap: 0.9rem;
 }
 
-/* Playing cards: serif numerals and a paper-white face, so the hand reads as
-   something dealt rather than as four buttons. */
+/* Proper playing cards: corner ranks, a centre pip, and red/black suits, so the
+   hand reads as something dealt rather than as four buttons. The suits carry no
+   meaning in the game — they exist to tell duplicates apart. */
 .tf-card {
+    position: relative;
+    width: 5rem;
+    height: 7rem;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(34, 51, 77, .10);
+    font-family: 'Fraunces', Georgia, serif;
+    transition: transform .16s ease, box-shadow .16s ease, opacity .18s ease;
+}
+
+.tf-card:hover {
+    transform: translateY(-6px) rotate(-1.5deg);
+    box-shadow: 0 10px 24px rgba(34, 51, 77, .16);
+}
+
+.tf-card-black { color: var(--ink); }
+.tf-card-red   { color: var(--red); }
+
+.tf-rank {
+    position: absolute;
+    top: 7px;
+    left: 9px;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+/* Bottom-right rank, rotated like a real card. */
+.tf-rank-br {
+    top: auto;
+    left: auto;
+    bottom: 7px;
+    right: 9px;
+    transform: rotate(180deg);
+}
+
+.tf-suit {
+    display: block;
+    text-align: center;
+    font-size: .72rem;
+    margin-top: 1px;
+}
+
+.tf-pip {
+    position: absolute;
+    inset: 0;
     display: grid;
     place-items: center;
-    width: 4.4rem;
-    height: 5.6rem;
-    background: #fff;
-    border: 1.5px solid var(--line);
-    border-radius: 12px;
-    box-shadow: var(--shadow);
-    font-family: 'Fraunces', Georgia, serif;
-    font-size: 2.1rem;
+    font-size: 2.5rem;
     font-weight: 700;
-    color: var(--ink);
+}
+
+/* Spent: the number is already in the expression. Fades rather than greys out, so
+   the card still reads — you need to see WHICH card you spent. Deleting the number
+   from the box brings it straight back. */
+.tf-card-used {
+    opacity: 0.3;
+}
+
+.tf-card-used:hover {
+    transform: none;
+    box-shadow: 0 2px 8px rgba(34, 51, 77, .10);
 }
 
 @media (max-width: 420px) {
     .tf-card {
-        width: 3.4rem;
-        height: 4.4rem;
-        font-size: 1.7rem;
+        width: 3.9rem;
+        height: 5.5rem;
     }
+
+    .tf-pip { font-size: 1.9rem; }
+    .tf-rank { font-size: .85rem; top: 5px; left: 6px; }
+    .tf-rank-br { top: auto; left: auto; bottom: 5px; right: 6px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tf-card:hover { transform: none; }
 }
 
 /* --- input and buttons -------------------------------------------------- */
