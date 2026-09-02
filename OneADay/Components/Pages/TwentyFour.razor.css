@@ -1,6 +1,4 @@
-.tf-page {
-    max-width: 720px;
-}
+/* No max-width here — the layout owns the reading column, in one place. */
 
 .tf-lead {
     font-size: 1.1rem;
@@ -8,60 +6,121 @@
 }
 
 .tf-rules {
-    font-size: 0.95rem;
+    font-size: 0.97rem;
     line-height: 1.6;
     margin: 0;
+    color: var(--ink-soft);
 }
 
 .tf-eg {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    background: rgba(255, 255, 255, 0.55);
-    border-radius: 3px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 4px;
     padding: 0.05rem 0.35rem;
 }
 
 /* --- the dealt hand ----------------------------------------------------- */
 
 .tf-hand-box {
-    padding: 1.25rem 1rem;
+    padding: 1.6rem 1rem;
 }
 
 .tf-hand {
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
-    gap: 0.75rem;
+    gap: 0.9rem;
 }
 
+/* Proper playing cards: corner ranks, a centre pip, and red/black suits, so the
+   hand reads as something dealt rather than as four buttons. The suits carry no
+   meaning in the game — they exist to tell duplicates apart. */
 .tf-card {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 4rem;
-    height: 5.25rem;
+    position: relative;
+    width: 5rem;
+    height: 7rem;
     background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
-    font-size: 2rem;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(34, 51, 77, .10);
+    font-family: 'Fraunces', Georgia, serif;
+    transition: transform .16s ease, box-shadow .16s ease, opacity .18s ease;
+}
+
+.tf-card:hover {
+    transform: translateY(-6px) rotate(-1.5deg);
+    box-shadow: 0 10px 24px rgba(34, 51, 77, .16);
+}
+
+.tf-card-black { color: var(--ink); }
+.tf-card-red   { color: var(--red); }
+
+.tf-rank {
+    position: absolute;
+    top: 7px;
+    left: 9px;
+    font-size: 1rem;
     font-weight: 700;
-    color: #1a1a1a;
+    line-height: 1;
+}
+
+/* Bottom-right rank, rotated like a real card. */
+.tf-rank-br {
+    top: auto;
+    left: auto;
+    bottom: 7px;
+    right: 9px;
+    transform: rotate(180deg);
+}
+
+.tf-suit {
+    display: block;
+    text-align: center;
+    font-size: .72rem;
+    margin-top: 1px;
+}
+
+.tf-pip {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+
+/* Spent: the number is already in the expression. Fades rather than greys out, so
+   the card still reads — you need to see WHICH card you spent. Deleting the number
+   from the box brings it straight back. */
+.tf-card-used {
+    opacity: 0.3;
+}
+
+.tf-card-used:hover {
+    transform: none;
+    box-shadow: 0 2px 8px rgba(34, 51, 77, .10);
 }
 
 @media (max-width: 420px) {
     .tf-card {
-        width: 3.2rem;
-        height: 4.2rem;
-        font-size: 1.6rem;
+        width: 3.9rem;
+        height: 5.5rem;
     }
+
+    .tf-pip { font-size: 1.9rem; }
+    .tf-rank { font-size: .85rem; top: 5px; left: 6px; }
+    .tf-rank-br { top: auto; left: auto; bottom: 5px; right: 6px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tf-card:hover { transform: none; }
 }
 
 /* --- input and buttons -------------------------------------------------- */
 
 .tf-input {
     width: 100%;
-    border: none;
-    border-radius: 4px;
-    padding: 0.7rem 0.9rem;
     font-size: 1.1rem;
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -69,94 +128,99 @@
 .tf-buttons {
     display: flex;
     gap: 0.75rem;
-    margin-top: 0.9rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
 }
 
 .tf-pass {
-    background: none;
-    border: 2px solid #1a1a1a;
-    border-radius: 4px;
-    padding: 0.6rem 1.4rem;
-    font-weight: 600;
+    background: #fff;
+    border: 1.5px solid #C9CFDA;
+    border-radius: 10px;
+    padding: 0.75rem 1.4rem;
+    font-weight: 700;
     font-family: inherit;
-    font-size: 1rem;
+    font-size: 1.02rem;
+    min-height: 48px;
     cursor: pointer;
+    transition: border-color .15s ease;
 }
 
 .tf-pass:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.4);
+    border-color: var(--ink-soft);
 }
 
 .tf-pass:disabled {
-    opacity: 0.5;
+    opacity: 0.45;
     cursor: not-allowed;
 }
 
 /* --- feedback ----------------------------------------------------------- */
 
 .tf-message {
-    margin-top: 0.9rem;
+    margin-top: 1rem;
     margin-bottom: 0;
     font-weight: 700;
     font-size: 1.02rem;
 }
 
 .tf-correct {
-    color: #0a5c1d;
+    color: var(--green-deep);
 }
 
 .tf-wrong {
-    color: #8f1a00;
+    color: var(--red);
 }
 
 .tf-passed {
-    color: #1a1a1a;
+    color: var(--ink-soft);
 }
 
 .tf-worked {
     margin-top: 0.5rem;
     margin-bottom: 0;
-    background: rgba(255, 255, 255, 0.55);
-    padding: 0.55rem 0.85rem;
-    border-radius: 4px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    padding: 0.6rem 0.9rem;
+    border-radius: 8px;
     font-size: 0.98rem;
 }
 
 /* --- next hand ---------------------------------------------------------- */
 
 .tf-next-box {
-    padding: 0.75rem;
+    padding: 0.6rem;
 }
 
+/* Was a glossy gradient; now matches the calm blue panel used for
+   "yesterday's solution", so the two share one visual language. */
 .tf-next {
     display: block;
     width: 100%;
-    padding: 0.7rem 1.1rem;
+    padding: 0.95rem 1.2rem;
     border: none;
-    border-radius: 6px;
-    font-size: 1rem;
+    border-radius: 10px;
+    font-size: 1.02rem;
     font-weight: 700;
     font-family: inherit;
-    color: #fff;
+    color: var(--blue-deep);
+    background: var(--blue-tint);
     cursor: pointer;
-    background: linear-gradient(180deg, #4aa8ea 0%, #1c73c4 55%, #175fa3 100%);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    transition: background-color .15s ease;
 }
 
 .tf-next:hover {
-    background: linear-gradient(180deg, #5cb6f2 0%, #2380d4 55%, #1a6bb5 100%);
+    background: #DCEBF8;
 }
 
 .tf-next-hint {
     text-align: center;
-    font-size: 0.8rem;
-    opacity: 0.7;
-    margin: 0.4rem 0 0 0;
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    margin: 0.5rem 0 0 0;
 }
 
 .tf-score {
     text-align: center;
-    font-size: 0.9rem;
-    font-weight: 600;
-    opacity: 0.75;
+    font-size: 0.94rem;
+    color: var(--ink-soft);
 }

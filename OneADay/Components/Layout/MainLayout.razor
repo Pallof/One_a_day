@@ -1,34 +1,59 @@
 @inherits LayoutComponentBase
+@inject NavigationManager Nav
+@implements IDisposable
 
-<div class="oad-page">
-    <header class="oad-header">
+<a class="oad-skip" href="#oad-main">Skip to content</a>
+
+@* Full-bleed band. The bar spans the whole viewport; only .oad-header-inner is
+   capped and centred, so the rule under the header reaches both edges on a wide
+   monitor instead of stopping short. *@
+<header class="oad-header">
+    <div class="oad-header-inner">
         @* The brand doubles as the way home — one click back to today's
            challenge from anywhere, without opening the menu. *@
-        <a class="oad-welcome" href="" title="Back to the Challenge of the day">
-            <span>One a Day 🧠</span>
+        <a class="oad-wordmark" href="" title="Back to the Challenge of the day">
+            <span class="oad-mark" aria-hidden="true">🧠</span>
+            <span>One a Day</span>
         </a>
 
+        @* Wide screens get the sections inline; the hamburger is for narrow ones. *@
+        <nav class="oad-nav" aria-label="Main">
+            @foreach (var item in NavItems)
+            {
+                <a href="@item.Href" class="oad-nav-link @(IsCurrent(item.Href) ? "oad-nav-current" : "")"
+                   aria-current="@(IsCurrent(item.Href) ? "page" : null)">@item.Label</a>
+            }
+        </nav>
+
         <div class="oad-menu-wrap">
-            <button class="oad-menu-button" title="Menu">
+            <button class="oad-menu-button" title="Menu" aria-label="Menu">
                 <span></span><span></span><span></span>
             </button>
-            <nav class="oad-menu-panel">
-                <ol>
-                    <li><NavLink href="/" Match="NavLinkMatch.All">Challenge of the day</NavLink></li>
-                    <li><NavLink href="yesterday">Yesterday's solution</NavLink></li>
-                    <li><NavLink href="twentyfour">Twenty Four</NavLink></li>
-                    <li><NavLink href="about">About</NavLink></li>
-                    <li><NavLink href="contact">Contact us</NavLink></li>
-                    <li class="oad-menu-admin"><NavLink href="admin">Add a teaser (admin)</NavLink></li>
-                </ol>
+            <nav class="oad-menu-panel" aria-label="Main menu">
+                <ul>
+                    @foreach (var item in NavItems)
+                    {
+                        <li><a href="@item.Href" aria-current="@(IsCurrent(item.Href) ? "page" : null)">@item.Label</a></li>
+                    }
+                    <li class="oad-menu-admin"><a href="admin">Add a teaser (admin)</a></li>
+                </ul>
             </nav>
         </div>
-    </header>
+    </div>
+</header>
 
-    <main class="oad-main">
-        @Body
-    </main>
-</div>
+@* The single place the reading column is capped and centred. Admin opts into the
+   wider measure because its tables don't fit a reading column — but the centring
+   still happens here, not in the page. *@
+<main id="oad-main" class="oad-main oad-measure @(IsWidePage ? "oad-measure-wide" : "")">
+    @Body
+</main>
+
+<footer class="oad-footer">
+    <div class="oad-measure">
+        <p>One a Day 🧠 — a small daily workout for your mind.</p>
+    </div>
+</footer>
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
@@ -36,3 +61,32 @@
     <span class="dismiss">🗙</span>
 </div>
 
+@code {
+    private sealed record NavItem(string Href, string Label);
+
+    private static readonly NavItem[] NavItems =
+    [
+        new("", "Today"),
+        new("yesterday", "Yesterday's solution"),
+        new("twentyfour", "Twenty Four"),
+        new("about", "About"),
+        new("contact", "Suggest a teaser"),
+    ];
+
+    /// <summary>Dense pages that need more than a reading column.</summary>
+    private bool IsWidePage =>
+        Nav.ToBaseRelativePath(Nav.Uri).StartsWith("admin", StringComparison.OrdinalIgnoreCase);
+
+    protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => StateHasChanged();
+
+    /// <summary>Marks the active section, so the current page is obvious in the bar.</summary>
+    private bool IsCurrent(string href)
+    {
+        var path = Nav.ToBaseRelativePath(Nav.Uri).Split('?')[0].TrimEnd('/');
+        return href.Length == 0 ? path.Length == 0 : path.Equals(href, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
+}
