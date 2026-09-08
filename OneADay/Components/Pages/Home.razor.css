@@ -1,3 +1,9 @@
-.oad-home {
-    max-width: 720px;
-}
+/* Deliberately no max-width.
+
+   This file used to read `.oad-home { max-width: 720px }` — the same cap-without-
+   centring pattern that made the whole site hug the left edge on a wide monitor. It
+   was harmless only by accident: the reading column is 680px, so a 720px cap never
+   bound. Widen the measure and it would have started clipping the home page alone,
+   which is a horrible bug to track down.
+
+   Width belongs to MainLayout, in one place. See PRD 09. */

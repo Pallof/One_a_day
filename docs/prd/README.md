@@ -22,6 +22,7 @@ Two kinds of document live here:
 | [06 — Community feedback](06-community-feedback.md) | Spec of record |
 | [07 — Twenty Four game](07-twenty-four.md) | Spec of record |
 | [08 — Recycling rotation](08-recycling-rotation.md) | Spec of record |
+| [09 — Visual design system](09-visual-design.md) | Spec of record |
 | [10 — Admin authentication](10-admin-authentication.md) | **Proposed — blocker for launch** |
 | [11 — Deployment](11-deployment.md) | Proposed |
 | [12 — Streaks & sharing](12-streaks-and-sharing.md) | Proposed |
@@ -34,3 +35,18 @@ Two kinds of document live here:
   (currently a single person, the site owner).
 - Dates and day boundaries always mean **Pacific Time** — see
   [01 — Daily challenge](01-daily-challenge.md).
+
+### Keeping these honest
+
+A spec of record that has drifted is worse than no spec, because people trust it. Two
+rules earned the hard way in an audit of all of these on 2026-09-08:
+
+- **A `[x]` means verified, not intended.** Three ticked criteria were false — a
+  "dated note" that had been deliberately removed, a "maintenance page" replaced by a
+  shipped game, and a test count off by 140. Each one stopped anyone from looking.
+- **Behaviour changes in the same pass as the doc.** Every inconsistency found traced
+  to work that shipped without a doc pass beside it. The specs that were current were
+  current because they were edited *while* the feature was built.
+
+Don't pin numbers that drift on their own (total test counts, file sizes). Pin the
+thing that proves the behaviour instead.

@@ -34,8 +34,9 @@ solver can reach is the one live today.
    the About page.
 4. Old links and bookmarks should land somewhere sensible rather than a dead end,
    so `/questions` is kept and serves the placeholder page below.
-5. The daily challenge at `/` is unaffected: it still falls back to the most recent
-   past teaser when today's is missing ([PRD 01](01-daily-challenge.md)).
+5. The daily challenge at `/` is unaffected: a day with nothing scheduled still gets
+   a puzzle, now by recycling one ([PRD 08](08-recycling-rotation.md)) rather than by
+   the date-based fallback this document originally described.
 6. **Teaser data is untouched.** Every teaser stays in `teasers.json` and remains
    visible in admin — only the public browsing surface is gone, so a curated
    archive can be reintroduced later without re-authoring anything.
@@ -44,7 +45,7 @@ solver can reach is the one live today.
 
 The slot vacated by the archive now holds a small game, specified in
 [PRD 07](07-twenty-four.md). It lives at `/twentyfour`, also answers the legacy
-`/questions`, and is reachable from the dropdown menu.
+`/questions`, and is reachable from the main navigation.
 
 Unlike the archive it replaced, it is **endlessly replayable without touching the
 teaser bank** — it generates its own puzzles, so playing it all afternoon cannot
@@ -58,9 +59,9 @@ exhaust the one-a-day content.
 - Per-teaser statistics ([PRD 06](06-community-feedback.md)) now accumulate only
   from the daily page, so figures are effectively day-of totals rather than
   lifetime ones.
-- Solutions are still gated on time rather than effort ([PRD 03](03-hints-and-solutions.md)),
-  but a past teaser's solution is only reachable while it is standing in as the
-  daily fallback.
+- Solutions are still gated on time rather than effort ([PRD 03](03-hints-and-solutions.md)).
+  With recycling, the only published solution is the one on `/yesterday`, and which
+  teaser that is follows the rotation rather than the calendar.
 
 ## Non-goals
 
@@ -71,7 +72,9 @@ exhaust the one-a-day content.
 
 ## Acceptance criteria
 
-- [x] `/questions` and `/twentyfour` both serve the Twenty Four maintenance page
+- [x] `/questions` and `/twentyfour` both serve the Twenty Four **game**
+      ([PRD 07](07-twenty-four.md)) — this criterion read "maintenance page" long
+      after the game replaced the placeholder
 - [x] `/questions/{any-date}` returns **404** with no answer box (verified for past
       and future dates)
 - [x] The menu offers "Twenty Four" and no route to browse teasers

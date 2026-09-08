@@ -9,7 +9,7 @@ or delete teasers, read every answer before publication, and clear the suggestio
 issue queues. Today the only thing protecting it is that the app runs on localhost —
 which stops being true the moment it is deployed.
 
-The route is also linked in the public dropdown menu, so it isn't even obscure.
+The route is also linked in the public navigation menu, so it isn't even obscure.
 
 There are no user accounts and none are wanted ([PRD 00](00-product-overview.md)), so
 this cannot be solved with a normal login system.

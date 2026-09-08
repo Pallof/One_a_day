@@ -24,14 +24,19 @@
     --blue: #2B7BC7;
     --blue-deep: #1E5E9C;
     --blue-tint: #EAF3FB;
+    --blue-tint-hover: #DCEBF8;
     --gold: #F0A500;
     --gold-tint: #FDF3DA;
+    --gold-tint-hover: #FBEBC4;
     --amber: #9A6700;
     --green: #2F855A;
     --green-deep: #256B49;
     --green-tint: #E7F3EC;
     --red: #B03A2E;
     --red-tint: #F9E9E7;
+
+    /* form control borders — distinct from --line, which is for hairline dividers */
+    --field: #C9CFDA;
 
     --radius: 14px;
     --shadow: 0 1px 2px rgba(34, 51, 77, .06), 0 4px 14px rgba(34, 51, 77, .05);
@@ -220,7 +225,7 @@ a {
 .oad-btn-plain {
     background: #fff;
     color: var(--ink);
-    border: 1.5px solid #C9CFDA;
+    border: 1.5px solid var(--field);
 }
 
 .oad-btn-plain:hover:not(:disabled) { border-color: var(--ink-soft); }
@@ -241,7 +246,7 @@ input[type="number"],
 select,
 textarea {
     width: 100%;
-    border: 1.5px solid #C9CFDA;
+    border: 1.5px solid var(--field);
     border-radius: 10px;
     background: #fff;
     padding: 0.75rem 0.9rem;

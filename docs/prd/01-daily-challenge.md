@@ -12,11 +12,28 @@ for everyone, and if finishing it leaves the solver with a reason to return.
 ### Selecting today's teaser
 
 - The home page must show the teaser scheduled for **today in Pacific Time**.
-- If today has no teaser, it must **fall back to the most recent past teaser** and
-  label it plainly (*"From Friday 3 July 2026 — today's teaser hasn't been posted
-  yet."*) rather than showing an empty page.
+- If today has no scheduled teaser, one is **recycled** from the bank — see
+  [PRD 08](08-recycling-rotation.md), which owns the selection rules.
 - If no teaser exists at all, show a friendly "check back soon" message.
 - Teasers dated in the future must never appear here.
+
+> **Superseded, and worth knowing why.** This used to read: *fall back to the most
+> recent past teaser, and label it "From Friday 3 July — today's teaser hasn't been
+> posted yet."* Both halves are now wrong.
+>
+> The fallback left the **same puzzle on the front page for days** during a dry
+> spell, which is what the recycling box exists to prevent. And the dated label
+> would now be actively harmful: a recycled teaser was written months ago, so
+> printing its date announces that the puzzle is a repeat. There is deliberately no
+> date note on a teaser anywhere on this page.
+
+### Today's date
+
+- A **dateline** sits above the masthead showing the current day (*"Tuesday,
+  September 1"*).
+- It must come from `AppTime.Today` — **today's date, never the teaser's**. The
+  distinction is the whole point: with recycling those two routinely differ, and
+  rendering the teaser's date would leak that it is a repeat.
 
 ### Day boundary
 
@@ -67,7 +84,9 @@ see [PRD 06](06-community-feedback.md#statistics).
 
 ## Acceptance criteria
 
-- [x] Home shows today's teaser; a missing day falls back with a dated note
+- [x] Home shows today's teaser; a day with none scheduled recycles one
+      ([PRD 08](08-recycling-rotation.md))
+- [x] **No date is ever shown for the teaser itself** — only today's dateline
 - [x] Future teasers never render on `/`
 - [x] Countdown ticks each second and auto-reloads at midnight PT
 - [x] Confetti fires on a correct answer and is suppressed under reduced-motion
@@ -75,8 +94,16 @@ see [PRD 06](06-community-feedback.md#statistics).
 
 ## Implementation notes
 
-`Components/Pages/Home.razor` selects the teaser via `TeaserStore.GetCurrent`;
-all challenge UI lives in the shared `Components/ChallengeView.razor` (also used by
-archived question pages, so the two cannot drift). `Services/AppTime.cs` owns the
+`Components/Pages/Home.razor` selects the teaser via **`DailySchedule.ForDay`**,
+which applies the recycling rules in [PRD 08](08-recycling-rotation.md). All
+challenge UI lives in `Components/ChallengeView.razor`; since [PRD 04](04-archive-and-discovery.md)
+removed the archive, **Home is its only caller**. `Services/AppTime.cs` owns the
 clock. `wwwroot/js/confetti.js` is a dependency-free canvas animation invoked by JS
 interop.
+
+> **Dead code, deliberately left in place.** `TeaserStore.GetCurrent` and
+> `GetPreviousBefore` implemented the old date-based selection. Nothing in the app
+> calls either any more — `DailySchedule` replaced both — but they still have test
+> coverage, so they are alive in `OneADay.Tests` and dead in production. If either
+> is ever reached for again, check it against PRD 08 first: they do **not** respect
+> the rotation, and using one is how the yesterday page regressed before.

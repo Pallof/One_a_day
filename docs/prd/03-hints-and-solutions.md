@@ -129,8 +129,9 @@ blank page is the correct answer.
 
 #### Presentation
 
-- Reached from a glossy blue link under the submission box (daily challenge only)
-  and from the dropdown menu.
+- Reached from a link under the submission box (daily challenge only) and from the
+  main navigation — inline on wide screens, the hamburger panel below 900px
+  ([PRD 09](09-visual-design.md)).
 - **No submission box** — it is for reading, not replaying.
 - Opens with a **spoiler warning** naming the date the puzzle ran, and both the
   question and the solution sit behind **separate tap-to-reveal veils**, so someone

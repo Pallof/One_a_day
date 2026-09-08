@@ -107,7 +107,12 @@ teaser has explicit accept/reject cases:
       equivalent formula forms
 - [x] `TeaserBankTests.cs` — every question in the live bank, accepted phrasings
       and plausible wrong answers
-- [x] **144 tests passing**
+
+> A running total of tests used to be pinned here as a criterion. It was wrong
+> within weeks — it read 144 while the suite was at 284 — because the number
+> changes whenever *anything* in the project gains a test, including work with no
+> bearing on answer evaluation. A count that drifts on its own is worse than no
+> count: it looks verified. The two files above are the criterion; run them.
 
 > **Regression on record:** rule 5 originally used *first `(`* to *last `)`*, which
 > made `5*(5-(1/5))` accept a bare `5`. Rule 6 exists because of that bug; the
@@ -115,10 +120,18 @@ teaser has explicit accept/reject cases:
 
 ## Implementation notes
 
-All logic is in `BrainTeaser.AcceptsAnswer` and its private helpers
-(`Variants`, `Matches`, `TryParseNumber`, `TryParseNumberWords`,
-`TrySplitNumberAndUnit`, `TryEvaluateExpression`). It is pure, in-memory, and has
-no dependencies — a submission is never stored, logged, or interpolated into any
-query. The expression evaluator is a hand-written recursive-descent parser with a
-depth cap, so hostile input (`((((((…`) is rejected rather than overflowing the
-stack.
+Matching lives in `BrainTeaser.AcceptsAnswer` and its private helpers (`Variants`,
+`Matches`, `TryParseNumber`, `TryParseNumberWords`, `TrySplitNumberAndUnit`).
+
+**Arithmetic is no longer among them.** The expression evaluator was extracted into
+`Models/Arithmetic.cs` when the Twenty Four game shipped, so the game and answer
+matching share one implementation — including the thousandths-place rounding
+([PRD 07](07-twenty-four.md)). Two copies would have drifted, and the rounding rule
+is exactly the kind of subtlety that drifts silently.
+
+It is pure, in-memory, and has no dependencies — a submission is never stored,
+logged, or interpolated into any query. `Arithmetic` is a hand-written
+recursive-descent parser with a **depth cap**, so hostile input (`((((((…`) is
+rejected rather than overflowing the stack. Depth alone is not enough: a very long
+*flat* expression never recurses, so callers cap length too — 300 characters on the
+daily challenge, 120 in the game.

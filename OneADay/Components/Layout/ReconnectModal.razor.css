@@ -20,14 +20,20 @@
 }
 
 
+/* This modal ships with the Blazor template and was missed by the redesign — it
+   kept the stock blue and square corners long after the rest moved on. It is not
+   an edge case: it appears on every deploy, every network blip, and every time a
+   laptop wakes from sleep, so for many visitors it is the second thing they see. */
 #components-reconnect-modal {
-    background-color: white;
+    background-color: var(--card);
+    color: var(--ink);
+    font-family: 'Atkinson Hyperlegible', 'Segoe UI', system-ui, sans-serif;
     width: 20rem;
     margin: 20vh auto;
     padding: 2rem;
-    border: 0;
-    border-radius: 0.5rem;
-    box-shadow: 0 3px 6px 2px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: 0 16px 44px rgba(34, 51, 77, .28);
     opacity: 0;
     transition: display 0.5s allow-discrete, overlay 0.5s allow-discrete;
     animation: components-reconnect-modal-fadeOutOpacity 0.5s both;
@@ -90,18 +96,22 @@
 
 #components-reconnect-modal button {
     border: 0;
-    background-color: #6b9ed2;
-    color: white;
-    padding: 4px 24px;
-    border-radius: 4px;
+    background-color: var(--green);
+    color: #fff;
+    font-family: inherit;
+    font-weight: 700;
+    padding: 0.65rem 1.4rem;
+    min-height: 44px;
+    border-radius: 10px;
+    cursor: pointer;
 }
 
     #components-reconnect-modal button:hover {
-        background-color: #3b6ea2;
+        background-color: var(--green-deep);
     }
 
     #components-reconnect-modal button:active {
-        background-color: #6b9ed2;
+        background-color: var(--green-deep);
     }
 
 .components-rejoining-animation {
@@ -112,7 +122,7 @@
 
     .components-rejoining-animation div {
         position: absolute;
-        border: 3px solid #0087ff;
+        border: 3px solid var(--blue);
         opacity: 1;
         border-radius: 50%;
         animation: components-rejoining-animation 1.5s cubic-bezier(0, 0.2, 0.8, 1) infinite;
