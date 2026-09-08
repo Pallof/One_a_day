@@ -87,7 +87,7 @@
 }
 
 .cv-hint-toggle:hover {
-    background: #FBEBC4;
+    background: var(--gold-tint-hover);
 }
 
 /* Revealed: switches to blue so it reads as information rather than an offer. */
@@ -101,7 +101,7 @@
 }
 
 .cv-hint-revealed:hover {
-    background: #DCEBF8;
+    background: var(--blue-tint-hover);
 }
 
 .cv-hint-hide {
@@ -140,7 +140,7 @@
 }
 
 .cv-reveal:hover {
-    background: #DCEBF8;
+    background: var(--blue-tint-hover);
 }
 
 .cv-feedback {
@@ -196,7 +196,7 @@
 }
 
 .cv-yesterday:hover {
-    background: #DCEBF8;
+    background: var(--blue-tint-hover);
 }
 
 /* ------------------------------------------------------------- post-solve --- */

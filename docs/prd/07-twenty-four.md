@@ -57,6 +57,41 @@ Four numbers are dealt. Combine **all four**, each used exactly once, with
    It is deliberately **not persisted** — this is a diversion, not a second streak to
    maintain.
 
+### Showing the hand
+
+10. The four numbers render as **playing cards** — corner ranks top-left and
+    bottom-right, a centre pip, red/black suits — because the hand *is* a deal, and
+    the rules already describe the numbers as coming from a deck.
+11. **Suits are cosmetic and assigned by position** (♠ ♥ ♣ ♦). The game has no suits
+    and nothing reads them. They exist so that **duplicates are tellable apart**,
+    which is load-bearing for rule 12: with a pair of 9s, "one of them is dimmed" is
+    ambiguous, while "9♠ is dimmed and 9♣ is not" is not.
+12. <a id="spent-cards"></a>A card **dims once its number appears in the expression**,
+    and **lights back up the moment it is deleted**. Duplicates are spent left to
+    right, so typing one 9 dims the first 9 only — the player can see they still hold
+    another.
+
+> **Why this doesn't violate the no-help rule.** Everything else in this document
+> works to stop the game helping: hands aren't screened, Pass reveals nothing, the UI
+> must not teach fractions. Dimming is a deliberate exception, and the line is
+> **bookkeeping versus insight**.
+>
+> A dimmed card tells you what you already typed. It says nothing about how to reach
+> 24 — not whether the hand is solvable, not which operator to try, not that a
+> fraction is needed. It removes clerical work (*"have I used both 8s?"*) that is
+> tedious rather than interesting, and on duplicate hands that bookkeeping is the
+> only genuinely annoying part.
+>
+> Keep the distinction when judging future additions. "Highlight the numbers you
+> haven't used" is bookkeeping. "Grey out operators that can't reach 24" is insight,
+> and belongs nowhere near this page.
+
+Derivation, not state: which cards are spent is recomputed from the expression text on
+every render, so it cannot fall out of sync with what is typed. It parses with
+`Arithmetic.Operands` — the same parser rule 6 validates with — so the cards can never
+disagree with what the game accepts. In particular `1` and `10` are distinguished
+correctly, and a number that isn't in the hand dims nothing.
+
 ### Judging a submission
 
 Checked in this order, each failure naming what actually went wrong:
@@ -100,6 +135,11 @@ Checked in this order, each failure naming what actually went wrong:
 - [x] Pass reveals nothing — no solution, and no verdict on whether the hand was
       possible — and moves straight to a new hand
 - [x] The solver is unreachable from the UI: no player action invokes it
+- [x] Cards dim as their number is typed and **relight when it is erased**
+- [x] Duplicates spend left to right; one 9 typed dims one 9, not both
+- [x] `1` and `10` dim the right card; a number not in the hand dims none
+- [x] A solved hand shows **all four cards lit** — dimming the whole hand under the
+      confetti reads as a loss
 - [x] Correct answers fire confetti and lock the round
 - [x] Nothing in the UI or the error messages reveals that fractions are viable
 

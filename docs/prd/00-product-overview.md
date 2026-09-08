@@ -48,8 +48,16 @@ Shipped and covered by the specs of record:
 - Answer evaluation (numeric, word-number, formula, and multi-phrasing matching)
 - Earned hints, and solutions that unlock the day after a challenge runs
 - **No archive** — only today's puzzle is reachable ([PRD 04](04-archive-and-discovery.md))
+- **The Twenty Four game** — endlessly replayable, generates its own puzzles, so it
+  can't exhaust the teaser bank ([PRD 07](07-twenty-four.md))
+- **Recycling rotation** — once the queue of new teasers runs dry, past ones are drawn
+  back out of a box, so the daily habit survives a dry spell and newcomers reach the
+  back catalogue ([PRD 08](08-recycling-rotation.md))
 - Authoring tools: scheduling, difficulty, backend tags, support images
-- Community feedback: teaser suggestions and issue reports with triage
+- Community feedback: teaser suggestions and issue reports with triage, screened for
+  automation ([PRD 06](06-community-feedback.md))
+- **Visual design system** — editorial layout, one centred reading column
+  ([PRD 09](09-visual-design.md))
 
 **Explicit non-goals** (considered and declined): user accounts, comment threads,
 per-user profiles and scores, and any leaderboard.
@@ -58,7 +66,8 @@ per-user profiles and scores, and any leaderboard.
 
 - **C# / Blazor Server, .NET 10**, interactive server rendering
 - **No database.** JSON files in `OneADay/App_Data/`: `teasers.json`,
-  `stats.json`, `suggestions.json`, `issues.json`, plus `teaser-images/`
+  `stats.json`, `suggestions.json`, `issues.json`, `rotation.json`, plus
+  `teaser-images/`
 - **One clock.** `AppTime` pins every day boundary to `America/Los_Angeles`
 
 Storage is intentionally the simplest thing that works. All reads and writes funnel

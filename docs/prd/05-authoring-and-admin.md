@@ -20,7 +20,7 @@ to it.
 | Field | Required | Behaviour |
 |---|---|---|
 | **Show on date** | yes | The day it becomes the challenge. Defaults to the **next date with no teaser**, so repeated adds queue forward without retyping. |
-| **Difficulty** | yes (defaults Medium) | Easy / Medium / Hard. Rendered to solvers as a colour-coded badge: green / yellow / red. |
+| **Difficulty** | yes (defaults Medium) | Easy / Medium / Hard. Rendered to solvers as a tinted pill with a coloured dot — green / gold / red ([PRD 09](09-visual-design.md)). |
 | **Question** | yes | The teaser text. |
 | **Answer** | yes | Accepted answers, `;`-separated ([PRD 02](02-answer-evaluation.md)). |
 | **Tags** | no | Comma-separated labels for the author's own classification. **Never shown to solvers** — admin-only, for sorting and spotting themes. |
@@ -33,8 +33,10 @@ to it.
 - Two teasers must never occupy the same date. Attempting it must **warn and refuse**
   rather than silently overwrite.
 - Dates may be scheduled arbitrarily far ahead.
-- A gap in the schedule is allowed; the daily page degrades gracefully
-  ([PRD 01](01-daily-challenge.md)).
+- A gap in the schedule is allowed. It is no longer a degraded case: the recycling
+  box fills it with a past teaser ([PRD 08](08-recycling-rotation.md)), so a dry
+  stretch is invisible to solvers. **The author still needs to know**, which is what
+  the rotation panel below is for.
 
 ### Support images
 
@@ -50,10 +52,24 @@ to it.
 ### Management table
 
 - Lists every teaser (scheduled and past) with date, difficulty, question, tags,
-  answer, and per-teaser stats.
+  answer, per-teaser stats, and a **Shown** count with the teaser's current draw
+  weight ([PRD 08](08-recycling-rotation.md)).
 - Today's row is highlighted; future rows are visually de-emphasised.
 - **Edit** loads a teaser back into the form (carrying every field, including
   difficulty, tags, and image); **Delete** removes the teaser, its stats, and its image.
+- Wide tables scroll **inside their own container**; they must never widen the page
+  itself ([PRD 09](09-visual-design.md)).
+
+### Rotation panel
+
+Surfaces the recycling box so the author can see it working without reading
+`rotation.json`:
+
+- Slips remaining, bank size, and the refill threshold.
+- **How many new teasers are scheduled ahead** — the real signal for whether the
+  queue is running dry, and the reason a gap is no longer visible to solvers.
+- The last 14 days: date, which teaser ran, and whether it was `new` or `recycled`.
+- **Reset the box now**, starting a fresh cycle over the whole bank.
 
 ### Review queues
 
@@ -76,7 +92,10 @@ reports — specified in [PRD 06](06-community-feedback.md).
 
 ## Implementation notes
 
-`Pages/Admin.razor` with `TeaserStore`, `StatsStore`, `ImageStore`. Runtime-uploaded
-images need an explicit `UseStaticFiles` mapping in `Program.cs` — the .NET template's
-`MapStaticAssets` only serves build-time `wwwroot` content, not files written after
-build.
+`Pages/Admin.razor` with `TeaserStore`, `StatsStore`, `ImageStore`, `SuggestionStore`,
+`IssueStore`, and `RotationStore`. Runtime-uploaded images need an explicit
+`UseStaticFiles` mapping in `Program.cs` — the .NET template's `MapStaticAssets` only
+serves build-time `wwwroot` content, not files written after build.
+
+Admin is the one route that opts into the **wide** measure rather than the reading
+column, because its tables don't fit 680px ([PRD 09](09-visual-design.md)).
