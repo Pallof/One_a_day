@@ -149,6 +149,6 @@ public class SuggestionStore
 
     private void Persist()
     {
-        File.WriteAllText(_filePath, JsonSerializer.Serialize(_data, JsonOptions));
+        AtomicFile.WriteAllText(_filePath, JsonSerializer.Serialize(_data, JsonOptions));
     }
 }

@@ -78,6 +78,6 @@ public class StatsStore
 
     private void Persist()
     {
-        File.WriteAllText(_filePath, JsonSerializer.Serialize(_stats, JsonOptions));
+        AtomicFile.WriteAllText(_filePath, JsonSerializer.Serialize(_stats, JsonOptions));
     }
 }

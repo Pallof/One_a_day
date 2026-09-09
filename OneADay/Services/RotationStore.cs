@@ -148,5 +148,5 @@ public class RotationStore
     }
 
     private void Persist() =>
-        File.WriteAllText(_filePath, JsonSerializer.Serialize(_state, JsonOptions));
+        AtomicFile.WriteAllText(_filePath, JsonSerializer.Serialize(_state, JsonOptions));
 }

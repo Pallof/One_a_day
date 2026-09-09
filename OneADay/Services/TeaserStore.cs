@@ -151,7 +151,7 @@ public class TeaserStore
 
     private void Persist()
     {
-        File.WriteAllText(_filePath, JsonSerializer.Serialize(_teasers, JsonOptions));
+        AtomicFile.WriteAllText(_filePath, JsonSerializer.Serialize(_teasers, JsonOptions));
     }
 
     private static List<BrainTeaser> Seed()
