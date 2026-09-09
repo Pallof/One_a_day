@@ -3,6 +3,7 @@
 @using System.Text
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @inject SuggestionStore Suggestions
+@inject EmailNotifier Notifier
 @inject ProtectedLocalStorage LocalStorage
 @inject IHttpContextAccessor HttpAccessor
 
@@ -135,25 +136,65 @@
             _visitorId = Guid.NewGuid();
         }
 
-        var accepted = Suggestions.TryAdd(
-            new TeaserSuggestion
-            {
-                SubmittedAt = AppTime.NowPacific,
-                Difficulty = _difficulty,
-                Question = _question.Trim(),
-                SolutionAndHint = _solutionAndHint.Trim(),
-            },
-            _visitorId, GetIpHash(), AppTime.Today);
+        var suggestion = new TeaserSuggestion
+        {
+            SubmittedAt = AppTime.NowPacific,
+            Difficulty = NormalisedDifficulty(),
+            Question = _question.Trim(),
+            SolutionAndHint = _solutionAndHint.Trim(),
+        };
+
+        var accepted = Suggestions.TryAdd(suggestion, _visitorId, GetIpHash(), AppTime.Today);
 
         if (accepted)
         {
             _submitted = true;
+
+            // Saved first, notified second. Enqueue never blocks and never throws, so
+            // a mail problem can't cost this visitor their suggestion — it is already
+            // on disk and visible in admin either way.
+            Notifier.Enqueue(
+                $"One a Day — new teaser suggestion ({suggestion.Difficulty})",
+                $"""
+                 A visitor suggested a teaser.
+
+                 Difficulty : {suggestion.Difficulty}
+                 Submitted  : {suggestion.SubmittedAt:dddd d MMMM yyyy, h:mm tt} Pacific
+
+                 THE TEASER
+                 {suggestion.Question}
+
+                 SOLUTION + HINT
+                 {suggestion.SolutionAndHint}
+
+                 Review it in admin to promote it into the teaser form or delete it.
+                 """);
         }
         else
         {
             _limitReached = true;
         }
     }
+
+    /// <summary>
+    /// The chosen difficulty, forced back to a known value.
+    /// </summary>
+    /// <remarks>
+    /// A <c>&lt;select&gt;</c> constrains what a <i>browser</i> sends, not what the server
+    /// receives: Blazor performs no server-side check that a bound value was one of the
+    /// rendered options, so a client driving the circuit directly can put arbitrary text
+    /// here. Unchecked it would be persisted raw to suggestions.json and interpolated
+    /// into a mail subject — a 40,000-character subject that Gmail rejects would burn
+    /// three retry attempts and a slot from the daily send budget.
+    ///
+    /// Admin already normalises this field the same way when promoting a suggestion
+    /// (<c>Enum.TryParse ... : Difficulty.Medium</c>); doing it at the point of entry
+    /// means the bad value is never stored in the first place.
+    /// </remarks>
+    private string NormalisedDifficulty() =>
+        Enum.TryParse<Difficulty>(_difficulty, ignoreCase: true, out var parsed)
+            ? parsed.ToString()
+            : nameof(Difficulty.Medium);
 
     /// <summary>Hashed client IP — never stored raw. Null if unavailable.</summary>
     private string? GetIpHash()

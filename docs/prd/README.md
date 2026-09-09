@@ -27,6 +27,7 @@ Two kinds of document live here:
 | [11 — Deployment](11-deployment.md) | Proposed |
 | [12 — Streaks & sharing](12-streaks-and-sharing.md) | Proposed |
 | [13 — Content pipeline](13-content-pipeline.md) | Proposed |
+| [14 — Email notifications](14-email-notifications.md) | Spec of record |
 
 ## Conventions
 

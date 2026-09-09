@@ -48,6 +48,9 @@ without that information spoiling the puzzle.
 - A limited visitor sees a friendly explanation, not the form.
 - Suggestions appear in admin with difficulty, timestamp, and text, and can be
   **promoted straight into the add-teaser form** or deleted.
+- A new suggestion also **emails the author** ([PRD 14](14-email-notifications.md)).
+  The mail is sent after the save and can never affect it — admin remains the record,
+  the email is only the nudge to go and look.
 
 ### Abuse defences
 
@@ -172,6 +175,9 @@ visible.
 - Each report must automatically capture **which teaser was on screen** plus the page
   URL — an "answer not accepted" report is useless without knowing the question.
 - On success, show a confirmation.
+- A report also **emails the author** ([PRD 14](14-email-notifications.md)). Because
+  reports are deliberately uncapped, the notifier carries its own daily send cap — a
+  burst stops the mail, never the save.
 
 ### Triage
 

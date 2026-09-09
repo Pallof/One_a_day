@@ -1,4 +1,5 @@
 @inject IssueStore Issues
+@inject EmailNotifier Notifier
 @inject CurrentTeaserContext TeaserContext
 @inject NavigationManager Nav
 
@@ -118,7 +119,7 @@
             return;
         }
 
-        Issues.Add(new IssueReport
+        var report = new IssueReport
         {
             SubmittedAt = AppTime.NowPacific,
             Category = _category,
@@ -126,10 +127,42 @@
             PageUrl = Nav.ToBaseRelativePath(Nav.Uri) is var path && path.Length > 0 ? "/" + path : "/",
             TeaserId = _teaserId,
             TeaserQuestion = _teaserQuestion,
-        });
+        };
 
+        Issues.Add(report);
         _submitted = true;
+
+        // Saved first, notified second — same contract as the suggestion form.
+        // Reports are uncapped by design (PRD 06), so the notifier's own daily cap is
+        // what stops a burst of them burying the inbox. Hitting that cap skips the
+        // mail, never the save.
+        Notifier.Enqueue(
+            $"One a Day — issue reported ({ShortCategory(report.Category)})",
+            $"""
+             A visitor reported a problem.
+
+             Category  : {report.Category}
+             Page      : {report.PageUrl}
+             Submitted : {report.SubmittedAt:dddd d MMMM yyyy, h:mm tt} Pacific
+             Teaser    : {report.TeaserQuestion ?? "(not a challenge page)"}
+
+             WHAT THEY SAID
+             {report.Details}
+
+             Triage it in admin — New / In progress / Solved / Won't solve / Duplicate.
+             """);
     }
+
+    /// <summary>
+    /// A short tag for the subject line. The three categories are long sentences, and
+    /// a subject that starts with 40 identical characters is unscannable in an inbox.
+    /// </summary>
+    private static string ShortCategory(string category) => category switch
+    {
+        IssueCategories.Wording => "wording",
+        IssueCategories.Evaluation => "answer not accepted",
+        _ => "other",
+    };
 
     private static string Truncate(string text, int max) =>
         text.Length <= max ? text : text[..max] + "…";

@@ -18,6 +18,13 @@ builder.Services.AddSingleton<DailySchedule>();
 builder.Services.AddScoped<CurrentTeaserContext>();
 builder.Services.AddHttpContextAccessor();
 
+// Email notifications. The app password comes from user-secrets locally and an
+// Email__AppPassword environment variable in production — never appsettings.json.
+// Unconfigured is a supported state: the notifier no-ops and the site is unaffected.
+builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection(EmailOptions.Section));
+builder.Services.AddSingleton<EmailNotifier>();
+builder.Services.AddHostedService<EmailSenderService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
