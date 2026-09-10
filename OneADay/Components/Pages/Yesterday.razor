@@ -1,4 +1,5 @@
 @page "/yesterday"
+@using System.Globalization
 @inject DailySchedule Schedule
 
 <PageTitle>One a Day — Yesterday's solution</PageTitle>
@@ -15,9 +16,15 @@
     }
     else
     {
+        @* Yesterday's calendar date — deliberately NOT _teaser.Date. With recycling the
+           teaser on this page may have been written months ago, so printing its own date
+           both reads as wrong ("the challenge from 30 June") and gives away that the
+           puzzle was a repeat. Same rule the daily page follows: today's date, never the
+           teaser's. See PRD 01. *@
         <div class="ys-spoiler-warning">
             <strong>Spoilers ahead.</strong>
-            This is the challenge from @_teaser.Date.ToString("dddd d MMMM yyyy") and its full solution.
+            This is the challenge from @_ranOn.ToString("dddd d MMMM yyyy", CultureInfo.InvariantCulture)
+            and its full solution.
             If you haven't tried it yet, have a go first — the question is hidden below too, so you can
             attempt it before comparing.
         </div>
@@ -77,13 +84,20 @@
 
 @code {
     private BrainTeaser? _teaser;
+
+    /// <summary>The day this puzzle ran — yesterday, not whenever it was written.</summary>
+    private DateOnly _ranOn;
+
     private bool _showQuestion;
     private bool _showSolution;
 
     protected override void OnInitialized()
     {
+        var today = AppTime.Today;
+
         // Whatever actually ran yesterday, which with recycling is not simply the
         // teaser dated yesterday — see DailySchedule.PreviousBefore.
-        _teaser = Schedule.PreviousBefore(AppTime.Today);
+        _teaser = Schedule.PreviousBefore(today);
+        _ranOn = today.AddDays(-1);
     }
 }

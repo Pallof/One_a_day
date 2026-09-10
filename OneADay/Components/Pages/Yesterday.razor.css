@@ -5,8 +5,8 @@
     background: var(--gold-tint);
     border-left: 5px solid var(--gold);
     border-radius: 0 var(--radius) var(--radius) 0;
-    padding: 1rem 1.25rem;
-    margin-bottom: 1.25rem;
+    padding: 0.8rem 1.15rem;
+    margin-bottom: 0.85rem;
     font-size: 0.97rem;
     line-height: 1.55;
     color: var(--amber);
@@ -94,7 +94,7 @@
 }
 
 .ys-answer {
-    font-family: 'Fraunces', Georgia, serif;
+    font-family: 'Lora', Georgia, serif;
     font-size: 1.3rem;
     font-weight: 650;
     margin: 0 0 0.6rem 0;

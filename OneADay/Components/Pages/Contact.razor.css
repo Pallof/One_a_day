@@ -1,22 +1,22 @@
 .oad-contact-intro {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.1rem;
     color: var(--ink-soft);
 }
 
 .oad-contact-field {
-    margin-bottom: 1.35rem;
+    margin-bottom: 0.8rem;
 }
 
 .oad-contact-field label {
     display: block;
     font-weight: 700;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.35rem;
 }
 
 /* Inputs inherit their shape from app.css; only the textarea height is
    page-specific — a teaser needs more room than a one-line answer. */
 .oad-contact-field textarea {
-    min-height: 120px;
+    min-height: 64px;
 }
 
 .oad-contact-thanks p {
@@ -29,7 +29,7 @@
 .oad-contact-limit-note {
     font-size: 0.88rem;
     color: var(--ink-soft);
-    margin-top: 0.6rem;
+    margin-top: 0.4rem;
 }
 
 /* Decoy field for the honeypot check.

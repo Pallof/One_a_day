@@ -19,14 +19,45 @@ Four numbers are dealt. Combine **all four**, each used exactly once, with
 
 - Numbers run **1–10 inclusive**, mirroring a deck of cards with face cards counting
   as 10 — so **duplicates are normal**, not a bug.
-- Fractions are part of the game: the classic `3 3 8 8` is solvable only as
-  `8 / (3 - 8/3)`.
+- Fractions are part of the game: the classic `3 3 8 8` is solvable only through one,
+  and the solution is written out in the "Examples" section below. **That hand is also
+  a teaser in the live bank**, so it must never reach the page.
 
-> **The UI must not teach this.** No worked example, no "fractions are allowed" note,
-> no example in the input placeholder, and the decimal-point error must not point at
-> division as the workaround. Realising a hand needs a fraction is the best moment the
-> game has, and handing it over cheapens every hand after it. Keep the discovery on
-> the player's side.
+> **The UI must not teach this.** No "fractions are allowed" note, and the
+> decimal-point error must not point at division as the workaround. Realising a hand
+> needs a fraction is the best moment the game has, and handing it over cheapens every
+> hand after it. Keep the discovery on the player's side.
+
+### Examples: easy base cases only
+
+**Why the ban existed.** The page originally carried a worked example using `3 3 8 8`
+and its only solution, `8 / (3 - 8/3)`. Two things were wrong with that, and the second
+is the serious one:
+
+1. It is the single hardest well-known hand in the game, and its solution is a trick
+   most players never find unaided. Printing it hands over the technique wholesale.
+2. **That hand is a teaser in the live bank** — a Hard challenge dated 2026-07-27
+   ("Can you get 24 using only the basic operators…"). So the example was publishing the
+   answer to an actual Challenge of the day, on a different page, permanently.
+
+The ban was the right response to *that* example. It was then written down as "no worked
+example" full stop, which is broader than the problem — and it cost real clarity, since
+a player facing four cards and an empty box had nothing telling them to type arithmetic
+at all.
+
+**The rule.** Examples are permitted, and must be **easy base cases that players work up
+from**.
+
+- ✅ The page carries one: *dealt 6 6 6 6, your answer could be `6 + 6 + 6 + 6`.* The
+  easiest hand possible, addition only, no parentheses. It shows what to type.
+- ❌ Anything that reveals a method — that division makes fractions, that parentheses
+  can build one, that an impossible-looking hand has a trick.
+- ❌ **Anything that appears in the teaser bank.** Check before using a hand as an
+  example; the two surfaces share the same puzzle space, and a hand that is fine today
+  becomes a spoiler the moment it is authored as a challenge.
+
+Two tests before adding or changing an example: *is it an easy base case?* and *is this
+hand in `teasers.json`?* `6+6+6+6` passes both. Don't "improve" it into something clever.
 
 ## Requirements
 
@@ -142,6 +173,9 @@ Checked in this order, each failure naming what actually went wrong:
       confetti reads as a loss
 - [x] Correct answers fire confetti and lock the round
 - [x] Nothing in the UI or the error messages reveals that fractions are viable
+- [x] The one on-page example is an **easy base case** — easiest hand, addition only,
+      no parentheses
+- [x] No example on the page uses a hand that exists in the teaser bank
 
 ## Implementation notes
 

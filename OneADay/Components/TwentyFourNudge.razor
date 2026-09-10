@@ -1,0 +1,28 @@
+@* A quiet invitation to the Twenty Four game, sliding in from the right edge.
+
+   It exists because the nav link says "Twenty Four" and nothing else — a visitor has
+   no way to know that is a game, let alone one they can play all afternoon. The daily
+   challenge is over in a minute; this is the only route to more.
+
+   Deliberately not a modal: it must never block the puzzle. No backdrop, no focus
+   steal, no Escape trap. Someone mid-thought on a hard teaser should be able to ignore
+   it completely and lose nothing. *@
+
+<aside class="tfn @(Visible ? "tfn-in" : "")" aria-label="More puzzles">
+    <button class="tfn-close" @onclick="OnDismiss" aria-label="Dismiss">✕</button>
+
+    <p class="tfn-kicker">Want another?</p>
+    <h3 class="tfn-title">Twenty&nbsp;Four</h3>
+    <p class="tfn-body">
+        Four numbers, one target: make <strong>24</strong> using each of them exactly
+        once. A fresh hand every time — play as many as you like.
+    </p>
+    <a class="tfn-go" href="twentyfour">Give it a go →</a>
+</aside>
+
+@code {
+    /// <summary>Slides in when true. Kept as a class toggle so the exit animates too.</summary>
+    [Parameter] public bool Visible { get; set; }
+
+    [Parameter] public EventCallback OnDismiss { get; set; }
+}

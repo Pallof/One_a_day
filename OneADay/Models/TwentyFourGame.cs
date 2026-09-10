@@ -142,7 +142,7 @@ public static class TwentyFourGame
     {
         if (string.IsNullOrWhiteSpace(expression))
         {
-            return new(TwentyFourResult.Empty, "Type an expression first.");
+            return new(TwentyFourResult.Empty, "Type an answer first.");
         }
 
         if (expression.Length > MaxExpressionLength)
@@ -168,7 +168,7 @@ public static class TwentyFourGame
         if (!Arithmetic.TryEvaluate(expression, out var value))
         {
             return new(TwentyFourResult.Malformed,
-                "That isn't a complete expression — check for a missing number or a stray operator.");
+                "That isn't a complete answer — check for a missing number or a stray operator.");
         }
 
         var used = Arithmetic.Operands(expression);

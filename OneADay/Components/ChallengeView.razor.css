@@ -13,7 +13,7 @@
     justify-content: space-between;
     align-items: center;
     gap: 0.75rem;
-    margin-bottom: 0.9rem;
+    margin-bottom: 0.7rem;
 }
 
 .cv-question-head h2 {
@@ -29,7 +29,7 @@
 
 .cv-question-text {
     font-size: 1.2rem;
-    line-height: 1.65;
+    line-height: 1.55;
 }
 
 .cv-image {
@@ -45,7 +45,7 @@
 /* ------------------------------------------------------------------- hint --- */
 
 .cv-hint-section {
-    margin-bottom: 1.25rem;
+    margin-bottom: 0.85rem;
 }
 
 /* One shared shape for all three hint states — locked, offered, revealed — so
@@ -116,14 +116,14 @@
 
 .cv-input {
     width: 100%;
-    min-height: 110px;
+    min-height: 84px;
     font-size: 1.05rem;
 }
 
 .cv-submit-row {
     display: flex;
     gap: 0.75rem;
-    margin-top: 1rem;
+    margin-top: 0.75rem;
     align-items: center;
     flex-wrap: wrap;
 }
@@ -176,7 +176,7 @@
 /* Its own container below the submission box — the padding comes from the
    link itself, so the box hugs it. */
 .cv-yesterday-box {
-    padding: 0.6rem;
+    padding: 0.45rem;
 }
 
 /* Was a glossy gradient with an animated shine. Now a calm blue panel: the
@@ -184,7 +184,7 @@
    a puzzle competes with the puzzle. */
 .cv-yesterday {
     display: block;
-    padding: 0.95rem 1.2rem;
+    padding: 0.8rem 1.2rem;
     border-radius: 10px;
     text-align: center;
     font-weight: 700;
@@ -197,6 +197,144 @@
 
 .cv-yesterday:hover {
     background: var(--blue-tint-hover);
+}
+
+/* ------------------------------------------------- solved dialog (on solve) --- */
+
+/* The countdown used to sit only at the bottom of the page, below the submission
+   box and the yesterday link — off-screen on most displays, with nothing but a
+   slightly longer scrollbar to hint it existed. It is announced here instead. */
+
+.cv-solved-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(34, 51, 77, 0.45);
+    z-index: 950;
+    animation: cv-solved-fade .18s ease;
+}
+
+.cv-solved {
+    position: fixed;
+    z-index: 960;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: min(440px, calc(100vw - 2.5rem));
+    max-height: calc(100vh - 3rem);
+    overflow-y: auto;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 1.9rem 1.75rem 1.6rem;
+    box-shadow: 0 20px 56px rgba(34, 51, 77, .3);
+    text-align: center;
+    animation: cv-solved-rise .22s cubic-bezier(.2, .8, .3, 1);
+}
+
+/* It receives focus on open, but it isn't itself interactive — the ring belongs
+   on the buttons inside, not around the whole panel. */
+.cv-solved:focus { outline: none; }
+
+@keyframes cv-solved-fade { from { opacity: 0; } to { opacity: 1; } }
+
+@keyframes cv-solved-rise {
+    from { opacity: 0; transform: translate(-50%, calc(-50% + 12px)) scale(.97); }
+    to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+.cv-solved-close {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.7rem;
+    background: none;
+    border: none;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--ink-soft);
+    cursor: pointer;
+    line-height: 1;
+    padding: 0.4rem 0.55rem;
+    border-radius: 8px;
+}
+
+.cv-solved-close:hover {
+    background: var(--blue-tint);
+    color: var(--blue-deep);
+}
+
+.cv-solved-mark {
+    font-size: 2.4rem;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.cv-solved-title {
+    font-size: 1.9rem;
+    color: var(--green-deep);
+    margin-bottom: 0.25rem;
+}
+
+.cv-solved-sub {
+    color: var(--ink-soft);
+    margin-bottom: 1.25rem;
+}
+
+.cv-solved-solution {
+    background: var(--green-tint);
+    border-left: 4px solid var(--green);
+    border-radius: 0 10px 10px 0;
+    padding: 0.85rem 1rem;
+    margin-bottom: 1.25rem;
+    text-align: left;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.cv-solved-next {
+    background: var(--gold-tint);
+    border: 1px solid var(--gold);
+    border-radius: var(--radius);
+    padding: 1.1rem 1rem 0.9rem;
+    color: var(--amber);
+}
+
+.cv-solved-next-label {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+}
+
+.cv-solved-stats {
+    font-size: 0.88rem;
+    color: var(--ink-soft);
+    margin-top: 1rem;
+    line-height: 1.5;
+}
+
+.cv-solved-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-top: 1.4rem;
+}
+
+.cv-solved-yesterday {
+    display: block;
+    padding: 0.85rem 1.2rem;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 1.02rem;
+    color: var(--blue-deep);
+    text-decoration: none;
+    background: var(--blue-tint);
+    transition: background-color .15s ease;
+}
+
+.cv-solved-yesterday:hover { background: var(--blue-tint-hover); }
+
+@media (prefers-reduced-motion: reduce) {
+    .cv-solved,
+    .cv-solved-backdrop { animation: none; }
 }
 
 /* ------------------------------------------------------------- post-solve --- */
@@ -218,7 +356,7 @@
 }
 
 .cv-next-timer {
-    font-family: 'Fraunces', Georgia, serif;
+    font-family: 'Lora', Georgia, serif;
     font-size: 2.6rem;
     font-weight: 700;
     font-variant-numeric: tabular-nums;

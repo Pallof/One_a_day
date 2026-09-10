@@ -12,18 +12,25 @@
     color: var(--ink-soft);
 }
 
+/* Deliberately quiet — it shows the *format*, not a technique, so it shouldn't
+   compete with the rules above it. See the comment in the markup. */
+.tf-example {
+    margin-top: 0.5rem;
+}
+
 .tf-eg {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     background: var(--paper);
     border: 1px solid var(--line);
     border-radius: 4px;
-    padding: 0.05rem 0.35rem;
+    padding: 0.1rem 0.4rem;
+    white-space: nowrap;
 }
 
 /* --- the dealt hand ----------------------------------------------------- */
 
 .tf-hand-box {
-    padding: 1.6rem 1rem;
+    padding: 1.1rem 1rem;
 }
 
 .tf-hand {
@@ -44,7 +51,7 @@
     border: 1px solid var(--line);
     border-radius: 10px;
     box-shadow: 0 2px 8px rgba(34, 51, 77, .10);
-    font-family: 'Fraunces', Georgia, serif;
+    font-family: 'Lora', Georgia, serif;
     transition: transform .16s ease, box-shadow .16s ease, opacity .18s ease;
 }
 
@@ -188,7 +195,7 @@
 /* --- next hand ---------------------------------------------------------- */
 
 .tf-next-box {
-    padding: 0.6rem;
+    padding: 0.45rem;
 }
 
 /* Was a glossy gradient; now matches the calm blue panel used for

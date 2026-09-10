@@ -49,9 +49,11 @@
 
     <div class="oad-box">
         <h2>Submission:</h2>
+        @* @bind:after gives us a keystroke hook without fighting @bind:event for the
+           oninput handler — it's what resets the quiet-period clock. *@
         <textarea class="cv-input" rows="3" maxlength="@MaxSubmissionLength"
                   placeholder="Type your answer here..."
-                  @bind="_submission" @bind:event="oninput"
+                  @bind="_submission" @bind:event="oninput" @bind:after="OnTyping"
                   disabled="@(_solved || _revealed)"></textarea>
 
         <div class="cv-submit-row">
@@ -105,6 +107,10 @@
         </div>
     }
 
+    @* The countdown used to live only here, below the submission box and below the
+       yesterday link — off-screen on most displays, with nothing to suggest it was
+       there. It is announced in a dialog on solve instead, and this stays as the
+       persistent copy for anyone who dismisses it and wants to look again. *@
     @if (_solved && IsDaily)
     {
         <div class="cv-next">
@@ -119,16 +125,74 @@
     @if (_solved && _stats is not null && _stats.TotalSubmissions > 0)
     {
         <p class="cv-stats">
-            🧠 @_stats.UniqueAttempters.ToString("N0") @(_stats.UniqueAttempters == 1 ? "mind has" : "minds have") taken on this challenge
+            🧠 @_stats.UniqueAttempters.ToString("N0") @Wording.Plural(_stats.UniqueAttempters, "mind has", "minds have") taken on this challenge
             — @_stats.SuccessfulSubmissions.ToString("N0")/@_stats.TotalSubmissions.ToString("N0") successful attempts
         </p>
     }
 </div>
 
+@* Always rendered on the daily page so the slide-out animates both ways; the
+   component keeps itself off-screen until Visible. *@
+@if (IsDaily)
+{
+    <TwentyFourNudge Visible="_showNudge" OnDismiss="DismissNudge" />
+}
+
+@* Announced on solve so the countdown can't be missed. Rendered outside .cv so the
+   backdrop covers the whole viewport rather than being clipped by the reading column. *@
+@if (_showSolved && IsDaily)
+{
+    <div class="cv-solved-backdrop" @onclick="DismissSolved"></div>
+
+    <div class="cv-solved" role="dialog" aria-modal="true" aria-labelledby="cv-solved-title"
+         tabindex="-1" @ref="_solvedDialog" @onkeydown="OnSolvedKeyDown">
+        <button class="cv-solved-close" @onclick="DismissSolved" aria-label="Close">✕</button>
+
+        <p class="cv-solved-mark" aria-hidden="true">🎉</p>
+        <h2 id="cv-solved-title" class="cv-solved-title">Correct!</h2>
+        <p class="cv-solved-sub">
+            Solved in @_attempts @Wording.Plural(_attempts, "attempt").
+        </p>
+
+        @if (!string.IsNullOrWhiteSpace(Teaser.Solution))
+        {
+            <div class="cv-solved-solution">@Teaser.Solution</div>
+        }
+
+        <div class="cv-solved-next">
+            <p class="cv-solved-next-label">Next challenge in</p>
+            <div class="cv-next-timer">@FormatCountdown(AppTime.UntilNextChallenge)</div>
+            <p class="cv-next-sub">Midnight, Pacific Time</p>
+        </div>
+
+        @if (_stats is not null && _stats.TotalSubmissions > 0)
+        {
+            <p class="cv-solved-stats">
+                🧠 @_stats.UniqueAttempters.ToString("N0") @Wording.Plural(_stats.UniqueAttempters, "mind has", "minds have")
+                taken this on — @_stats.SuccessfulSubmissions.ToString("N0")/@_stats.TotalSubmissions.ToString("N0") successful
+            </p>
+        }
+
+        <div class="cv-solved-actions">
+            <a class="cv-solved-yesterday" href="yesterday">See yesterday's solution</a>
+            <button class="oad-btn-plain" @onclick="DismissSolved">Close</button>
+        </div>
+    </div>
+}
+
 @code {
     private const int MinAttemptsBeforeHint = 1;
     private const int MaxSubmissionLength = 300;
     private const string VisitorKey = "oad-visitor-id";
+
+    /// <summary>Wrong answers before we suggest a change of scene.</summary>
+    private const int AttemptsBeforeNudge = 3;
+
+    /// <summary>Quiet minutes before we assume they're stuck and staring.</summary>
+    private const int IdleMinutesBeforeNudge = 5;
+
+    /// <summary>Remembers a dismissal, so the nudge is a suggestion and not a nag.</summary>
+    private const string NudgeDismissedKey = "oad-24-nudge-dismissed";
 
     [Parameter, EditorRequired] public BrainTeaser Teaser { get; set; } = default!;
 
@@ -153,6 +217,22 @@
     private Timer? _countdownTimer;
     private DateOnly _solvedOn;
 
+    /// <summary>Whether the solve dialog is up. Dismissed, it does not come back.</summary>
+    private bool _showSolved;
+
+    private ElementReference _solvedDialog;
+
+    /// <summary>Set once, so focus moves to the dialog on the render that opens it.</summary>
+    private bool _focusSolvedDialog;
+
+    // ---- the Twenty Four nudge ------------------------------------------------
+    private bool _showNudge;
+
+    /// <summary>Once dismissed it never returns — persisted, so a reload doesn't nag.</summary>
+    private bool _nudgeDismissed;
+
+    private Timer? _idleTimer;
+
     protected override void OnParametersSet()
     {
         if (_renderedTeaserId == Teaser.Id)
@@ -166,6 +246,7 @@
         _revealed = false;
         _showHint = false;
         _attempts = 0;
+        _showSolved = false;
         _stats = Stats.Get(Teaser.Id);
         StopCountdown();
         // Let "Report an issue" name the question being viewed.
@@ -174,6 +255,22 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        // Move focus into the dialog the render it appears, so keyboard and screen
+        // reader users land on it rather than being left behind on the submit button
+        // with an announcement they can't reach.
+        if (_focusSolvedDialog)
+        {
+            _focusSolvedDialog = false;
+            try
+            {
+                await _solvedDialog.FocusAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+                // Circuit went away mid-celebration; nothing to focus.
+            }
+        }
+
         if (!firstRender)
         {
             return;
@@ -188,6 +285,89 @@
         {
             _visitorId = Guid.NewGuid();
             await LocalStorage.SetAsync(VisitorKey, _visitorId);
+        }
+
+        // Respect an earlier dismissal before any trigger can fire.
+        var dismissed = await LocalStorage.GetAsync<bool>(NudgeDismissedKey);
+        _nudgeDismissed = dismissed.Success && dismissed.Value;
+
+        // Start the quiet-period clock from the moment the page is usable.
+        RestartIdleTimer();
+    }
+
+    private void DismissSolved()
+    {
+        _showSolved = false;
+        // Only once the celebration is out of the way — two panels at once would be
+        // shouting, and the dialog is the thing they actually earned.
+        ShowNudge();
+    }
+
+    // ---- the Twenty Four nudge ------------------------------------------------
+
+    /// <summary>
+    /// Reveals the nudge, unless it has been dismissed. Safe to call from any trigger;
+    /// whichever fires first wins and the rest become no-ops.
+    /// </summary>
+    private void ShowNudge()
+    {
+        if (_nudgeDismissed || !IsDaily)
+        {
+            return;
+        }
+        _showNudge = true;
+        StopIdleTimer();   // it has served its purpose either way
+    }
+
+    private async Task DismissNudge()
+    {
+        _showNudge = false;
+        _nudgeDismissed = true;
+        StopIdleTimer();
+
+        try
+        {
+            await LocalStorage.SetAsync(NudgeDismissedKey, true);
+        }
+        catch (Exception)
+        {
+            // Storage blocked or the circuit went away. Losing the preference only
+            // means they may see it once more — not worth surfacing.
+        }
+    }
+
+    /// <summary>
+    /// (Re)starts the quiet-period countdown. Called on every keystroke and every
+    /// submission, so the clock measures time since they last did anything — a person
+    /// typing steadily is not stuck.
+    /// </summary>
+    private void RestartIdleTimer()
+    {
+        if (_nudgeDismissed || _showNudge || !IsDaily)
+        {
+            return;
+        }
+
+        StopIdleTimer();
+        _idleTimer = new Timer(
+            _ => InvokeAsync(() => { ShowNudge(); StateHasChanged(); }),
+            null,
+            TimeSpan.FromMinutes(IdleMinutesBeforeNudge),
+            Timeout.InfiniteTimeSpan);   // one shot, not a repeat
+    }
+
+    private void StopIdleTimer()
+    {
+        _idleTimer?.Dispose();
+        _idleTimer = null;
+    }
+
+    /// <summary>Escape closes the dialog, as every dialog should.</summary>
+    private void OnSolvedKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            _showSolved = false;
         }
     }
 
@@ -209,10 +389,12 @@
         if (Teaser.AcceptsAnswer(_submission))
         {
             _solved = true;
-            _feedback = $"Correct! Solved in {_attempts} attempt{(_attempts == 1 ? "" : "s")}. 🎉";
+            _feedback = $"Correct! Solved in {_attempts} {Wording.Plural(_attempts, "attempt")}. 🎉";
             if (IsDaily)
             {
                 StartCountdown();
+                _showSolved = true;
+                _focusSolvedDialog = true;
             }
         }
         else
@@ -220,6 +402,17 @@
             _feedback = CanReveal
                 ? "Not quite — try again, or reveal the solution."
                 : "Not quite — stretch that brain and try again!";
+
+            // Struggling. Offer a change of scene rather than letting them grind —
+            // and only after several genuine tries, so it never reads as "give up".
+            if (_attempts >= AttemptsBeforeNudge)
+            {
+                ShowNudge();
+            }
+            else
+            {
+                RestartIdleTimer();   // still going; reset the quiet clock
+            }
         }
 
         if (_visitorId == Guid.Empty)
@@ -234,6 +427,9 @@
             await JS.InvokeVoidAsync("oadCelebrate");
         }
     }
+
+    /// <summary>Any keystroke counts as activity — someone typing is not stuck.</summary>
+    private void OnTyping() => RestartIdleTimer();
 
     private void StartCountdown()
     {
@@ -266,6 +462,9 @@
     public void Dispose()
     {
         StopCountdown();
+        // Without this the idle timer outlives the component and fires into a dead
+        // circuit five minutes after someone navigates away.
+        StopIdleTimer();
         // Navigating away: stop attributing issue reports to this question.
         TeaserContext.Clear(_renderedTeaserId);
     }

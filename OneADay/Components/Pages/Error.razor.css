@@ -1,0 +1,40 @@
+.err-box {
+    text-align: center;
+}
+
+.err-lead {
+    font-size: 1.15rem;
+    margin-bottom: 0.6rem;
+}
+
+.err-sub {
+    color: var(--ink-soft);
+    margin-bottom: 1.5rem;
+}
+
+.err-home {
+    display: inline-block;
+    padding: 0.85rem 1.4rem;
+    border-radius: 10px;
+    font-weight: 700;
+    color: var(--blue-deep);
+    background: var(--blue-tint);
+    text-decoration: none;
+    transition: background-color .15s ease;
+}
+
+.err-home:hover {
+    background: var(--blue-tint-hover);
+}
+
+/* Quiet on purpose — useful if someone reports the problem, meaningless otherwise. */
+.err-ref {
+    margin-top: 1.5rem;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+}
+
+.err-ref code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.78rem;
+}
