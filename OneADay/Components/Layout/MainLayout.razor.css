@@ -44,7 +44,7 @@
     display: inline-flex;
     align-items: center;
     gap: 9px;
-    font-family: 'Fraunces', Georgia, serif;
+    font-family: 'Lora', Georgia, serif;
     font-weight: 700;
     font-size: 1.45rem;
     letter-spacing: -0.01em;
@@ -198,10 +198,13 @@
 
 /* ------------------------------------------------------------------- main --- */
 
+/* Vertical rhythm here is tuned so the four main pages fit a laptop viewport without
+   a scrollbar — see the note in PRD 09. The bottom padding was 4.5rem, which alone
+   pushed every page ~40px over on a 14" screen. */
 .oad-main {
     display: block;
-    padding-top: 2.25rem;
-    padding-bottom: 4.5rem;
+    padding-top: 1.25rem;
+    padding-bottom: 1.25rem;
     /* Push the footer down on short pages so it never floats mid-screen. */
     min-height: calc(100vh - 320px);
 }
@@ -210,10 +213,10 @@
 
 .oad-footer {
     border-top: 1px solid var(--line);
-    padding: 1.6rem 0 2.5rem;
+    padding: 0.85rem 0 1.1rem;
     text-align: center;
     color: var(--ink-soft);
-    font-size: 0.94rem;
+    font-size: 0.92rem;
 }
 
 /* ------------------------------------------------------------ error strip --- */

@@ -59,10 +59,10 @@ environment: state lives in **local JSON files**, and Blazor Server keeps a
 9. **Logging** sufficient to notice unhandled exceptions.
 10. **Reasonable WebSocket support** for Blazor Server circuits (rules out hosts that
     only serve static content or short-lived functions).
-11. **Self-host the webfonts.** The app currently loads Fraunces and Atkinson
-    Hyperlegible from `fonts.googleapis.com`, which puts a third party on the render
-    path and exposes visitor IPs to Google. Serving the woff2 files from `wwwroot`
-    removes both ([PRD 09](09-visual-design.md)).
+11. **Self-host the webfonts.** The app currently loads Lora and Atkinson Hyperlegible
+    from `fonts.googleapis.com`, which puts a third party on the render path and
+    exposes visitor IPs to Google. Serving the woff2 files from `wwwroot` removes both
+    ([PRD 09](09-visual-design.md)).
 
 ## Candidate hosts
 

@@ -1,0 +1,20 @@
+/* app.css zeroes p margins globally, so consecutive paragraphs would otherwise butt
+   together and read as one block — which is what made this page a wall of text even
+   though it already had two <p> elements. */
+.about-body p + p {
+    margin-top: 1.1rem;
+}
+
+.about-body p {
+    line-height: 1.7;
+}
+
+/* The closing line is an aside rather than part of the argument, so it gets a rule
+   above it and steps back a shade. */
+.about-close {
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--line);
+    color: var(--ink-soft);
+    font-style: italic;
+}

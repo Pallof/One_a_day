@@ -41,10 +41,25 @@ information or a way onward, **green** is success, **red** is wrong or hardest.
 
 ### Type
 
-- **Fraunces** (variable serif, weights 500/650/700) — masthead, wordmark, yesterday's
-  answer, countdown digits, and the Twenty Four card numerals.
+- **Lora** (variable serif, 400–700) — masthead, wordmark, yesterday's answer,
+  countdown digits, and the Twenty Four card numerals.
 - **Atkinson Hyperlegible** (400/700 + italic) — everything else.
 - **System monospace** — expression input and inline examples only.
+
+> **Fraunces was here first, and was replaced 2026-09-10.** Its "wonk" letterforms —
+> most visibly an `f` that drops a hooked tail below the baseline — read as a typo at
+> masthead size in a heading as ordinary as *"Challenge of the day"*.
+>
+> Wonk is a real axis in the typeface, so switching it off looked like a one-line fix.
+> It isn't: **Google Fonts ships `WONK` as separate static files, not a variable axis.**
+> Requesting both instances returns two different woff2 files (19,748 and 19,880 bytes)
+> under `@font-face` blocks that are otherwise identical, so the browser picks one
+> arbitrarily and `font-variation-settings: "WONK" 0` does nothing — the served file
+> has no axes at all. Verified by fetching both and diffing them.
+>
+> Lora carries the same editorial weight without the quirk, sits closer to Georgia so
+> the fallback degrades better, and is **23 KB against Fraunces' 66 KB** — which was
+> two-thirds of the font budget for perhaps thirty words a page.
 
 > Atkinson is not just an aesthetic choice. It was commissioned by the Braille
 > Institute to make similar glyphs distinguishable — `I`/`l`/`1`, `O`/`0`, `rn`/`m`.
@@ -93,7 +108,7 @@ Verified by measurement rather than by eye: equal left/right gutters at 375, 480
 ## Components
 
 - **Cards** (`.oad-box`) — white, hairline border, soft shadow, 14px radius.
-- **Masthead** (`.oad-banner`) — centred Fraunces with a 64px gold rule beneath.
+- **Masthead** (`.oad-banner`) — centred Lora with a 64px gold rule beneath.
 - **Dateline** — today's date above the masthead ([PRD 01](01-daily-challenge.md)).
 - **Difficulty badge** — tinted pill with a coloured dot, not a solid block.
 - **Hint bar** — gold while locked or offered, switching to **blue once revealed**, so
@@ -103,6 +118,37 @@ Verified by measurement rather than by eye: equal left/right gutters at 375, 480
   because it never shows in normal development, but it appears on every deploy, every
   network blip, and every laptop wake, so for some visitors it is the second thing they
   see. It must use the tokens like anything else.
+
+### The Twenty Four nudge
+
+`Components/TwentyFourNudge.razor` — a panel that slides in from the right edge of the
+daily challenge, inviting the visitor to the Twenty Four game.
+
+It exists because the nav link says **"Twenty Four"** and nothing else. A visitor has no
+way to know that is a game, let alone one they can play indefinitely — and the daily
+challenge is over in a minute, so this is the only route to more.
+
+Three triggers, first one wins; the rest become no-ops:
+
+| Trigger | Threshold | Why there |
+|---|---|---|
+| Solved | after the solve dialog is **dismissed** | Two panels at once is shouting, and the dialog is the thing they earned |
+| Struggling | **3** wrong answers | Enough genuine tries that it reads as an offer rather than "give up" |
+| Idle | **5** quiet minutes | Any keystroke resets the clock — someone typing steadily is not stuck |
+
+**It must never become a modal.** No backdrop, no focus steal, no Escape trap. Someone
+mid-thought on a hard teaser has to be able to ignore it completely and lose nothing.
+It must not overlap the answer box or the report button at any width; below 560px it
+comes up from the bottom full-width instead, because a card hanging off the right edge
+of a phone would cover the answer box.
+
+**Dismissal is permanent and persisted.** The purpose is discovery — once someone knows
+the game exists, showing it again is nagging. A dismissal survives reloads.
+
+> **The thresholds are product judgement, not tuning knobs.** Lowering the attempt count
+> or shortening the idle period turns an offer into a pester, and this appears while
+> someone is deliberately concentrating. If it ever needs to convert harder, make the
+> panel better rather than making it interrupt sooner.
 
 ### Removed deliberately
 

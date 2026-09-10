@@ -19,6 +19,20 @@
             Each number must be used exactly once. Numbers run 1–10, like a deck of cards
             with the face cards counting as 10 — so duplicates happen.
         </p>
+        @* An easy base case, deliberately. Players work up from here.
+
+           Two rules before changing this, both from PRD 07 and both learned the hard
+           way — the original example used 3 3 8 8 and its only solution:
+             1. Keep it an easy base case. That hand needs a fraction most players
+                never find unaided, so it revealed the method outright.
+             2. Never use a hand that exists in teasers.json. 3 3 8 8 is a Hard teaser
+                dated 2026-07-27, so the example was publishing the answer to a real
+                Challenge of the day from a different page, permanently.
+           6 6 6 6 breaks neither. Don't "improve" it into something clever. *@
+        <p class="tf-rules tf-example">
+            For example, dealt <strong>6 6 6 6</strong> your answer could be
+            <span class="tf-eg">6 + 6 + 6 + 6</span>.
+        </p>
     </div>
 
     <div class="oad-box tf-hand-box">
@@ -38,8 +52,8 @@
     </div>
 
     <div class="oad-box">
-        <h2>Your expression:</h2>
-        <input class="tf-input" placeholder="Type your expression"
+        <h2>Your answer:</h2>
+        <input class="tf-input" placeholder="Type your answer"
                maxlength="120"
                @bind="_expression" @bind:event="oninput"
                @onkeydown="OnKeyDown"

@@ -1,0 +1,109 @@
+/* Parked off the right edge and slid in — never a modal, so the puzzle stays usable
+   the whole time it is on screen. */
+.tfn {
+    position: fixed;
+    right: 0;
+    bottom: 5.5rem;      /* clear of the "Report an issue" button */
+    z-index: 800;
+    width: min(300px, calc(100vw - 2rem));
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-right: none;
+    border-radius: var(--radius) 0 0 var(--radius);
+    box-shadow: -6px 8px 28px rgba(34, 51, 77, .16);
+    padding: 1.1rem 1.25rem 1.25rem;
+
+    /* The "fan": it swings in from behind the edge rather than sliding flat, which
+       reads as a card being dealt onto the page — the same gesture as the game. */
+    transform: translateX(100%) rotate(2.5deg);
+    transform-origin: bottom right;
+    opacity: 0;
+    visibility: hidden;
+    transition: transform .38s cubic-bezier(.2, .9, .3, 1.05),
+                opacity .28s ease,
+                visibility .38s;
+}
+
+.tfn-in {
+    transform: translateX(0) rotate(0deg);
+    opacity: 1;
+    visibility: visible;
+}
+
+.tfn-close {
+    position: absolute;
+    top: 0.35rem;
+    right: 0.5rem;
+    background: none;
+    border: none;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    cursor: pointer;
+    line-height: 1;
+    padding: 0.35rem 0.45rem;
+    border-radius: 6px;
+}
+
+.tfn-close:hover {
+    background: var(--blue-tint);
+    color: var(--blue-deep);
+}
+
+.tfn-kicker {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 0.15rem;
+}
+
+.tfn-title {
+    font-family: 'Lora', Georgia, serif;
+    font-size: 1.35rem;
+    font-weight: 650;
+    margin-bottom: 0.4rem;
+}
+
+.tfn-body {
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    margin-bottom: 0.9rem;
+}
+
+.tfn-go {
+    display: block;
+    text-align: center;
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.97rem;
+    color: var(--blue-deep);
+    background: var(--blue-tint);
+    text-decoration: none;
+    transition: background-color .15s ease;
+}
+
+.tfn-go:hover { background: var(--blue-tint-hover); }
+
+/* On a phone it spans the width and comes up from the bottom instead — a card
+   hanging off the right edge of a 375px screen would cover the answer box. */
+@media (max-width: 560px) {
+    .tfn {
+        right: 0.6rem;
+        left: 0.6rem;
+        bottom: 4.5rem;
+        width: auto;
+        border-right: 1px solid var(--line);
+        border-radius: var(--radius);
+        transform: translateY(120%) rotate(0deg);
+    }
+
+    .tfn-in { transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tfn { transition: opacity .2s ease, visibility .2s; transform: none; }
+    .tfn-in { transform: none; }
+}

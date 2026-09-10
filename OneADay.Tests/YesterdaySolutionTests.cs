@@ -1,3 +1,4 @@
+using System.Globalization;
 using Bunit;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Microsoft.Extensions.DependencyInjection;
@@ -199,6 +200,31 @@ public class YesterdaySolutionTests : BunitContext
         var cut = Render<Yesterday>();
 
         Assert.Contains("Spoilers ahead", cut.Find(".ys-spoiler-warning").TextContent);
+    }
+
+    [Fact]
+    public void Page_names_yesterday_not_the_day_the_teaser_was_written()
+    {
+        // With recycling the teaser on this page may have been authored months ago.
+        // Printing its own date read as plainly wrong ("the challenge from 30 June"
+        // when it ran yesterday) and gave away that the puzzle was a repeat — the
+        // exact leak the daily page removes its date note to avoid.
+        var store = StoreWithBank();
+        var schedule = RegisterAppServices(store);
+        var shown = schedule.PreviousBefore(AppTime.Today);
+
+        var cut = Render<Yesterday>();
+        var warning = cut.Find(".ys-spoiler-warning").TextContent;
+
+        var yesterday = AppTime.Today.AddDays(-1);
+        Assert.Contains(
+            yesterday.ToString("dddd d MMMM yyyy", CultureInfo.InvariantCulture), warning);
+
+        // And the teaser's own date must not appear. The bank is dated well in the
+        // past, so if this ever prints _teaser.Date again the two won't match.
+        Assert.NotEqual(yesterday, shown!.Date);
+        Assert.DoesNotContain(
+            shown.Date.ToString("dddd d MMMM yyyy", CultureInfo.InvariantCulture), warning);
     }
 
     [Fact]
