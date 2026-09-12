@@ -1,0 +1,69 @@
+@page "/subscribe/confirm"
+@inject SubscriberStore Subscribers
+
+<PageTitle>One a Day — Confirm your email</PageTitle>
+
+@* Confirmation takes a button press, not just the page load.
+
+   Corporate mail filters and link-preview bots open every link in an incoming email
+   to scan it. If loading this page confirmed the address, double opt-in would be
+   defeated for anyone behind one of those scanners — the scanner, not the person,
+   would be saying yes. Scanners fetch the page; they don't open a live connection and
+   press buttons, so requiring the click keeps the decision with the human. *@
+<div class="oad-static">
+    <div class="oad-banner">Confirm your email</div>
+
+    <div class="oad-box sub-box">
+        @if (_subscriber is null && !_confirmed)
+        {
+            <p class="sub-lead">This confirmation link isn't valid.</p>
+            <p class="sub-sub">
+                It may have been used already, or the sign-up expired — unconfirmed sign-ups
+                are cleared after @SubscriberStore.PendingExpiry.Days days. You can sign up
+                again from the link at the bottom of the home page.
+            </p>
+            <a class="sub-home" href="">Back to the Challenge of the day</a>
+        }
+        else if (_confirmed)
+        {
+            <p class="sub-mark" aria-hidden="true">🎉</p>
+            <p class="sub-lead">You're subscribed.</p>
+            @* "Your first", not "tomorrow's": confirm before 7am and the first one is
+               today's. DailyDigestService holds anyone confirmed after the send until the
+               next morning, so this is true either way. *@
+            <p class="sub-sub">
+                Your first challenge arrives at 7am Pacific. Every email has a one-click
+                unsubscribe link if you change your mind.
+            </p>
+            <a class="sub-home" href="">Try today's challenge now</a>
+        }
+        else
+        {
+            <p class="sub-lead">
+                Confirm that <strong>@EmailAddress.Mask(_subscriber!.Email)</strong> should get
+                the daily challenge?
+            </p>
+            <button class="oad-btn-green" @onclick="Confirm">Yes, subscribe me</button>
+        }
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "token")]
+    public string? Token { get; set; }
+
+    private Subscriber? _subscriber;
+    private bool _confirmed;
+
+    protected override void OnInitialized()
+    {
+        _subscriber = Subscribers.FindByToken(Token);
+        // Already confirmed via an earlier click — show the success state, not the button.
+        _confirmed = _subscriber?.IsConfirmed == true;
+    }
+
+    private void Confirm()
+    {
+        _confirmed = Subscribers.Confirm(Token, DateTime.UtcNow);
+    }
+}

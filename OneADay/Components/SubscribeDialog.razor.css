@@ -1,0 +1,141 @@
+/* The footer trigger — reads as a link, sits in the footer's quiet register. */
+.sd-open {
+    background: none;
+    border: none;
+    padding: 0.2rem 0.3rem;
+    font-family: inherit;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--blue-deep);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+.sd-open:hover { color: var(--blue); }
+
+.sd-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(34, 51, 77, 0.45);
+    z-index: 950;
+    animation: sd-fade .18s ease;
+}
+
+.sd-dialog {
+    position: fixed;
+    z-index: 960;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: min(420px, calc(100vw - 2.5rem));
+    max-height: calc(100vh - 3rem);
+    overflow-y: auto;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 1.8rem 1.6rem 1.5rem;
+    box-shadow: 0 20px 56px rgba(34, 51, 77, .3);
+    text-align: left;
+    animation: sd-rise .22s cubic-bezier(.2, .8, .3, 1);
+}
+
+.sd-dialog:focus { outline: none; }
+
+@keyframes sd-fade { from { opacity: 0; } to { opacity: 1; } }
+
+@keyframes sd-rise {
+    from { opacity: 0; transform: translate(-50%, calc(-50% + 12px)) scale(.97); }
+    to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+.sd-close {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.7rem;
+    background: none;
+    border: none;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--ink-soft);
+    cursor: pointer;
+    line-height: 1;
+    padding: 0.4rem 0.55rem;
+    border-radius: 8px;
+}
+
+.sd-close:hover {
+    background: var(--blue-tint);
+    color: var(--blue-deep);
+}
+
+.sd-mark {
+    font-size: 2.2rem;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+    text-align: center;
+}
+
+.sd-title {
+    font-family: 'Lora', Georgia, serif;
+    font-size: 1.45rem;
+    font-weight: 650;
+    margin-bottom: 0.45rem;
+    padding-right: 1.5rem;   /* clear of the close button */
+}
+
+.sd-lead {
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+    line-height: 1.55;
+    margin-bottom: 1.1rem;
+}
+
+.sd-dialog label {
+    font-size: 0.95rem;
+    margin-bottom: 0.35rem;
+}
+
+.sd-dialog input[type="email"] {
+    width: 100%;
+    border: 1.5px solid var(--field);
+    border-radius: 10px;
+    background: #fff;
+    padding: 0.7rem 0.9rem;
+    font-size: 1rem;
+}
+
+.sd-dialog input[type="email"]:focus {
+    border-color: var(--blue);
+    outline: 3px solid rgba(43, 123, 199, .25);
+    outline-offset: 0;
+}
+
+.sd-error {
+    color: var(--red);
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-top: 0.45rem;
+}
+
+.sd-full {
+    width: 100%;
+    margin-top: 1rem;
+}
+
+/* Decoy field for the honeypot check — never display:none, which scrapers skip. See
+   PRD 06. */
+.sd-hp {
+    position: absolute;
+    left: -9999px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sd-dialog, .sd-backdrop { animation: none; }
+}

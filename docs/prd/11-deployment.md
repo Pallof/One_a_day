@@ -12,8 +12,8 @@ environment: state lives in **local JSON files**, and Blazor Server keeps a
 ## Goals
 
 - A public URL serving today's challenge over HTTPS.
-- Data (teasers, stats, suggestions, issues, **rotation**, images) survives restarts
-  and redeploys.
+- Data (teasers, stats, suggestions, issues, **rotation**, subscribers, images)
+  survives restarts and redeploys.
 - Deploying an update is one repeatable command or a push.
 
 ## Non-goals
@@ -55,7 +55,8 @@ environment: state lives in **local JSON files**, and Blazor Server keeps a
    Pacific regardless of server locale — but must be verified on the host, since a
    server running UTC is the exact case this protects against.
 8. **Backups.** A scheduled copy of `App_Data/` off the host. Restoring must be
-   documented and tested at least once.
+   documented and tested at least once. The folder holds subscriber email addresses
+   ([PRD 15](15-email-subscriptions.md)), so the copy must be as private as the host.
 9. **Logging** sufficient to notice unhandled exceptions.
 10. **Reasonable WebSocket support** for Blazor Server circuits (rules out hosts that
     only serve static content or short-lived functions).
@@ -63,6 +64,10 @@ environment: state lives in **local JSON files**, and Blazor Server keeps a
     from `fonts.googleapis.com`, which puts a third party on the render path and
     exposes visitor IPs to Google. Serving the woff2 files from `wwwroot` removes both
     ([PRD 09](09-visual-design.md)).
+12. **Email settings.** `Email__AppPassword` as a secret ([PRD 14](14-email-notifications.md)),
+    and **`Site__BaseUrl` set to the public HTTPS address** ([PRD 15](15-email-subscriptions.md)).
+    The second is easy to miss and fails silently: every link in every email — confirm,
+    unsubscribe, solve — is built from it, and the default points at `localhost`.
 
 ## Candidate hosts
 
@@ -85,6 +90,7 @@ environment: state lives in **local JSON files**, and Blazor Server keeps a
 - [ ] Data Protection keys persist across a restart — a visitor is not treated as new
 - [ ] Day rollover verified correct on a UTC-clock server
 - [ ] A backup has been taken **and restored** once
+- [ ] The links in a real email open the public site — `Site__BaseUrl` is set
 - [ ] Documented deploy command in the README
 
 ## Risks
@@ -94,7 +100,7 @@ environment: state lives in **local JSON files**, and Blazor Server keeps a
 - ~~**Torn writes.**~~ **Fixed 2026-09-09.** Every store persisted with
   `File.WriteAllText`, which truncates the file *then* writes — a crash inside that
   window left a file that no longer parses, losing the whole store rather than the last
-  record. All five now go through `Services/AtomicFile.cs`: write a sibling temp file,
+  record. Every store now goes through `Services/AtomicFile.cs`: write a sibling temp file,
   then `File.Move(..., overwrite: true)`, which is an atomic rename within one
   filesystem.
 
@@ -120,4 +126,6 @@ environment: state lives in **local JSON files**, and Blazor Server keeps a
   `TeaserStore`/`StatsStore` for SQLite. That change is contained because all access
   already funnels through those services.
 - **Cold starts** on scale-to-zero hosting would drop Blazor circuits; prefer an
-  always-on instance.
+  always-on instance. It is required, not preferred, for the daily email: an app
+  asleep at 7am sends nothing until a visitor wakes it, and a day with no visitor is
+  skipped entirely ([PRD 15](15-email-subscriptions.md)).

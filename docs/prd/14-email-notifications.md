@@ -62,7 +62,9 @@ Consequences that must hold:
 | New suggestion | `One a Day — new teaser suggestion (Hard)` | difficulty, timestamp, the teaser, the solution + hint |
 | Issue report | `One a Day — issue reported (answer not accepted)` | category, page, timestamp, the teaser on screen, the details |
 
-- **Plain text only.** Nothing to escape, renders everywhere.
+- **Plain text only.** Nothing to escape, renders everywhere. Subscriber mail is styled
+  like the site ([PRD 15](15-email-subscriptions.md)); these stay plain on purpose —
+  they have one reader, who wants to scan them.
 - **Subject lines carry no visitor text**, only the difficulty or category. Categories
   are shortened for the subject — the real ones are long sentences, and a subject that
   starts with forty identical characters is unscannable.
@@ -70,6 +72,10 @@ Consequences that must hold:
   subject is header injection; strip rather than trusting the mail library to notice.
 
 ### Delivery
+
+Sending lives in `SmtpMailer`, shared with the daily email
+([PRD 15](15-email-subscriptions.md)), so the timeout and retry rules below apply to
+both. The queue and the cap are this feature's own.
 
 - **Gmail SMTP** (`smtp.gmail.com:587`, STARTTLS) using the built-in
   `System.Net.Mail.SmtpClient`, so the project keeps its **zero NuGet packages**.
@@ -122,32 +128,35 @@ content leak into git history before ([PRD 00](00-product-overview.md)).
 
 ## Non-goals
 
-- HTML email, templates, or branding
-- Notifying anyone but the author
+- HTML email, templates, or branding for these notifications
+- Notifying anyone but the author — subscriber mail is its own feature,
+  [PRD 15](15-email-subscriptions.md)
 - Email as a *reply* channel — reporters are anonymous by design
-- Digests or scheduled summaries (see below)
+- Daily summaries for the author (see below)
 
 ## Known ceiling
 
 **This does not scale, and that is accepted for now.**
 
 - Gmail caps around **500 messages/day** and throttles well before that from a server
-  IP. Fine at one-a-day volume; not fine if the site ever gets popular.
+  IP. Fine at one-a-day volume; not fine if the site ever gets popular. That allowance
+  is now **shared with the daily email** — this feature's 25 is one line of the budget
+  in [PRD 15](15-email-subscriptions.md).
 - `SmtpClient` is documented as not recommended for new development. It is adequate for
   low-volume mail to a single inbox and nothing more.
 - Mail from a cloud IP through a personal Gmail account has mediocre deliverability.
   Sending to yourself is the forgiving case; anything else would need better.
 
-**The upgrade path**, when volume or reliability justifies it: swap `EmailSenderService`
+**The upgrade path**, when volume or reliability justifies it: swap `SmtpMailer`'s send
 for a transactional API (Resend, Postmark, SES). The queue, the contract, and both call
 sites stay as they are — only the send method changes. That containment is the point of
 splitting the notifier from the sender.
 
-> **The better long-term answer is probably a digest, not more mail.** One message a
-> day carrying "2 new suggestions · 3 days of teasers left" would also solve a problem
+> **The better long-term answer is probably a daily summary, not more mail.** One message
+> a day carrying "2 new suggestions · 3 days of teasers left" would also solve a problem
 > this project already has: since the recycling box hides a dry queue from visitors
 > ([PRD 08](08-recycling-rotation.md)), the author has *no signal at all* that content
-> is running low. [PRD 13](13-content-pipeline.md) proposes the warning; a digest would
+> is running low. [PRD 13](13-content-pipeline.md) proposes the warning; a summary would
 > deliver it. Immediate mail was chosen first because volume is currently about one
 > suggestion every two months.
 
@@ -198,18 +207,22 @@ splitting the notifier from the sender.
 - [ ] Behaviour when Gmail rejects or throttles (the retry path has never run against a
       real server that refuses)
 - [ ] `EmailSenderService` itself — the extraction of `DailySendBudget` covers the cap
-      and the rollover, but the retry loop, the timeout, and the SMTP call remain
-      untested. They need an injectable send operation to reach.
+      and the rollover, but the drain loop is untested. The send operation is now
+      injectable (`SmtpMailer.SendAsync` is virtual, and PRD 15's tests fake it), so
+      this is reachable; it just hasn't been written.
+- [ ] `SmtpMailer`'s retry loop and timeout — reaching them needs an SMTP server that
+      refuses or stalls. (The message it builds is tested: `SmtpMailerTests`.)
 
 ## Implementation notes
 
-Three pieces, split so the sending method can be replaced without touching the callers:
+Four pieces, split so the sending method can be replaced without touching the callers:
 
 | File | Role |
 |---|---|
 | `Services/EmailOptions.cs` | Config + `IsConfigured` |
 | `Services/EmailNotifier.cs` | The queue. Injected into components; never sends. |
-| `Services/EmailSenderService.cs` | `BackgroundService` that drains, sends, retries, counts against the cap |
+| `Services/EmailSenderService.cs` | `BackgroundService` that drains the queue and counts against the cap |
+| `Services/SmtpMailer.cs` | The SMTP send — timeout, retry, logging. Shared with [PRD 15](15-email-subscriptions.md). |
 
 Call sites are `Components/Pages/Contact.razor` and `Components/ReportIssue.razor`,
 both immediately **after** their store write.

@@ -23,6 +23,10 @@ public static class AppTime
 
     public static DateTime NowPacific => TimeZoneInfo.ConvertTime(DateTime.UtcNow, Pacific);
 
+    /// <summary>A stored UTC instant as Pacific wall-clock time.</summary>
+    public static DateTime ToPacific(DateTime utc) =>
+        TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), Pacific);
+
     public static DateOnly Today => DateOnly.FromDateTime(NowPacific);
 
     /// <summary>Time remaining until the next challenge (midnight Pacific).</summary>

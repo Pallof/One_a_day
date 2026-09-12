@@ -1,0 +1,71 @@
+@page "/unsubscribe"
+@inject SubscriberStore Subscribers
+
+<PageTitle>One a Day — Unsubscribe</PageTitle>
+
+@* One click: opening the link from an email unsubscribes, with nothing else to press.
+
+   It happens when the page goes live in a browser, not when the page is fetched. Some
+   mail filters, mostly corporate ones, open every link in incoming mail to scan it; if the
+   plain fetch unsubscribed, those readers would be removed the moment the digest landed,
+   without ever seeing it. A scanner downloads the HTML (the prerender, where this does
+   nothing) — it doesn't run the page and hold the live connection open, which is the step
+   that does the work. Not airtight: a scanner driving a full browser would still count.
+   But it stops the common case and costs a real reader nothing.
+
+   Mail clients' own "Unsubscribe" buttons skip this page entirely and use the RFC 8058
+   POST endpoint (SubscriptionEndpoints). *@
+<div class="oad-static">
+    <div class="oad-banner">Unsubscribe</div>
+
+    <div class="oad-box sub-box">
+        @if (_outcome == Outcome.Pending)
+        {
+            <p class="sub-lead">Unsubscribing…</p>
+        }
+        else if (_outcome == Outcome.Unsubscribed)
+        {
+            <p class="sub-mark" aria-hidden="true">👋</p>
+            <p class="sub-lead">Sorry to see you go — you're now unsubscribed.</p>
+            <p class="sub-sub">
+                Your address has been deleted from the list, not just switched off, so you
+                won't get another email from us. Changed your mind? You can sign up again
+                from the bottom of the home page.
+            </p>
+            <a class="sub-home" href="">Back to the Challenge of the day</a>
+        }
+        else
+        {
+            @* Deleting on unsubscribe means a used link and a mangled one look the same
+               from here, so this can't promise the emails have stopped — only point at
+               the fix if they haven't. *@
+            <p class="sub-lead">You're not subscribed.</p>
+            <p class="sub-sub">
+                This link doesn't match a subscription — most likely you've already
+                unsubscribed. If emails are still arriving, use the unsubscribe link in the
+                newest one.
+            </p>
+            <a class="sub-home" href="">Back to the Challenge of the day</a>
+        }
+    </div>
+</div>
+
+@code {
+    private enum Outcome { Pending, Unsubscribed, NotFound }
+
+    [SupplyParameterFromQuery(Name = "token")]
+    public string? Token { get; set; }
+
+    private Outcome _outcome = Outcome.Pending;
+
+    protected override void OnInitialized()
+    {
+        // Not interactive = the prerender, which is all a link scanner ever sees.
+        if (!RendererInfo.IsInteractive)
+        {
+            return;
+        }
+
+        _outcome = Subscribers.Unsubscribe(Token) ? Outcome.Unsubscribed : Outcome.NotFound;
+    }
+}

@@ -22,8 +22,18 @@ builder.Services.AddHttpContextAccessor();
 // Email__AppPassword environment variable in production — never appsettings.json.
 // Unconfigured is a supported state: the notifier no-ops and the site is unaffected.
 builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection(EmailOptions.Section));
+builder.Services.AddSingleton<SmtpMailer>();
 builder.Services.AddSingleton<EmailNotifier>();
 builder.Services.AddHostedService<EmailSenderService>();
+
+// Daily-challenge subscriptions (PRD 15). subscribers.json lives in App_Data/, which is
+// gitignored, so subscriber addresses can never reach the public repository.
+builder.Services.Configure<SiteOptions>(builder.Configuration.GetSection(SiteOptions.Section));
+builder.Services.Configure<SubscriptionOptions>(builder.Configuration.GetSection(SubscriptionOptions.Section));
+builder.Services.AddSingleton<SubscriberStore>();
+builder.Services.AddSingleton<ConfirmationQueue>();
+builder.Services.AddHostedService<ConfirmationSender>();
+builder.Services.AddHostedService<DailyDigestService>();
 
 var app = builder.Build();
 
@@ -48,6 +58,9 @@ app.UseStaticFiles(new StaticFileOptions
     FileProvider = new PhysicalFileProvider(teaserImages.PhysicalDirectory),
     RequestPath = ImageStore.RequestPath,
 });
+
+// One-click unsubscribe for mail clients (RFC 8058) — see SubscriptionEndpoints.
+app.MapOneClickUnsubscribe();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

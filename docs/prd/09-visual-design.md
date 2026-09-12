@@ -87,8 +87,9 @@ The same cap-without-centre pattern was in four places (`.oad-static`, `.ys-page
 `.tf-page`, `.oad-admin`). Width now lives in exactly one place — `MainLayout` — which
 is what stops it recurring in a fifth.
 
-- Reading column: **680px**. Header and footer bands: **1040px**, so the rules under
-  and above them reach the viewport edges while their contents stay aligned.
+- Reading column: **680px**, which the footer's contents share. Header contents:
+  **1040px** — the nav needs the room. Both bands are full-bleed, so the rules under and
+  above them reach the viewport edges while their contents stay aligned.
 - `/admin` opts into the **wide** measure (1040px); the layout applies it, not the page.
 - **No page may scroll horizontally.** Wide content — admin tables especially — scrolls
   inside its own `overflow-x` container.

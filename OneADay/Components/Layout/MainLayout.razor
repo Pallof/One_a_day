@@ -51,7 +51,19 @@
 
 <footer class="oad-footer">
     <div class="oad-measure">
-        <p>One a Day 🧠 — a small daily workout for your mind.</p>
+        @* One line, not two: a second footer row pushed the home page past the 860px
+           no-scrollbar target (PRD 09). Wraps naturally on narrow screens. A div, not a
+           p — the sign-up dialog renders block elements, which a p can't contain. *@
+        <div class="oad-footer-line">
+            <span>One a Day 🧠 — a small daily workout for your mind.</span>
+            @* Home page only: the offer is "this challenge, every morning", which only
+               makes sense sitting under the challenge. Elsewhere it's clutter. *@
+            @if (IsHomePage)
+            {
+                <span class="oad-footer-sep" aria-hidden="true">·</span>
+                <SubscribeDialog />
+            }
+        </div>
     </div>
 </footer>
 
@@ -76,6 +88,9 @@
     /// <summary>Dense pages that need more than a reading column.</summary>
     private bool IsWidePage =>
         Nav.ToBaseRelativePath(Nav.Uri).StartsWith("admin", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Today's challenge — the only page that offers the email sign-up.</summary>
+    private bool IsHomePage => IsCurrent("");
 
     protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
 

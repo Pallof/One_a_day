@@ -3,12 +3,13 @@
 This folder holds the product requirements documents for **One a Day**, a daily
 brain teaser web app.
 
-Two kinds of document live here:
+Two kinds of document live here — the table below says which each one is. The number
+is only the order they were written in, not the kind.
 
-- **Spec of record (`0x-`)** — describes behaviour that is **built and shipped**.
+- **Spec of record** — describes behaviour that is **built and shipped**.
   These are the reference for how the product is supposed to work; if the code and
   the doc disagree, one of them is a bug.
-- **Proposals (`1x-`)** — features **not yet built**. These define the problem,
+- **Proposals** — features **not yet built**. These define the problem,
   the requirements, and the acceptance criteria before implementation starts.
 
 | Doc | Status |
@@ -28,6 +29,7 @@ Two kinds of document live here:
 | [12 — Streaks & sharing](12-streaks-and-sharing.md) | Proposed |
 | [13 — Content pipeline](13-content-pipeline.md) | Proposed |
 | [14 — Email notifications](14-email-notifications.md) | Spec of record |
+| [15 — Email subscriptions](15-email-subscriptions.md) | Spec of record |
 
 ## Conventions
 

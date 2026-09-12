@@ -1,0 +1,153 @@
+@inject SubscriberStore Subscribers
+@inject ConfirmationQueue Confirmations
+@inject IOptions<SiteOptions> Site
+@using Microsoft.Extensions.Options
+
+@* Sign-up for the daily email. Opened from the footer link.
+
+   Two rules this component must keep:
+   1. The visitor sees the SAME confirmation whatever happened — new, already pending,
+      already subscribed, or dropped as a bot. Anything else lets a stranger test whether
+      an address is on the list.
+   2. Nothing is sent to an address until it clicks the confirmation link. *@
+
+<button class="sd-open" @onclick="Open">Get the daily challenge by email</button>
+
+@if (_open)
+{
+    <div class="sd-backdrop" @onclick="Close"></div>
+
+    <div class="sd-dialog" role="dialog" aria-modal="true" aria-labelledby="sd-title"
+         tabindex="-1" @ref="_dialog" @onkeydown="OnKeyDown">
+        <button class="sd-close" @onclick="Close" aria-label="Close">✕</button>
+
+        @if (_done)
+        {
+            <p class="sd-mark" aria-hidden="true">📬</p>
+            <h2 id="sd-title" class="sd-title">Check your inbox</h2>
+            @* The spam-folder line earns its place: mail from a new sender often lands
+               there, and a confirmation nobody finds is a subscriber lost silently — they
+               assume the sign-up failed. See PRD 15. *@
+            <p class="sd-lead">
+                If that address can receive mail, a confirmation link is on its way.
+                Nothing will be sent until you click it. If it hasn't arrived in a
+                minute, check your spam folder.
+            </p>
+            <button class="oad-btn-plain sd-full" @onclick="Close">Done</button>
+        }
+        else
+        {
+            <h2 id="sd-title" class="sd-title">One a Day, in your inbox</h2>
+            <p class="sd-lead">
+                Each morning at 7am Pacific, today's challenge. No spam, and unsubscribe any
+                time from the link in every email.
+            </p>
+
+            <label for="sd-email">Email address</label>
+            <input id="sd-email" type="email" autocomplete="email" maxlength="@EmailAddress.MaxLength"
+                   placeholder="you@example.com"
+                   @bind="_email" @bind:event="oninput" @onkeydown="OnInputKeyDown" />
+
+            @if (_error is not null)
+            {
+                <p class="sd-error" role="alert">@_error</p>
+            }
+
+            @* Decoy field — see Contact.razor. Hidden from sight, tab order and screen
+               readers; only a script fills it. *@
+            <input class="sd-hp" id="sd-website" name="website" type="text"
+                   tabindex="-1" autocomplete="off" aria-hidden="true"
+                   @bind="_honeypot" @bind:event="oninput" />
+
+            <button class="oad-btn-green sd-full" @onclick="Submit"
+                    disabled="@string.IsNullOrWhiteSpace(_email)">
+                Subscribe
+            </button>
+        }
+    </div>
+}
+
+@code {
+    private bool _open;
+    private bool _done;
+    private string _email = string.Empty;
+    private string _honeypot = string.Empty;
+    private string? _error;
+    private DateTime _openedAt;
+    private ElementReference _dialog;
+    private bool _focusOnRender;
+
+    private void Open()
+    {
+        _open = true;
+        _done = false;
+        _email = string.Empty;
+        _honeypot = string.Empty;
+        _error = null;
+        _openedAt = DateTime.UtcNow;   // the compose-time clock starts when the form appears
+        _focusOnRender = true;
+    }
+
+    private void Close() => _open = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusOnRender)
+        {
+            _focusOnRender = false;
+            try { await _dialog.FocusAsync(); }
+            catch (JSDisconnectedException) { }
+        }
+    }
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            Close();
+        }
+    }
+
+    private void OnInputKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_email))
+        {
+            Submit();
+        }
+    }
+
+    private void Submit()
+    {
+        var address = EmailAddress.Normalise(_email);
+        if (address is null)
+        {
+            // The one message that IS allowed to differ: it's about what they typed, not
+            // about whether the address is on the list.
+            _error = "That doesn't look like an email address — check it and try again.";
+            return;
+        }
+        _error = null;
+
+        // Looks scripted? Show the ordinary confirmation and do nothing. Telling a bot it
+        // was caught only teaches whoever wrote it which check to route around.
+        // A short floor, not the default five seconds: an autofilled email field is
+        // legitimately fast. See SubmissionGuard.SingleFieldFloor.
+        if (SubmissionGuard.LooksAutomated(_honeypot, DateTime.UtcNow - _openedAt, SubmissionGuard.SingleFieldFloor))
+        {
+            _done = true;
+            return;
+        }
+
+        var result = Subscribers.Request(address, DateTime.UtcNow);
+
+        if (result.Outcome == SubscribeOutcome.SendConfirmation && result.Token is not null)
+        {
+            var link = Site.Value.Link($"subscribe/confirm?token={result.Token}");
+            var mail = SubscriptionMail.Confirmation(link, Site.Value.Link(""));
+            Confirmations.Enqueue(new OutgoingMail(address, mail.Subject, mail.Body, Html: mail.Html));
+        }
+
+        // Same screen for every outcome — see the rule at the top of this file.
+        _done = true;
+    }
+}
