@@ -137,6 +137,11 @@ a {
     width: 100%;
 }
 
+/* The last card on a static page already sits on .oad-main's bottom padding. Keeping
+   its own margin too doubled the gap above the footer, and cost the Contact page its
+   no-scrollbar fit (PRD 09). */
+.oad-static > :last-child { margin-bottom: 0; }
+
 /* --------------------------------------------------------------- masthead --- */
 
 /* Dateline above the title, the way a paper prints the day above the headline.
@@ -292,3 +297,46 @@ label {
 .validation-message { color: var(--red); }
 .invalid { outline: 1px solid var(--red); }
 .valid.modified:not([type=checkbox]) { outline: 1px solid var(--green); }
+
+/* ---------------------------------------------- subscription landing pages --- */
+
+/* Shared by /subscribe/confirm and /unsubscribe — the two pages a subscriber reaches
+   from a link in an email, usually on a phone, usually for a few seconds. */
+
+.sub-box {
+    text-align: center;
+}
+
+.sub-mark {
+    font-size: 2.2rem;
+    line-height: 1;
+    margin-bottom: 0.4rem;
+}
+
+.sub-lead {
+    font-size: 1.1rem;
+    margin-bottom: 0.6rem;
+}
+
+.sub-sub {
+    color: var(--ink-soft);
+    margin-bottom: 1.3rem;
+    line-height: 1.55;
+}
+
+.sub-box .oad-btn-green,
+.sub-box .oad-btn-danger {
+    margin-top: 0.6rem;
+}
+
+.sub-home {
+    display: inline-block;
+    padding: 0.8rem 1.3rem;
+    border-radius: 10px;
+    font-weight: 700;
+    color: var(--blue-deep);
+    background: var(--blue-tint);
+    text-decoration: none;
+}
+
+.sub-home:hover { background: var(--blue-tint-hover); }
