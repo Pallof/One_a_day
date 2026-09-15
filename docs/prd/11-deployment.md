@@ -1,6 +1,6 @@
 # PRD 11 — Deployment
 
-**Status:** Proposed · **Priority: P1 — depends on [PRD 10](10-admin-authentication.md)**
+**Status:** Proposed · **Priority: P1 — the remaining launch blocker**
 
 ## Problem
 
@@ -24,8 +24,13 @@ environment: state lives in **local JSON files**, and Blazor Server keeps a
 
 ## Requirements
 
-1. **Auth first.** Must not deploy publicly until [PRD 10](10-admin-authentication.md)
-   ships.
+1. **Run in Production — never Development.** The live site has no admin page only
+   because it doesn't run in Development ([PRD 10](10-admin-authentication.md)). The app
+   now enforces this itself: it refuses to start in Development unless it's a Debug build
+   on a machine marked as the author's computer. Deploy a **published** build — Release,
+   so the fence holds even if the host sets `ASPNETCORE_ENVIRONMENT=Development` — and
+   **never mark the server** as the author's machine. Most hosts default to Production;
+   confirm it anyway.
 2. **Persistent storage.** `App_Data/` must be on a volume that survives restarts and
    redeploys. Ephemeral container filesystems would silently discard every teaser and
    every stat — this is the single biggest deployment risk.
@@ -68,20 +73,30 @@ environment: state lives in **local JSON files**, and Blazor Server keeps a
     and **`Site__BaseUrl` set to the public HTTPS address** ([PRD 15](15-email-subscriptions.md)).
     The second is easy to miss and fails silently: every link in every email — confirm,
     unsubscribe, solve — is built from it, and the default points at `localhost`.
+13. **A publish command for teasers.** One command copies `teasers.json` and any new
+    images into the server's `App_Data/` and restarts the app — **never the whole
+    folder**, which would overwrite live stats, rotation history and subscribers
+    ([PRD 10](10-admin-authentication.md)). The bank must be in place before the first
+    start: the live site refuses to start without one. `dotnet publish` never includes
+    `App_Data/` — the project file excludes it, because by default it would ship every
+    future answer and real subscriber address with each deploy.
 
 ## Candidate hosts
 
 | Host | Fit |
 |---|---|
 | **Fly.io** | Good — persistent volumes, cheap, WebSockets fine |
-| **Azure App Service** | Good — first-class .NET, Easy Auth available for PRD 10 |
+| **Azure App Service** | Good — first-class .NET |
 | **A small VPS** | Most control, most maintenance |
 | **Raspberry Pi at home** | Cheapest; needs tunnelling and has home-uptime caveats |
 
 ## Acceptance criteria
 
 - [ ] Public HTTPS URL serves the current challenge
-- [ ] `/admin` reachable only with the passphrase
+- [ ] `/admin` shows the not-found page on the live site — typed into the address bar and
+      clicked through from inside the app
+- [ ] Publishing a teaser reaches the live site without touching its stats, rotation or
+      subscribers
 - [ ] Adding a teaser, then redeploying, retains it (persistence proven, not assumed)
 - [ ] **`rotation.json` survives a redeploy** — check a past day still resolves to the
       same teaser afterwards, not merely that the file exists

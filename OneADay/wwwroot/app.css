@@ -35,8 +35,10 @@
     --red: #B03A2E;
     --red-tint: #F9E9E7;
 
-    /* form control borders — distinct from --line, which is for hairline dividers */
-    --field: #C9CFDA;
+    /* Form control borders — distinct from --line, which is for hairline dividers. Dark
+       enough for the 3:1 contrast WCAG asks of a field's outline against white: the old
+       #C9CFDA managed about 1.5:1, and fields were hard to find. */
+    --field: #7D889B;
 
     --radius: 14px;
     --shadow: 0 1px 2px rgba(34, 51, 77, .06), 0 4px 14px rgba(34, 51, 77, .05);

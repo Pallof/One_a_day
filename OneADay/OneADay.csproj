@@ -8,4 +8,11 @@
     <UserSecretsId>cbad3f57-3cbf-41b4-ae04-cff02951677b</UserSecretsId>
   </PropertyGroup>
 
+  <!-- Live data never ships with the app. App_Data holds every future answer and real
+       subscriber addresses, and publishing it would overwrite the live site's copies on
+       every deploy. Teasers reach the server through their own publish step (PRD 10). -->
+  <ItemGroup>
+    <Content Update="App_Data\**" CopyToPublishDirectory="Never" CopyToOutputDirectory="Never" />
+  </ItemGroup>
+
 </Project>

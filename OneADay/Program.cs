@@ -4,6 +4,14 @@ using OneADay.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Never start in Development mode anywhere but the author's computer: that mode switches the
+// admin page on. Checked before anything is built, so a refused start opens no port — see
+// DevelopmentModeGuard and PRD 10.
+if (DevelopmentModeGuard.ReasonToRefuse(builder.Environment, builder.Configuration, DevelopmentModeGuard.IsDebugBuild) is { } refusal)
+{
+    throw new InvalidOperationException(refusal);
+}
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -37,6 +45,11 @@ builder.Services.AddHostedService<DailyDigestService>();
 
 var app = builder.Build();
 
+// Load the question bank now, not on the first visitor's request. A missing or broken
+// teasers.json should stop a deploy at startup, loudly, rather than show an error page to
+// whoever happens to arrive first (PRD 10).
+app.Services.GetRequiredService<TeaserStore>();
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
@@ -45,6 +58,10 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+
+// The admin page exists only on the author's machine. Everywhere else /admin is a 404,
+// shown as the ordinary not-found page — see AdminAccess and PRD 10.
+app.UseAdminOnlyInDevelopment();
 app.UseHttpsRedirection();
 
 app.UseAntiforgery();

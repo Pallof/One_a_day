@@ -104,7 +104,9 @@ close — the guard exists for a fresh install.
 ### Admin visibility
 
 `/admin` shows the rotation as a panel, so the author can see the mechanism working
-without reading `rotation.json`:
+without reading `rotation.json`. The page exists only on the author's machine, so the
+panel reflects that machine's copy unless the live file is copied down first
+([PRD 10](10-admin-authentication.md)):
 
 - how many slips remain, out of what bank size, and the refill threshold
 - how many **new** teasers are scheduled ahead — the real signal for whether the queue
