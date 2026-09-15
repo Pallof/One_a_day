@@ -24,7 +24,7 @@ is only the order they were written in, not the kind.
 | [07 — Twenty Four game](07-twenty-four.md) | Spec of record |
 | [08 — Recycling rotation](08-recycling-rotation.md) | Spec of record |
 | [09 — Visual design system](09-visual-design.md) | Spec of record |
-| [10 — Admin authentication](10-admin-authentication.md) | **Proposed — blocker for launch** |
+| [10 — Admin access](10-admin-authentication.md) | Spec of record |
 | [11 — Deployment](11-deployment.md) | Proposed |
 | [12 — Streaks & sharing](12-streaks-and-sharing.md) | Proposed |
 | [13 — Content pipeline](13-content-pipeline.md) | Proposed |

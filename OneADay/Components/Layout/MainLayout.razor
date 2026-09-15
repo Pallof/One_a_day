@@ -1,5 +1,6 @@
 @inherits LayoutComponentBase
 @inject NavigationManager Nav
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
 @implements IDisposable
 
 <a class="oad-skip" href="#oad-main">Skip to content</a>
@@ -35,7 +36,11 @@
                     {
                         <li><a href="@item.Href" aria-current="@(IsCurrent(item.Href) ? "page" : null)">@item.Label</a></li>
                     }
-                    <li class="oad-menu-admin"><a href="admin">Add a teaser (admin)</a></li>
+                    @* Only where the page exists: the author's machine (PRD 10). *@
+                    @if (AdminAccess.IsAvailable(Env))
+                    {
+                        <li class="oad-menu-admin"><a href="admin">Add a teaser (admin)</a></li>
+                    }
                 </ul>
             </nav>
         </div>
@@ -80,7 +85,7 @@
     [
         new("", "Today"),
         new("yesterday", "Yesterday's solution"),
-        new("twentyfour", "Twenty Four"),
+        new("twentyfour", "24"),
         new("about", "About"),
         new("contact", "Suggest a teaser"),
     ];

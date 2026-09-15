@@ -1,6 +1,6 @@
 # PRD 05 — Authoring & admin
 
-**Status:** Spec of record · **Route:** `/admin`
+**Status:** Spec of record · **Route:** `/admin`, on the author's machine only
 
 ## Problem
 
@@ -9,9 +9,10 @@ hand. If authoring has any friction, the queue runs dry and the site breaks its 
 promise. The realistic failure mode is not a bug — it's the author not getting around
 to it.
 
-> ⚠️ **This page currently has no authentication.** That is acceptable while the app
-> runs on localhost and is a **launch blocker** — see
-> [PRD 10](10-admin-authentication.md).
+> **This page exists only on the author's machine.** The live site has no `/admin`;
+> teasers written here are published by copying `teasers.json` — see
+> [PRD 10](10-admin-authentication.md). The review queues and the rotation reset below
+> act on this machine's copy of that data, not the live site's.
 
 ## Requirements
 

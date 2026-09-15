@@ -1,4 +1,8 @@
 @page "/admin"
+@* This page exists only on the author's machine. On the live site the server answers
+   /admin with 404 and the router refuses to build it, so none of what follows ever runs
+   there — see AdminAccess and PRD 10. Changes to live data made here (the queues, the
+   rotation reset) therefore only touch the local copy. *@
 @inject TeaserStore Store
 @inject StatsStore Stats
 @inject SuggestionStore Suggestions
@@ -41,13 +45,13 @@
 
         <div class="oad-field">
             <label for="answer">Answer *</label>
-            <input id="answer" placeholder="Accepted answer — separate alternatives with ; (e.g. 9; nine)"
+            <input id="answer" type="text" placeholder="Accepted answer — separate alternatives with ; (e.g. 9; nine)"
                    @bind="_form.Answer" />
         </div>
 
         <div class="oad-field">
             <label for="tags">Tags (optional)</label>
-            <input id="tags" placeholder="Comma-separated labels, e.g. logic, wordplay, math" @bind="_tagsText" @bind:event="oninput" />
+            <input id="tags" type="text" placeholder="Comma-separated labels, e.g. logic, wordplay, math" @bind="_tagsText" @bind:event="oninput" />
             @if (ParsedTags.Count > 0)
             {
                 <div class="oad-tag-preview">
@@ -77,7 +81,7 @@
 
         <div class="oad-field">
             <label for="hint">Hint (optional)</label>
-            <input id="hint" placeholder="Concealed on the home page until the solver clicks to reveal it" @bind="_form.Hint" />
+            <input id="hint" type="text" placeholder="Concealed on the home page until the solver clicks to reveal it" @bind="_form.Hint" />
         </div>
 
         <div class="oad-field">
@@ -103,215 +107,247 @@
         }
     </div>
 
-    <div class="oad-banner">Scheduled &amp; past teasers</div>
+    @* Everything below the form starts collapsed, to cut the clutter; the arrow opens a
+       section. Native <details>: the browser keeps each open/closed state, and Blazor
+       leaves it alone on re-render because the markup never sets `open` either way. The
+       counts sit in the summary so a collapsed section still says when something needs
+       attention. *@
+    <details class="oad-admin-section">
+        <summary class="oad-banner">
+            <span>Scheduled &amp; past teasers</span>
+            <span class="oad-chevron" aria-hidden="true"></span>
+        </summary>
 
-    <div class="oad-box">
-        @if (_all.Count == 0)
-        {
-            <p>No teasers yet — add your first one above.</p>
-        }
-        else
-        {
-            @* Wide table scrolls inside its own box — otherwise it drags the whole
-               page sideways and breaks the centred column. *@
-            <div class="oad-admin-table-scroll">
-            <table class="oad-admin-table">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Difficulty</th>
-                        <th>Question</th>
-                        <th>Tags</th>
-                        <th>Answer</th>
-                        <th>Stats</th>
-                        <th>Shown</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var teaser in _all)
-                    {
-                        <tr class="@(teaser.Date == _today ? "oad-row-today" : teaser.Date > _today ? "oad-row-future" : "")">
-                            <td class="oad-cell-date">@teaser.Date.ToString("ddd d MMM yyyy")</td>
-                            <td><DifficultyBadge Level="teaser.Difficulty" /></td>
-                            <td>@Truncate(teaser.Question, 80)</td>
-                            <td class="oad-cell-tags">
-                                @if (teaser.Tags.Count > 0)
-                                {
-                                    @foreach (var tag in teaser.Tags)
-                                    {
-                                        <span class="oad-tag-chip">@tag</span>
-                                    }
-                                }
-                                else
-                                {
-                                    <span class="oad-cell-muted">—</span>
-                                }
-                            </td>
-                            <td>@Truncate(teaser.Answer, 30)</td>
-                            <td class="oad-cell-stats">@StatsSummary(teaser.Id)</td>
-                            <td class="oad-cell-stats">@ShowSummary(teaser.Id)</td>
-                            <td class="oad-cell-actions">
-                                <button class="oad-btn-plain" @onclick="() => Edit(teaser)">Edit</button>
-                                <button class="oad-btn-danger" @onclick="() => Delete(teaser.Id)">Delete</button>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-            </div>
-        }
-    </div>
-
-    <div class="oad-banner">Visitor suggestions</div>
-
-    <div class="oad-box">
-        @if (_blockedCount > 0)
-        {
-            <p class="oad-suggestion-blocked">
-                <strong>@_blockedCount</strong> @Wording.Plural(_blockedCount, "submission")
-                dropped as automated (honeypot or faster than
-                @SubmissionGuard.MinComposeSeconds seconds). These are rejected silently
-                and never appear below.
-            </p>
-        }
-
-        @if (_suggestions.Count == 0)
-        {
-            <p>No suggestions yet — they'll appear here when visitors submit one on the Contact us page.</p>
-        }
-        else
-        {
-            @foreach (var suggestion in _suggestions)
+        <div class="oad-box">
+            @if (_all.Count == 0)
             {
-                <div class="oad-suggestion" @key="suggestion.Id">
-                    <div class="oad-suggestion-meta">
-                        <span class="oad-suggestion-difficulty">@suggestion.Difficulty</span>
-                        <span>@suggestion.SubmittedAt.ToString("d MMM yyyy, h:mm tt") PT</span>
-                    </div>
-                    <p class="oad-suggestion-q">@suggestion.Question</p>
-                    <p class="oad-suggestion-s"><strong>Solution + hint:</strong> @suggestion.SolutionAndHint</p>
-                    <div class="oad-suggestion-actions">
-                        <button class="oad-btn-plain" @onclick="() => UseSuggestion(suggestion)">Use in form above</button>
-                        <button class="oad-btn-danger" @onclick="() => DeleteSuggestion(suggestion.Id)">Delete</button>
-                    </div>
-                </div>
+                <p>No teasers yet — add your first one above.</p>
             }
-        }
-    </div>
-
-    <div class="oad-banner">Recycling box</div>
-
-    <div class="oad-box">
-        <p class="oad-rotation-lead">
-            New teasers always run on their own date. Once the queue is empty, past
-            teasers are drawn from a box without replacement, so none repeats until the
-            box refills. Teasers shown less often are weighted to come up sooner.
-        </p>
-        <p class="oad-rotation-state">
-            <strong>@_boxRemaining</strong> of <strong>@_bankSize</strong> still in the box
-            &middot; refills at @TeaserRotation.RefillThreshold(_bankSize) left
-            &middot; <strong>@_queueAhead</strong> new @Wording.Plural(_queueAhead, "teaser") scheduled ahead
-        </p>
-
-        @if (_recentRuns.Count > 0)
-        {
-            <div class="oad-admin-table-scroll">
-            <table class="oad-admin-table oad-rotation-table">
-                <thead><tr><th>Day</th><th>Ran</th><th>Source</th></tr></thead>
-                <tbody>
-                    @foreach (var run in _recentRuns)
-                    {
+            else
+            {
+                @* Wide table scrolls inside its own box — otherwise it drags the whole
+                   page sideways and breaks the centred column. *@
+                <div class="oad-admin-table-scroll">
+                <table class="oad-admin-table">
+                    <thead>
                         <tr>
-                            <td class="oad-cell-date">@run.Date.ToString("ddd d MMM")</td>
-                            <td>@Truncate(Store.GetById(run.TeaserId)?.Question ?? "(deleted)", 60)</td>
-                            <td>@(run.Recycled ? "recycled" : "new")</td>
+                            <th>Date</th>
+                            <th>Difficulty</th>
+                            <th>Question</th>
+                            <th>Tags</th>
+                            <th>Answer</th>
+                            <th>Stats</th>
+                            <th>Shown</th>
+                            <th></th>
                         </tr>
-                    }
-                </tbody>
-            </table>
-            </div>
-        }
-
-        <div class="oad-rotation-actions">
-            <button class="oad-btn-plain" @onclick="ResetBox">Reset the box now</button>
-        </div>
-    </div>
-
-    <div class="oad-banner">
-        Reported issues@(Issues.OpenCount > 0 ? $" ({Issues.OpenCount} open)" : "")
-    </div>
-
-    <div class="oad-box">
-        @if (_issuesBlockedCount > 0)
-        {
-            <p class="oad-suggestion-blocked">
-                <strong>@_issuesBlockedCount</strong> @Wording.Plural(_issuesBlockedCount, "report")
-                dropped as automated (honeypot or faster than
-                @SubmissionGuard.MinComposeSeconds seconds). Reports are never rate
-                limited — this only screens out scripts.
-            </p>
-        }
-
-        @if (_issues.Count == 0)
-        {
-            <p>No issues reported — they'll appear here when a visitor uses the "Report an issue" button.</p>
-        }
-        else
-        {
-            @foreach (var issue in _issues)
-            {
-                <div class="oad-issue @(IssueStatusInfo.IsOpen(issue.Status) ? "" : "oad-issue-closed")" @key="issue.Id">
-                    <div class="oad-issue-meta">
-                        <span class="oad-issue-status oad-status-@IssueStatusInfo.CssName(issue.Status)">
-                            @IssueStatusInfo.Label(issue.Status)
-                        </span>
-                        <span class="oad-issue-category">@issue.Category</span>
-                        <span>@issue.SubmittedAt.ToString("d MMM yyyy, h:mm tt") PT</span>
-                        @if (issue.StatusUpdatedAt is not null)
+                    </thead>
+                    <tbody>
+                        @foreach (var teaser in _all)
                         {
-                            <span class="oad-issue-updated">updated @issue.StatusUpdatedAt.Value.ToString("d MMM")</span>
+                            <tr class="@(teaser.Date == _today ? "oad-row-today" : teaser.Date > _today ? "oad-row-future" : "")">
+                                <td class="oad-cell-date">@teaser.Date.ToString("ddd d MMM yyyy")</td>
+                                <td><DifficultyBadge Level="teaser.Difficulty" /></td>
+                                <td>@Truncate(teaser.Question, 80)</td>
+                                <td class="oad-cell-tags">
+                                    @if (teaser.Tags.Count > 0)
+                                    {
+                                        @foreach (var tag in teaser.Tags)
+                                        {
+                                            <span class="oad-tag-chip">@tag</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="oad-cell-muted">—</span>
+                                    }
+                                </td>
+                                <td>@Truncate(teaser.Answer, 30)</td>
+                                <td class="oad-cell-stats">@StatsSummary(teaser.Id)</td>
+                                <td class="oad-cell-stats">@ShowSummary(teaser.Id)</td>
+                                <td class="oad-cell-actions">
+                                    <button class="oad-btn-plain" @onclick="() => Edit(teaser)">Edit</button>
+                                    <button class="oad-btn-danger" @onclick="() => Delete(teaser.Id)">Delete</button>
+                                </td>
+                            </tr>
                         }
-                    </div>
-
-                    <p class="oad-issue-details">@issue.Details</p>
-
-                    <p class="oad-issue-context">
-                        @if (issue.TeaserQuestion is not null)
-                        {
-                            <span>Question: <em>@Truncate(issue.TeaserQuestion, 90)</em></span>
-                            @if (issue.TeaserId is not null && _all.Any(t => t.Id == issue.TeaserId))
-                            {
-                                <button class="oad-btn-plain oad-issue-jump"
-                                        @onclick="() => EditById(issue.TeaserId.Value)">Edit that teaser</button>
-                            }
-                        }
-                        else
-                        {
-                            <span>Filed from @(issue.PageUrl ?? "unknown page")</span>
-                        }
-                    </p>
-
-                    <div class="oad-issue-actions">
-                        <label class="oad-issue-statuslabel" for="status-@issue.Id">Status:</label>
-                        @* Single source of truth for the selection: `selected` on the
-                           options. Adding `value` on the select as well can make the
-                           browser and Blazor disagree and fire a spurious change. *@
-                        <select id="status-@issue.Id" class="oad-issue-select"
-                                @onchange="e => SetIssueStatus(issue.Id, e.Value?.ToString())">
-                            @foreach (var status in IssueStatusInfo.All)
-                            {
-                                <option value="@status" selected="@(status == issue.Status)">
-                                    @IssueStatusInfo.Label(status)
-                                </option>
-                            }
-                        </select>
-                        <button class="oad-btn-danger" @onclick="() => DeleteIssue(issue.Id)">Delete</button>
-                    </div>
+                    </tbody>
+                </table>
                 </div>
             }
-        }
-    </div>
+        </div>
+    </details>
+
+    <details class="oad-admin-section">
+        <summary class="oad-banner">
+            <span>Visitor suggestions</span>
+            @if (_suggestions.Count > 0)
+            {
+                <span class="oad-section-count">@_suggestions.Count</span>
+            }
+            <span class="oad-chevron" aria-hidden="true"></span>
+        </summary>
+
+        <div class="oad-box">
+            @if (_blockedCount > 0)
+            {
+                <p class="oad-suggestion-blocked">
+                    <strong>@_blockedCount</strong> @Wording.Plural(_blockedCount, "submission")
+                    dropped as automated (honeypot or faster than
+                    @SubmissionGuard.MinComposeSeconds seconds). These are rejected silently
+                    and never appear below.
+                </p>
+            }
+
+            @if (_suggestions.Count == 0)
+            {
+                <p>No suggestions yet — they'll appear here when visitors submit one on the Contact us page.</p>
+            }
+            else
+            {
+                @foreach (var suggestion in _suggestions)
+                {
+                    <div class="oad-suggestion" @key="suggestion.Id">
+                        <div class="oad-suggestion-meta">
+                            <span class="oad-suggestion-difficulty">@suggestion.Difficulty</span>
+                            <span>@suggestion.SubmittedAt.ToString("d MMM yyyy, h:mm tt") PT</span>
+                        </div>
+                        <p class="oad-suggestion-q">@suggestion.Question</p>
+                        <p class="oad-suggestion-s"><strong>Solution + hint:</strong> @suggestion.SolutionAndHint</p>
+                        <div class="oad-suggestion-actions">
+                            <button class="oad-btn-plain" @onclick="() => UseSuggestion(suggestion)">Use in form above</button>
+                            <button class="oad-btn-danger" @onclick="() => DeleteSuggestion(suggestion.Id)">Delete</button>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </details>
+
+    <details class="oad-admin-section">
+        <summary class="oad-banner">
+            <span>Recycling box</span>
+            <span class="oad-section-count">@_queueAhead scheduled ahead</span>
+            <span class="oad-chevron" aria-hidden="true"></span>
+        </summary>
+
+        <div class="oad-box">
+            <p class="oad-rotation-lead">
+                New teasers always run on their own date. Once the queue is empty, past
+                teasers are drawn from a box without replacement, so none repeats until the
+                box refills. Teasers shown less often are weighted to come up sooner.
+            </p>
+            <p class="oad-rotation-state">
+                <strong>@_boxRemaining</strong> of <strong>@_bankSize</strong> still in the box
+                &middot; refills at @TeaserRotation.RefillThreshold(_bankSize) left
+                &middot; <strong>@_queueAhead</strong> new @Wording.Plural(_queueAhead, "teaser") scheduled ahead
+            </p>
+
+            @if (_recentRuns.Count > 0)
+            {
+                <div class="oad-admin-table-scroll">
+                <table class="oad-admin-table oad-rotation-table">
+                    <thead><tr><th>Day</th><th>Ran</th><th>Source</th></tr></thead>
+                    <tbody>
+                        @foreach (var run in _recentRuns)
+                        {
+                            <tr>
+                                <td class="oad-cell-date">@run.Date.ToString("ddd d MMM")</td>
+                                <td>@Truncate(Store.GetById(run.TeaserId)?.Question ?? "(deleted)", 60)</td>
+                                <td>@(run.Recycled ? "recycled" : "new")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                </div>
+            }
+
+            <div class="oad-rotation-actions">
+                <button class="oad-btn-plain" @onclick="ResetBox">Reset the box now</button>
+            </div>
+        </div>
+    </details>
+
+    <details class="oad-admin-section">
+        <summary class="oad-banner">
+            <span>Reported issues</span>
+            @if (Issues.OpenCount > 0)
+            {
+                <span class="oad-section-count">@Issues.OpenCount open</span>
+            }
+            <span class="oad-chevron" aria-hidden="true"></span>
+        </summary>
+
+        <div class="oad-box">
+            @if (_issuesBlockedCount > 0)
+            {
+                <p class="oad-suggestion-blocked">
+                    <strong>@_issuesBlockedCount</strong> @Wording.Plural(_issuesBlockedCount, "report")
+                    dropped as automated (honeypot or faster than
+                    @SubmissionGuard.MinComposeSeconds seconds). Reports are never rate
+                    limited — this only screens out scripts.
+                </p>
+            }
+
+            @if (_issues.Count == 0)
+            {
+                <p>No issues reported — they'll appear here when a visitor uses the "Report an issue" button.</p>
+            }
+            else
+            {
+                @foreach (var issue in _issues)
+                {
+                    <div class="oad-issue @(IssueStatusInfo.IsOpen(issue.Status) ? "" : "oad-issue-closed")" @key="issue.Id">
+                        <div class="oad-issue-meta">
+                            <span class="oad-issue-status oad-status-@IssueStatusInfo.CssName(issue.Status)">
+                                @IssueStatusInfo.Label(issue.Status)
+                            </span>
+                            <span class="oad-issue-category">@issue.Category</span>
+                            <span>@issue.SubmittedAt.ToString("d MMM yyyy, h:mm tt") PT</span>
+                            @if (issue.StatusUpdatedAt is not null)
+                            {
+                                <span class="oad-issue-updated">updated @issue.StatusUpdatedAt.Value.ToString("d MMM")</span>
+                            }
+                        </div>
+
+                        <p class="oad-issue-details">@issue.Details</p>
+
+                        <p class="oad-issue-context">
+                            @if (issue.TeaserQuestion is not null)
+                            {
+                                <span>Question: <em>@Truncate(issue.TeaserQuestion, 90)</em></span>
+                                @if (issue.TeaserId is not null && _all.Any(t => t.Id == issue.TeaserId))
+                                {
+                                    <button class="oad-btn-plain oad-issue-jump"
+                                            @onclick="() => EditById(issue.TeaserId.Value)">Edit that teaser</button>
+                                }
+                            }
+                            else
+                            {
+                                <span>Filed from @(issue.PageUrl ?? "unknown page")</span>
+                            }
+                        </p>
+
+                        <div class="oad-issue-actions">
+                            <label class="oad-issue-statuslabel" for="status-@issue.Id">Status:</label>
+                            @* Single source of truth for the selection: `selected` on the
+                               options. Adding `value` on the select as well can make the
+                               browser and Blazor disagree and fire a spurious change. *@
+                            <select id="status-@issue.Id" class="oad-issue-select"
+                                    @onchange="e => SetIssueStatus(issue.Id, e.Value?.ToString())">
+                                @foreach (var status in IssueStatusInfo.All)
+                                {
+                                    <option value="@status" selected="@(status == issue.Status)">
+                                        @IssueStatusInfo.Label(status)
+                                    </option>
+                                }
+                            </select>
+                            <button class="oad-btn-danger" @onclick="() => DeleteIssue(issue.Id)">Delete</button>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </details>
 </div>
 
 @code {

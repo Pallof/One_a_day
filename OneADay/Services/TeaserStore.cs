@@ -13,6 +13,13 @@ public class TeaserStore
     private readonly object _lock = new();
     private List<BrainTeaser> _teasers;
 
+    /// <summary>
+    /// Only the author's machine may start a sample bank. On the live site a missing file
+    /// means a publish went wrong, and quietly serving three sample riddles — saving them
+    /// where the real bank belongs — would hide that until a visitor noticed. See PRD 10.
+    /// </summary>
+    private readonly bool _mayCreateSamples;
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
@@ -26,6 +33,7 @@ public class TeaserStore
         var dataDir = Path.Combine(env.ContentRootPath, "App_Data");
         Directory.CreateDirectory(dataDir);
         _filePath = Path.Combine(dataDir, "teasers.json");
+        _mayCreateSamples = env.IsDevelopment();
         _teasers = Load();
     }
 
@@ -140,13 +148,31 @@ public class TeaserStore
     {
         if (!File.Exists(_filePath))
         {
+            if (!_mayCreateSamples)
+            {
+                throw new InvalidOperationException(
+                    $"No question bank at {_filePath}. The live site never creates questions — " +
+                    "publish teasers.json from the author's machine, then start the app (PRD 10).");
+            }
+
             var seeded = Seed();
             _teasers = seeded;
             Persist();
             return seeded;
         }
+
         var json = File.ReadAllText(_filePath);
-        return JsonSerializer.Deserialize<List<BrainTeaser>>(json, JsonOptions) ?? [];
+        try
+        {
+            return JsonSerializer.Deserialize<List<BrainTeaser>>(json, JsonOptions) ?? [];
+        }
+        catch (JsonException ex)
+        {
+            // Refuse rather than repair. Nothing on this path writes the file, so the bank
+            // survives exactly as it was, ready to be fixed and published again.
+            throw new InvalidOperationException(
+                $"The question bank at {_filePath} can't be read: {ex.Message}", ex);
+        }
     }
 
     private void Persist()

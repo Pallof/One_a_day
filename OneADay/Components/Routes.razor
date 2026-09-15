@@ -1,6 +1,23 @@
-﻿<Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
+@using Microsoft.AspNetCore.Hosting
+@inject IWebHostEnvironment Env
+
+<Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
     <Found Context="routeData">
-        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
-        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+        @* The admin page exists only on the author's machine. A click inside an open page
+           never asks the server for /admin, so the server's gate can't see it; this check
+           is what stops the router building the page anyway. See AdminAccess. *@
+        @if (AdminAccess.Blocks(routeData.PageType, Env))
+        {
+            <LayoutView Layout="typeof(Layout.MainLayout)">
+                @* DynamicComponent, not <Pages.NotFound />: Razor can't read a dotted tag
+                   name as a component, and prints it as an empty HTML element instead. *@
+                <DynamicComponent Type="typeof(Pages.NotFound)" />
+            </LayoutView>
+        }
+        else
+        {
+            <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
+            <FocusOnNavigate RouteData="routeData" Selector="h1" />
+        }
     </Found>
 </Router>

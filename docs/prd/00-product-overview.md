@@ -76,6 +76,8 @@ per-user profiles and scores, and any leaderboard.
   `subscribers.json`, plus `teaser-images/`. The folder is gitignored — it holds
   subscriber addresses, so it must never reach the public repository.
 - **One clock.** `AppTime` pins every day boundary to `America/Los_Angeles`
+- **Admin lives on the author's machine.** The live site has no `/admin`; teasers are
+  written locally and published by copying `teasers.json` ([PRD 10](10-admin-authentication.md))
 
 Storage is intentionally the simplest thing that works. All reads and writes funnel
 through the `*Store` services, so swapping JSON for SQLite later is a contained
@@ -92,6 +94,6 @@ change.
 
 | Phase | Work |
 |---|---|
-| **Now — launch blockers** | [Admin authentication](10-admin-authentication.md), [deployment](11-deployment.md) |
+| **Now — launch blockers** | [Deployment](11-deployment.md) |
 | **Next — retention** | [Streaks & sharing](12-streaks-and-sharing.md) |
 | **Then — author quality of life** | [Content pipeline](13-content-pipeline.md) |

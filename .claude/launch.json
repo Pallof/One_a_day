@@ -6,6 +6,18 @@
       "runtimeExecutable": "/Users/danielsing/.dotnet/dotnet",
       "runtimeArgs": ["run", "--project", "OneADay", "--urls", "http://localhost:5178"],
       "port": 5178
+    },
+    {
+      "name": "oneaday-published",
+      "runtimeExecutable": "/Users/danielsing/.dotnet/dotnet",
+      "runtimeArgs": ["OneADay/bin/publish/OneADay.dll", "--environment", "Production", "--contentRoot", "/Users/danielsing/Claude-Personal/OneaDay-Claude/OneADay/bin/publish", "--urls", "http://localhost:5179"],
+      "port": 5179
+    },
+    {
+      "name": "guard-check-published-in-development",
+      "runtimeExecutable": "/Users/danielsing/.dotnet/dotnet",
+      "runtimeArgs": ["OneADay/bin/publish/OneADay.dll", "--environment", "Development", "--contentRoot", "/Users/danielsing/Claude-Personal/OneaDay-Claude/OneADay/bin/publish", "--urls", "http://localhost:5180"],
+      "port": 5180
     }
   ]
 }
