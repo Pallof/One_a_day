@@ -125,7 +125,7 @@ Verified by measurement rather than by eye: equal left/right gutters at 375, 480
 `Components/TwentyFourNudge.razor` — a panel that slides in from the right edge of the
 daily challenge, inviting the visitor to the Twenty Four game.
 
-It exists because the nav link says **"Twenty Four"** and nothing else. A visitor has no
+It exists because the nav link says **"24"** and nothing else. A visitor has no
 way to know that is a game, let alone one they can play indefinitely — and the daily
 challenge is over in a minute, so this is the only route to more.
 
