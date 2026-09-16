@@ -42,7 +42,8 @@ There are two ways to reach a page, so there are two checks:
 
 1. **Asking the server for `/admin`** — typing it, a bookmark, a script. A gate early in
    the request pipeline answers anything under `/admin` with 404 before any page code runs,
-   and visitors see the site's ordinary not-found page.
+   and the not-found page that follows answers an admin knock with a cat and "Nice try,
+   nothing to see here" — a mistyped address still gets a plain apology.
 2. **Clicking through inside a page that's already open.** Blazor handles that navigation
    inside the live connection, so no request for `/admin` ever reaches the server and the
    gate can't see it. The router checks as well, and renders the not-found page instead of
@@ -52,7 +53,9 @@ Either check alone leaves the other door open. And since the page is never built
 live site, none of its buttons exist there: Blazor only accepts events for components it
 actually rendered into a visitor's session.
 
-The menu's admin link appears only in Development.
+**The menu never links to `/admin`**, in any mode. It is the visitor's map of the site, and a
+link that appears only in some conditions is one more thing to get wrong; the author opens the
+page from a bookmark, on the one machine where it exists.
 
 ## Development mode is fenced in
 
@@ -166,7 +169,7 @@ instead of a visitor's page.
       building it would fail (mutation-verified: switching the router check off fails it)
 - [x] In Development the admin page builds, answers included — the control case, and the
       reason any of this matters
-- [x] The menu offers the admin link only in Development (mutation-verified)
+- [x] The menu never links to `/admin`, in Development or Production
 
 ### The bank at startup — `TeaserStoreStartupTests`
 
@@ -210,8 +213,8 @@ instead of a visitor's page.
       published copy, where the framework's JavaScript loads: the address bar changed, the
       page showed not-found with no form or Save button, and the browser never asked the
       server for `/admin`, so the router's check is what stopped it
-- [x] …and its menu has no admin link, while Development's does — and in Development,
-      `/admin` still loads the full admin page
+- [x] …and neither menu links to `/admin` — in Development the page still loads when the
+      address is opened directly
 
 ### Not covered
 
@@ -225,7 +228,7 @@ instead of a visitor's page.
 | `Services/DevelopmentModeGuard.cs` | Refuses to start in Development unless it's a Debug build on a marked machine |
 | `Services/AdminAccess.cs` | The rule, and the request gate |
 | `Components/Routes.razor` | The router check, for in-app navigation |
-| `Components/Layout/MainLayout.razor` | The admin menu link, Development only |
+| `Components/Layout/MainLayout.razor` | No admin link in the menu, in any mode |
 | `Services/TeaserStore.cs` | Refuses to start on a missing or unreadable bank |
 | `Program.cs` | Runs the Development-mode fence first; loads the bank at startup; registers the gate after the not-found re-execution |
 | `OneADay.csproj` | Keeps `App_Data/` out of build and publish output |

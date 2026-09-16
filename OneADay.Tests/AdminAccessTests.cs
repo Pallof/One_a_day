@@ -95,6 +95,9 @@ public class AdminRoutingTests : BunitContext
     {
         _env.EnvironmentName = environment;
         Services.AddSingleton<IWebHostEnvironment>(_env);
+        // The not-found page asks for the current request to tell an admin knock from a
+        // mistyped address. There's none behind a bUnit render, so it falls back to the URL.
+        Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
         JSInterop.Mode = JSRuntimeMode.Loose;
     }
 
@@ -118,7 +121,7 @@ public class AdminRoutingTests : BunitContext
 
         var page = NavigateInApp("admin");
 
-        Assert.Contains("Not Found", page.Markup);
+        Assert.Contains("nothing to see here", page.Markup);
         Assert.DoesNotContain("Add a brain teaser", page.Markup);
         Assert.Empty(page.FindAll("button.oad-btn-green"));
     }
@@ -150,10 +153,12 @@ public class AdminRoutingTests : BunitContext
     }
 
     [Theory]
-    [InlineData("Production", false)]
-    [InlineData("Development", true)]
-    public void The_menu_offers_admin_only_on_the_authors_machine(string environment, bool offered)
+    [InlineData("Production")]
+    [InlineData("Development")]
+    public void The_menu_never_links_to_admin(string environment)
     {
+        // Not even on the author's machine. The menu is the visitor's map of the site, and a
+        // link that appears only in some conditions is one more thing to get wrong.
         RunningIn(environment);
         SetRendererInfo(new RendererInfo("Server", isInteractive: true));
         // Off the home page, which would also add the sign-up dialog and its services.
@@ -161,7 +166,7 @@ public class AdminRoutingTests : BunitContext
 
         var layout = Render<MainLayout>(p => p.Add(l => l.Body, (RenderFragment)(_ => { })));
 
-        Assert.Equal(offered, layout.FindAll("a[href='admin']").Count > 0);
+        Assert.Empty(layout.FindAll("a[href='admin']"));
     }
 
     protected override void Dispose(bool disposing)

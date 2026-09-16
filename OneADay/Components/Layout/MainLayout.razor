@@ -1,6 +1,5 @@
 @inherits LayoutComponentBase
 @inject NavigationManager Nav
-@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
 @implements IDisposable
 
 <a class="oad-skip" href="#oad-main">Skip to content</a>
@@ -36,11 +35,10 @@
                     {
                         <li><a href="@item.Href" aria-current="@(IsCurrent(item.Href) ? "page" : null)">@item.Label</a></li>
                     }
-                    @* Only where the page exists: the author's machine (PRD 10). *@
-                    @if (AdminAccess.IsAvailable(Env))
-                    {
-                        <li class="oad-menu-admin"><a href="admin">Add a teaser (admin)</a></li>
-                    }
+                    @* No admin link, in any mode. This menu is the visitor's map of the site
+                       and /admin isn't part of it; a link that appears only sometimes is one
+                       more thing to get wrong. The author reaches it by bookmark, on the one
+                       machine where the page exists at all (PRD 10). *@
                 </ul>
             </nav>
         </div>

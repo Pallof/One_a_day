@@ -188,8 +188,6 @@
     color: var(--blue-deep);
 }
 
-.oad-menu-admin ::deep a { font-size: 0.93rem; color: var(--ink-soft); }
-
 /* Swap inline nav for the hamburger once the links stop fitting comfortably. */
 @media (max-width: 900px) {
     .oad-nav { display: none; }

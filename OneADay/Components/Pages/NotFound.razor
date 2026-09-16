@@ -1,5 +1,54 @@
-﻿@page "/not-found"
+@page "/not-found"
 @layout MainLayout
+@using Microsoft.AspNetCore.Diagnostics
+@using Microsoft.AspNetCore.Http.Features
+@inject NavigationManager Nav
+@inject IHttpContextAccessor Http
 
-<h3>Not Found</h3>
-<p>Sorry, the content you are looking for does not exist.</p>
+<PageTitle>One a Day — @(_noEntry ? "No entry" : "Page not found")</PageTitle>
+
+@* One page answers every wrong address on the site, so it speaks twice. Someone knocking on
+   /admin gets the cheeky line; someone who mistyped a URL gets a plain apology, because
+   "nice try" reads as an accusation to a visitor who simply fumbled an address. *@
+<div class="oad-static">
+    <div class="oad-banner">@(_noEntry ? "No entry" : "Page not found")</div>
+
+    <div class="oad-box sub-box">
+        <p class="sub-mark" aria-hidden="true">🐱</p>
+
+        @if (_noEntry)
+        {
+            <p class="sub-lead">Nice try, nothing to see here.</p>
+            <p class="sub-sub">
+                No doors here. Say hi to the cat.
+            </p>
+        }
+        else
+        {
+            <p class="sub-lead">That page doesn't exist.</p>
+            <p class="sub-sub">
+                The link may be old, or the address slightly off. Today's challenge is
+                always one click away.
+            </p>
+        }
+
+        <a class="sub-home" href="">Back to the Challenge of the day</a>
+    </div>
+</div>
+
+@code {
+    private bool _noEntry;
+
+    protected override void OnInitialized()
+    {
+        // Two sources, one answer, so the wording can't change a moment after it appears.
+        // Before the page goes live in the browser the request is still in flight, and its
+        // original address lives in the re-execute feature — the URL here is already
+        // /not-found. Afterwards there is no request at all, and the browser's address is the
+        // one that matters. In-app navigation only ever has the second.
+        var address = Http.HttpContext?.Features.Get<IStatusCodeReExecuteFeature>()?.OriginalPath
+                      ?? new Uri(Nav.Uri).AbsolutePath;
+
+        _noEntry = AdminAccess.IsAdminPath(address);
+    }
+}
