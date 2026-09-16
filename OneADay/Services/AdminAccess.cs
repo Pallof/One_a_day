@@ -33,6 +33,14 @@ public static class AdminAccess
         pageType == typeof(Admin) && !IsAvailable(env);
 
     /// <summary>
+    /// Whether an address belongs to the admin page — <c>/admin</c> itself or anything under
+    /// it, but not <c>/administrator</c>. Shared by the gate below and the not-found page,
+    /// which greets an admin knock differently from a mistyped address.
+    /// </summary>
+    public static bool IsAdminPath(PathString path) =>
+        path.StartsWithSegments(AdminPath, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
     /// Outside Development, answers every request under <c>/admin</c> with 404. Register it
     /// after <c>UseStatusCodePagesWithReExecute</c>, so visitors get the site's ordinary
     /// not-found page rather than a blank one.
@@ -46,7 +54,7 @@ public static class AdminAccess
 
         app.Use(async (context, next) =>
         {
-            if (context.Request.Path.StartsWithSegments(AdminPath, StringComparison.OrdinalIgnoreCase))
+            if (IsAdminPath(context.Request.Path))
             {
                 context.Response.StatusCode = StatusCodes.Status404NotFound;
                 return;
