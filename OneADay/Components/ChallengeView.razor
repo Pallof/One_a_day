@@ -275,11 +275,14 @@
         {
             return;
         }
-        // Anonymous device id so "unique minds" can be counted without accounts.
-        var stored = await LocalStorage.GetAsync<Guid>(VisitorKey);
-        if (stored.Success && stored.Value != Guid.Empty)
+        // Anonymous device id so "unique minds" can be counted without accounts. Read through
+        // ReadOrDefaultAsync: a value this server can no longer decrypt — after the key ring
+        // is rotated, restored or moved — would otherwise throw from here and kill the
+        // circuit, taking the visitor's page down instead of quietly minting a new id.
+        var stored = await LocalStorage.ReadOrDefaultAsync<Guid>(VisitorKey);
+        if (stored != Guid.Empty)
         {
-            _visitorId = stored.Value;
+            _visitorId = stored;
         }
         else
         {
@@ -287,9 +290,9 @@
             await LocalStorage.SetAsync(VisitorKey, _visitorId);
         }
 
-        // Respect an earlier dismissal before any trigger can fire.
-        var dismissed = await LocalStorage.GetAsync<bool>(NudgeDismissedKey);
-        _nudgeDismissed = dismissed.Success && dismissed.Value;
+        // Respect an earlier dismissal before any trigger can fire. An unreadable value means
+        // the nudge shows once more, which is the harmless way to be wrong.
+        _nudgeDismissed = await LocalStorage.ReadOrDefaultAsync<bool>(NudgeDismissedKey);
 
         // Start the quiet-period clock from the moment the page is usable.
         RestartIdleTimer();

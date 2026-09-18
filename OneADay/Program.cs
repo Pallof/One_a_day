@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.FileProviders;
 using OneADay.Components;
 using OneADay.Services;
@@ -10,6 +11,25 @@ var builder = WebApplication.CreateBuilder(args);
 if (DevelopmentModeGuard.ReasonToRefuse(builder.Environment, builder.Configuration, DevelopmentModeGuard.IsDebugBuild) is { } refusal)
 {
     throw new InvalidOperationException(refusal);
+}
+
+// Two more refusals, for the same reason and in the same place: checked before anything is
+// built, so a refused start never opens a port.
+//
+// Visitor addresses are hashed before they are stored, and that hash needs a secret key
+// outside Development — without one it is a plain hash of an IPv4 address, which inverts in
+// minutes (PRD 06). And a proxy that is announced must actually be trusted, or the forwarded
+// headers are ignored in silence (PRD 11).
+if (IpHasher.ReasonToRefuse(builder.Environment, builder.Configuration) is { } privacyRefusal)
+{
+    throw new InvalidOperationException(privacyRefusal);
+}
+
+var proxyOptions = builder.Configuration.GetSection(ProxyOptions.Section).Get<ProxyOptions>()
+                   ?? new ProxyOptions();
+if (proxyOptions.ReasonToRefuse() is { } proxyRefusal)
+{
+    throw new InvalidOperationException(proxyRefusal);
 }
 
 // Add services to the container.
@@ -25,6 +45,26 @@ builder.Services.AddSingleton<RotationStore>();
 builder.Services.AddSingleton<DailySchedule>();
 builder.Services.AddScoped<CurrentTeaserContext>();
 builder.Services.AddHttpContextAccessor();
+
+// Reading a visitor's real address behind a proxy, and storing it as a keyed hash rather
+// than a recoverable one. See ProxyOptions and IpHasher.
+builder.Services.Configure<ProxyOptions>(builder.Configuration.GetSection(ProxyOptions.Section));
+builder.Services.AddSingleton(IpHasher.Create(builder.Environment, builder.Configuration));
+
+// Data Protection encrypts every ProtectedLocalStorage value, the anonymous visitor id among
+// them. The default key ring does not survive a restart, and losing it makes every stored
+// value undecryptable: each returning visitor looks brand new, unique-attempter counts
+// inflate, and the one-suggestion-per-day limit resets for everyone. It fails *silently* —
+// the site keeps working — so nothing would ever draw attention to it. App_Data is the volume
+// that has to survive a redeploy anyway (PRD 11), and it is gitignored.
+//
+// The application name is pinned rather than left to default. The default is the assembly
+// name, so renaming this project would silently invalidate every stored value.
+var keyRing = Directory.CreateDirectory(
+    Path.Combine(builder.Environment.ContentRootPath, "App_Data", "keys"));
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(keyRing)
+    .SetApplicationName("OneADay");
 
 // Email notifications. The app password comes from user-secrets locally and an
 // Email__AppPassword environment variable in production — never appsettings.json.
@@ -49,6 +89,12 @@ var app = builder.Build();
 // teasers.json should stop a deploy at startup, loudly, rather than show an error page to
 // whoever happens to arrive first (PRD 10).
 app.Services.GetRequiredService<TeaserStore>();
+
+// Behind a proxy, rewrite the connection's address and scheme from its forwarded headers.
+// This has to come before anything that reads either one: UseHsts and UseHttpsRedirection
+// both read the scheme, and below them the app would see the proxy's inward hop as plain
+// HTTP and redirect to HTTPS forever. See ProxyOptions and PRD 11.
+app.UseProxyHeaders();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
