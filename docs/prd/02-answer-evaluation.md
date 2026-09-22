@@ -40,8 +40,8 @@ One line of text. **Alternative accepted answers are separated by `;`** — e.g.
    doesn't.
 5. **One pair of brackets creates alternatives:** storing `12 (a dozen)` accepts `12`, `a dozen`,
    or `12 (a dozen)`.
-6. **Formulas are matched whole.** An answer with several or nested brackets — `5*(5-(1/5))`,
-   `8 / (3 - (8/3))` — is **not** split by rule 5, so a fragment such as `5` or `8` is rejected.
+6. **Formulas are matched whole.** An answer with several or nested brackets — `5*(5-(1/5))` —
+   is **not** split by rule 5, so a fragment such as `5` is rejected.
 7. **Formulas compare by what they work out to — but must use exactly the numbers given.** The
    site does the arithmetic (`+ - * /`, brackets, decimals, minus signs, `×` `÷`, and implied
    multiplication like `5(5-1/5)`) and accepts a formula only when it **both** reaches the
@@ -59,7 +59,8 @@ One line of text. **Alternative accepted answers are separated by `;`** — e.g.
 
    - The same-numbers check is a **hard requirement**: reaching the total any other way doesn't
      solve the puzzle.
-   - Rounding (rule 2) is what lets `8/(3-8/3)` count as 24 despite division leftovers.
+   - Rounding (rule 2) is what lets a formula still count when its division doesn't come out
+     even — the same reason a stored `0.333` accepts `1/3`.
    - A **plain-number** answer skips the check, so someone showing their working (`500*10` for
      `5000`) is still credited.
    - Broken input (`5*(5-`, `((((`, `1/0`) is rejected, never crashes.

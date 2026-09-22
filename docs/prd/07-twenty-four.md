@@ -18,8 +18,9 @@ possible, never shows a solution, and never hints that fractions are allowed.
 ## The game
 
 Numbers run **1–10**, like a deck of cards with face cards counting 10 — so **duplicates are
-normal**, not a bug. Fractions are part of the game: the classic `3 3 8 8` can only be solved with
-one.
+normal**, not a bug. Fractions are part of the game. The easiest case: dealt 1 2 2 6,
+`6 / (1/2) * 2` makes 24, because dividing by a half doubles. A few harder hands can only be
+solved with a fraction.
 
 > **The page must not teach this.** No "fractions are allowed" note, and the decimal-point error must
 > not point to division as the way round it. Realising a hand needs a fraction is the best moment
@@ -35,10 +36,9 @@ there is. It shows what to type and reveals no method. Before adding or changing
 2. **Is the hand in the teaser bank?** The game and the teasers share the same puzzles, so a hand
    that's fine today becomes a spoiler the moment it's written up as a challenge.
 
-> **History — why the second test exists:** the page first worked through `3 3 8 8` and its only
-> solution. That hand **is a teaser in the live bank** (Hard, 2026-07-27), so the page permanently
-> published the answer to a real challenge of the day — and, as the hardest well-known hand, gave
-> the technique away wholesale. Don't "improve" `6+6+6+6` into something clever.
+> **History — why the second test exists:** the page's first example used a hand that is also a
+> teaser in the bank, so it permanently published the answer to a real challenge of the day.
+> Don't "improve" `6+6+6+6` into something clever.
 
 ## Requirements
 
@@ -101,9 +101,9 @@ Checked in this order, each failure naming what went wrong:
 
 - Check 6 stops `24`, `12 + 12`, and `38 + 5 - 8 - 8` (digits glued into a new number).
 - Check 4 must reject right-count-wrong-order cases like `)3 + 5(`, not just count brackets.
-- **Check 7 compares to three decimal places**, because fractions don't divide evenly:
-  `8 / (3 - 8/3)` lands a hair off 24 and must still count — the rounding teaser answers use
-  ([PRD 02](02-answer-evaluation.md)).
+- **Check 7 compares to three decimal places**, because fractions don't always divide evenly: an
+  answer that goes through one can land a hair off 24 and must still count — the same rounding
+  teaser answers use ([PRD 02](02-answer-evaluation.md)).
 
 ## Non-goals
 
@@ -120,7 +120,8 @@ Checked in this order, each failure naming what went wrong:
 - [x] Illegal operators and decimal points are rejected by name; unbalanced brackets are rejected,
       including right-count-wrong-order
 - [x] Expressions not using exactly the dealt numbers are rejected
-- [x] `8 / (3 - 8/3)` is accepted for `3 3 8 8`; near-misses are not
+- [x] An answer that goes through a fraction and lands a hair off 24 is accepted; near-misses are
+      not
 - [x] A wrong total reports the value actually reached
 - [x] Pass reveals nothing and moves straight to a new hand
 - [x] The solver is unreachable from the UI — no player action invokes it
