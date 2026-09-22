@@ -4,7 +4,7 @@
 
 ## Vision and Problem
 
-One a Day serves a single brain teaser every day to help people use and stretch
+Stumpty serves a single brain teaser every day to help people use and stretch
 their minds. I think that in this day and age it's too easy to rely on AI and it
 can make our minds lazy and reduces our processing abilities. I believe that solving 
 a challenge a day can help retain our mental sharpness. Even if you aren't able to
@@ -16,6 +16,26 @@ can benefit from it or enjoy solving a quick challenge.
 It is deliberately **small, anonymous, and frictionless**. No sign-up wall, no
 prerequisites, no leaderboard pressure — just today's puzzle, an answer box, and
 the option of a hint when you're genuinely stuck.
+
+## The name
+
+The site was **One a Day** until 2026-09-19, and is now **Stumpty** — a play on *stumped*.
+The rename avoids any collision with Bayer's "One A Day" vitamin trademark. The public
+address is `stumpty.com`.
+
+Researched and rejected: **Stumped** (an existing board game, an iOS trivia app, and a live
+trademark), **Stumpt** (an established gaming YouTube channel, ~500k subscribers, making
+party and puzzle game content — adjacent enough that the name could never be worry-free),
+**Crack It** (crowded with existing lock-and-code puzzle apps), and **Humpty Stumpty**
+(several real stump-grinding businesses trade under the exact phrase). Stumpty was the only
+candidate with no existing brand, app, game, company or trademark, and with `.com`, `.io`
+and `.gg` all unregistered.
+
+**Internals keep the old name on purpose.** The `OneADay` namespace and the `oad-` CSS
+prefix are invisible to visitors, and renaming them would churn every file and the whole
+test suite for nothing. The Data Protection application name is pinned to `OneADay` in
+`Program.cs` for a stronger reason: it defaults to the assembly name, so a project rename
+would otherwise invalidate every visitor's stored id ([PRD 11](11-deployment.md)).
 
 ## Users
 

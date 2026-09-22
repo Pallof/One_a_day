@@ -1,8 +1,8 @@
-# One a Day 🧠
+# Stumpty 🧠
 
 **A daily brain teaser to help people use and stretch their minds.**
 
-One a Day serves a single brain teaser every day to help people use and stretch
+Stumpty serves a single brain teaser every day to help people use and stretch
 their minds. I think that in this day and age it's too easy to rely on AI and it
 can make our minds lazy and reduces our processing abilities. I believe that solving 
 a challenge a day can help retain our mental sharpness. Even if you aren't able to
@@ -165,7 +165,7 @@ Before deploying publicly:
 - [ ] Pick a host and deploy (`dotnet publish` runs on any cheap host)
 
 Ideas after that:
-- [ ] Solve streaks and a share button ("One a Day #12 — solved in 2 attempts 🧠")
+- [ ] Solve streaks and a share button ("Stumpty #12 — solved in 2 attempts 🧠")
 - [ ] A "queue is running dry" warning when no teaser is scheduled for tomorrow
 - [ ] Bulk import so a week of teasers can be added at once
 

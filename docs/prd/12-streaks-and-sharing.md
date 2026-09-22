@@ -46,7 +46,7 @@ already used for statistics is enough to track a streak locally.
 
 8. A **Share** button in the post-solve state copies a short text summary to the
    clipboard, e.g.
-   `One a Day — 29 Jul 2026 🧠 solved in 2 attempts (🔥6) https://…`
+   `Stumpty — 29 Jul 2026 🧠 solved in 2 attempts (🔥6) https://…`
 9. The share text must **never** contain the question, the answer, or anything that
    spoils the puzzle for the recipient.
 10. Confirm the copy visibly ("Copied!").

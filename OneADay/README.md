@@ -1,4 +1,4 @@
-# One a Day 🧠
+# Stumpty 🧠
 
 A daily brain teaser web app built with C# Blazor (interactive server rendering),
 following the wireframes in `Desktop/One_a_day/Picture Directory/One a Day layout.pdf`.
