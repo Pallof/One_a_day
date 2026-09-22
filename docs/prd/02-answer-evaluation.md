@@ -4,148 +4,112 @@
 
 ## In plain terms
 
-People type answers in free text, so the site has to be generous about *how* an answer is
-phrased without ever accepting one that's actually wrong:
+People type answers freely, and the same answer arrives in many shapes — a word, a number, a
+number with a unit, a spelled-out number, a formula. The author can't list every phrasing, so the
+site is generous about *how* an answer is written, without ever accepting a wrong one:
 
 - `A Keyboard!` matches `a keyboard` — case and punctuation ignored
 - `forty-eight` matches `48` — spelled-out numbers count as their value
 - `9.0` matches `9`, and `1,000` matches `1000`
-- But `12+12` does **not** solve a make-24 puzzle built from 5, 5, 5 and 1 — right answer,
-  wrong numbers
+- But `12+12` does **not** solve "make 24 from 5, 5, 5 and 1" — right total, wrong numbers
 
-The failure that would destroy trust fastest is telling someone who *is* right that they're
-wrong, so the rules lean generous. They just never lean so far that a wrong answer gets through.
-
-## Problem
-
-Free-text answers are the core interaction, and the failure mode that would kill
-trust fastest is telling a solver who *is* right that they're wrong. Puzzle answers
-arrive in wildly different shapes — a word, a number, a number with a unit, a
-spelled-out number, an algebraic formula — and the author cannot be expected to
-enumerate every phrasing by hand.
-
-Equally, generosity must not tip into accepting wrong answers.
+Telling someone who *is* right that they're wrong would destroy trust fastest, so the rules lean
+generous — never so far that a wrong answer gets through.
 
 ## Requirements
 
-### Authoring format
+### Writing an answer
 
-- An answer is a single string. **Alternative accepted answers are separated by
-  `;`** — e.g. `48; 48 mph; forty-eight miles per hour`.
-- Every alternative is evaluated independently under all rules below.
+One line of text. **Alternative accepted answers are separated by `;`** — e.g.
+`48; 48 mph; forty-eight miles per hour` — and each is checked under every rule below.
 
 ### Matching rules
 
-1. **Text** — comparison ignores case, whitespace, and punctuation.
-   `A Keyboard!` matches `a keyboard`.
-2. **Numbers compare by value, not by text.**
-   `9` = `9.0` = ` 9 `; `1,000` = `1000`; `-5` = `-5.0`.
-   Numeric comparison must not be reachable by stripping punctuation — `9.0` must
-   **not** collapse into `90`.
-   - **All numeric comparison happens at the thousandths place.** Both sides are
-     rounded to 3 decimals (away from zero at the midpoint) before comparing,
-     because puzzle arithmetic rarely divides evenly. So a stored `0.333` accepts
+1. **Text** ignores case, spaces and punctuation.
+2. **Numbers compare by value:** `9` = `9.0` = ` 9 `, `1,000` = `1000`, `-5` = `-5.0`. Stripping
+   punctuation must never be how numbers match — `9.0` must **not** become `90`.
+   - **Values compare to three decimal places.** Both sides are rounded to 3 decimals (halves
+     away from zero), because puzzle arithmetic rarely divides evenly: a stored `0.333` accepts
      `1/3` and `0.3333333`, while `0.334` is still wrong.
-   - Rounding applies only to the **final** value; intermediate steps inside an
-     expression keep full precision, so errors don't compound.
-3. **Spelled-out numbers count as their value.**
-   `eighty` = `80`, `forty-eight` = `forty eight` = `48`, `five thousand` = `5000`,
-   `nine hundred and one` = `901`. This works in both directions (a stored word
-   answer accepts digits). The common misspelling `fourty` is accepted.
-4. **Number + unit** — a value and a unit are compared separately, so
-   `eighty degrees` matches `80 degrees` while `eighty radians` does not.
-5. **A single parenthetical group creates alternatives.**
-   Storing `12 (a dozen)` accepts `12`, `a dozen`, or `12 (a dozen)`.
-6. **Formulas are matched whole.** An answer with multiple or nested parentheses —
-   e.g. `5*(5-(1/5))`, `8 / (3 - (8/3))` — must **not** be split by rule 5. A
-   fragment such as `5` or `8` must be rejected.
-7. **Formulas are compared by what they compute, not how they were typed** —
-   but must use exactly the numbers the question supplied.
-   The expression is evaluated (`+ - * /`, parentheses, decimals, unary sign,
-   `×`/`÷`, and implicit multiplication such as `5(5-1/5)`), and a submission is
-   accepted when **both** hold:
-   1. it computes the same value as the author's answer, and
-   2. it is built from **exactly the same multiset of numeric literals**.
+   - Only the final value is rounded; steps inside a formula keep full precision, so errors don't
+     pile up.
+3. **Spelled-out numbers count as their value**, both ways round: `eighty` = `80`, `forty-eight` =
+   `forty eight` = `48`, `five thousand` = `5000`, `nine hundred and one` = `901`. The common
+   misspelling `fourty` is accepted.
+4. **Number + unit** compare separately: `eighty degrees` matches `80 degrees`; `eighty radians`
+   doesn't.
+5. **One pair of brackets creates alternatives:** storing `12 (a dozen)` accepts `12`, `a dozen`,
+   or `12 (a dozen)`.
+6. **Formulas are matched whole.** An answer with several or nested brackets — `5*(5-(1/5))`,
+   `8 / (3 - (8/3))` — is **not** split by rule 5, so a fragment such as `5` or `8` is rejected.
+7. **Formulas compare by what they work out to — but must use exactly the numbers given.** The
+   site does the arithmetic (`+ - * /`, brackets, decimals, minus signs, `×` `÷`, and implied
+   multiplication like `5(5-1/5)`) and accepts a formula only when it **both** reaches the
+   author's value **and** uses exactly the same numbers, each as many times.
 
-   So for `5*(5-(1/5))` — a "make 24 from 5, 5, 5, 1" puzzle:
+   For `5*(5-(1/5))`, the answer to "make 24 from 5, 5, 5, 1":
 
    | Submission | | Why |
    |---|---|---|
    | `5*(5-1/5)`, `(5-1/5)*5`, `5(5-1/5)`, `5 × (5 − 1/5)` | ✅ | same value, same numbers |
    | `24` | ❌ | not a formula |
    | `12+12`, `8*3`, `25-1` | ❌ | right value, **wrong numbers** |
-   | `5 * (5 - 0.2)`, `5*4.8` | ❌ | folds `1/5` into a number not supplied |
+   | `5 * (5 - 0.2)`, `5*4.8` | ❌ | turns `1/5` into a number that wasn't given |
    | `5*5-(5/5)` | ❌ | uses `5` four times; only three were given |
 
-   - The operand check is a **hard requirement**: hitting the target value by any
-     other route is not a solution to the puzzle.
-   - Values are compared at the thousandths place (rule 2), which is what lets
-     `8/(3-8/3)` count as 24 despite division residue.
-   - A **plain-number** answer is exempt from the operand check, so a solver
-     showing their work (`500*10` for `5000`) is still credited.
-   - Malformed input (`5*(5-`, `((((`, `1/0`) is rejected, never thrown.
+   - The same-numbers check is a **hard requirement**: reaching the total any other way doesn't
+     solve the puzzle.
+   - Rounding (rule 2) is what lets `8/(3-8/3)` count as 24 despite division leftovers.
+   - A **plain-number** answer skips the check, so someone showing their working (`500*10` for
+     `5000`) is still credited.
+   - Broken input (`5*(5-`, `((((`, `1/0`) is rejected, never crashes.
+8. **Blank answers are always rejected.**
 
-> **Authoring guidance.** Store an answer as a **formula** only when the formula
-> *is* the puzzle (make 24 from these numbers). For a question whose answer is a
-> value, store the **number** — `0.333`, not `1/3` — otherwise solvers must
-> reproduce a formula using the same operands rather than simply giving the value.
-8. **Blank or whitespace-only submissions are always rejected.**
+> **Authoring guidance.** Store a **formula** only when the formula *is* the puzzle ("make 24 from
+> these numbers"). When the answer is a value, store the **number** — `0.333`, not `1/3` — or
+> solvers must rebuild a formula from the same numbers instead of just giving the value.
 
 ### Guarantees
 
-- Non-numeric words must never be coerced into numbers (`banana`, or `thousand`
-  standing alone, are not numbers).
-- The rules are **order-independent** and must hold for both stored answer and
-  submission.
+- Ordinary words never become numbers (`banana`, or `thousand` on its own).
+- The rules don't depend on order, and hold for both the stored answer and the submission.
 
 ## Non-goals
 
-- **Accepting a partially-simplified formula.** The operand check is strict by
-  design, so a solver who folds a step into a new number (`5 * (5 - 0.2)`, or
-  `5*4.8`) is rejected even though the arithmetic is sound. This is the accepted
-  cost of guaranteeing that a "make 24 from these numbers" puzzle can only be
-  solved with those numbers. Authors can always add such forms explicitly with `;`.
-- Deriving the required numbers from the **question text**. They are taken from
-  the author's stored answer, which is by definition a valid solution — no prose
-  parsing involved.
-- Symbolic algebra beyond arithmetic — no variables, exponents, or roots.
-- Fuzzy spelling correction on words (`kyboard` is wrong).
-- Natural-language understanding of prose answers.
+- **Accepting a half-simplified formula** (`5 * (5 - 0.2)`), sound arithmetic or not. The strict
+  same-numbers check is the accepted cost of guaranteeing a "make 24 from these numbers" puzzle
+  can only be solved with those numbers. The author can always list such forms with `;`.
+- Reading the required numbers from the **question text** — they come from the stored answer,
+  which is by definition a valid solution.
+- Algebra beyond arithmetic — no variables, powers or roots.
+- Forgiving misspellings (`kyboard` is wrong), or understanding prose answers.
 
 ## Acceptance criteria
 
-Every rule above is pinned by unit tests in `OneADay.Tests/`, and each shipped
-teaser has explicit accept/reject cases:
+Unit tests in `OneADay.Tests/` pin every rule, and every live teaser has its own accept and reject
+cases:
 
-- [x] `AnswerValidationTests.cs` — the rule matrix, including number words and
-      equivalent formula forms
-- [x] `TeaserBankTests.cs` — every question in the live bank, accepted phrasings
-      and plausible wrong answers
+- [x] `AnswerValidationTests.cs` — the rule matrix, including number words and equivalent formula
+      forms
+- [x] `TeaserBankTests.cs` — every question in the live bank, accepted phrasings and plausible
+      wrong answers
 
-> A running total of tests used to be pinned here as a criterion. It was wrong
-> within weeks — it read 144 while the suite was at 284 — because the number
-> changes whenever *anything* in the project gains a test, including work with no
-> bearing on answer evaluation. A count that drifts on its own is worse than no
-> count: it looks verified. The two files above are the criterion; run them.
+> **History:** a running total of tests used to be a criterion here. It read 144 while the suite
+> was at 284 — it changes whenever *anything* gains a test — and a number that drifts on its own
+> looks verified when it isn't. The two files above are the criterion; run them.
 
-> **Regression on record:** rule 5 originally used *first `(`* to *last `)`*, which
-> made `5*(5-(1/5))` accept a bare `5`. Rule 6 exists because of that bug; the
-> tests for it must not be removed.
+> **History — regression:** rule 5 once split from the *first* `(` to the *last* `)`, so
+> `5*(5-(1/5))` accepted a bare `5`. Rule 6 exists because of that bug; its tests must stay.
 
 ## Implementation notes
 
-Matching lives in `BrainTeaser.AcceptsAnswer` and its private helpers (`Variants`,
-`Matches`, `TryParseNumber`, `TryParseNumberWords`, `TrySplitNumberAndUnit`).
+Matching is `BrainTeaser.AcceptsAnswer` and its private helpers (`Variants`, `Matches`,
+`TryParseNumber`, `TryParseNumberWords`, `TrySplitNumberAndUnit`). The arithmetic, rounding
+included, lives in `Models/Arithmetic.cs`, moved out when the Twenty Four game shipped so the two
+share one copy ([PRD 07](07-twenty-four.md)) — two copies would drift, and rounding is exactly the
+kind of detail that drifts silently.
 
-**Arithmetic is no longer among them.** The expression evaluator was extracted into
-`Models/Arithmetic.cs` when the Twenty Four game shipped, so the game and answer
-matching share one implementation — including the thousandths-place rounding
-([PRD 07](07-twenty-four.md)). Two copies would have drifted, and the rounding rule
-is exactly the kind of subtlety that drifts silently.
-
-It is pure, in-memory, and has no dependencies — a submission is never stored,
-logged, or interpolated into any query. `Arithmetic` is a hand-written
-recursive-descent parser with a **depth cap**, so hostile input (`((((((…`) is
-rejected rather than overflowing the stack. Depth alone is not enough: a very long
-*flat* expression never recurses, so callers cap length too — 300 characters on the
-daily challenge, 120 in the game.
+It all runs in memory; a submission is never stored, logged, or inserted into any query.
+`Arithmetic` is hand-written with a **cap on how deeply brackets nest**, so hostile input
+(`((((((…`) is rejected instead of crashing the server. A very long *flat* expression never
+nests, so callers cap length too: 300 characters on the daily challenge, 120 in the game.

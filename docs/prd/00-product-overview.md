@@ -1,7 +1,7 @@
 # This is both a Product Diary and a PRD of past and ongoing developments of Stumpty
 # PRD 00 — Product overview
 
-**Status:** Spec of record · **Last updated:** 2026-09-11
+**Status:** Spec of record · **Last updated:** 2026-09-22
 
 ## Vision and Problem
 
@@ -14,95 +14,87 @@ Challenges will vary from simple word riddles, to tougher math questions or simp
 taking a step back and looking at the bigger picture. Regardless of the user, anyone
 can benefit from it or enjoy solving a quick challenge.
 
-It is deliberately **small, anonymous, and frictionless**. No sign-up wall, no
-prerequisites, no leaderboard pressure — just today's puzzle, an answer box, and
-the option of a hint when you're genuinely stuck.
+*The About page's wording, word for word — keep the two in step.*
+
+It is deliberately **small, anonymous and frictionless**: no sign-up, no leaderboard pressure —
+just today's puzzle, an answer box, and a hint when you're genuinely stuck.
 
 ## The name
 
-The site was **One a Day** until 2026-09-19, and is now **Stumpty** — a play on *stumped*.
-The rename avoids any collision with Bayer's "One A Day" vitamin trademark. The public
-address is `stumpty.com`.
+The site was **One a Day** until 2026-09-19. It is now **Stumpty** — a play on *stumped*, at
+`stumpty.com` — which avoids Bayer's "One A Day" vitamin trademark.
 
-Researched and rejected: **Stumped** (an existing board game, an iOS trivia app, and a live
-trademark), **Stumpt** (an established gaming YouTube channel, ~500k subscribers, making
-party and puzzle game content — adjacent enough that the name could never be worry-free),
-**Crack It** (crowded with existing lock-and-code puzzle apps), and **Humpty Stumpty**
-(several real stump-grinding businesses trade under the exact phrase). Stumpty was the only
-candidate with no existing brand, app, game, company or trademark, and with `.com`, `.io`
-and `.gg` all unregistered.
+Researched and rejected: **Stumped** (a board game, an iOS trivia app and a live trademark),
+**Stumpt** (a gaming YouTube channel of ~500k subscribers making puzzle content — never
+worry-free), **Crack It** (crowded with lock-and-code puzzle apps) and **Humpty Stumpty** (used by
+several stump-grinding businesses). Only Stumpty had no existing brand, app, game, company or
+trademark, with `.com`, `.io` and `.gg` all free.
 
-**Internals keep the old name on purpose.** The `OneADay` namespace and the `oad-` CSS
-prefix are invisible to visitors, and renaming them would churn every file and the whole
-test suite for nothing. The Data Protection application name is pinned to `OneADay` in
-`Program.cs` for a stronger reason: it defaults to the assembly name, so a project rename
-would otherwise invalidate every visitor's stored id ([PRD 11](11-deployment.md)).
+**The code keeps the old name on purpose.** Visitors never see the internal `OneADay` names or
+`oad-` prefixes, and renaming them would churn every file and test for nothing. One internal name
+is pinned for a stronger reason: visitors' stored IDs are encrypted under the name `OneADay`, and
+letting it follow a renamed project would make every one unreadable ([PRD 11](11-deployment.md)).
 
 ## Users
 
 | User | Needs |
 |---|---|
-| **Solver** (primary) | A quick daily mental workout. Wants instant feedback, a hint if stuck, and to know how they did relative to others. Arrives with no account and expects none. |
-| **Author** (the site owner) | To publish one teaser per day without friction, queue a week ahead in one sitting, and hear when a question is broken or unfair. |
+| **Solver** (primary) | A quick daily mental workout: instant feedback, a hint if stuck, and how they did against others. Arrives with no account and expects none. |
+| **Author** (the site owner) | To publish one teaser a day without friction, queue a week ahead in one sitting, and hear when a question is broken or unfair. |
 
 ## Product principles
 
-1. **No accounts.** Nothing about a daily puzzle requires identity. Solvers are
-   counted by an anonymous per-device ID so aggregate stats work without
-   collecting anything personal. *A login page existed early on and was removed
-   because it earned nothing.* The daily email ([PRD 15](15-email-subscriptions.md))
-   is the one place the site holds anything personal: an address, kept only to send
-   that email, never linked to what anyone does on the site, and deleted on
-   unsubscribe. It is not an account.
-2. **Answer checking should be generous, never wrong.** A solver who knows the
-   answer must never be told they're wrong over formatting — case, punctuation,
-   `9` vs `nine`, `48` vs `48 mph`. Equally, a wrong answer must never pass.
-3. **Effort before help.** Hints and solutions are available but must be earned,
-   so the puzzle stays a puzzle.
-4. **Never spoil the future.** Today's answer and any scheduled teaser's answer
-   must be unreachable, including by URL guessing.
-5. **Data stays legible.** All content and metrics live in human-readable JSON the
-   author can read, hand-edit, or back up by copying a folder.
+1. **No accounts.** Nothing about a daily puzzle needs identity, and statistics are just counts —
+   answers and correct answers — with nothing about who answered. *History: an early login page
+   was removed because it earned nothing.*
+   The daily email ([PRD 15](15-email-subscriptions.md)) is the one exception — an address, kept
+   only to send that email, never linked to site activity, deleted on unsubscribe. Not an account.
+2. **Generous, never wrong.** A right answer is never rejected over formatting — case,
+   punctuation, `9` vs `nine`, `48` vs `48 mph` — and a wrong one never passes
+   ([PRD 02](02-answer-evaluation.md)).
+3. **Effort before help.** Hints and solutions are earned, so the puzzle stays a puzzle
+   ([PRD 03](03-hints-and-solutions.md)).
+4. **Never spoil the future.** No answer to today's or a scheduled teaser can be reached, even by
+   guessing an address.
+5. **Data stays legible.** Everything lives in plain text files (JSON) the author can read, edit
+   by hand, or back up by copying one folder.
 
 ## Scope today
 
-Shipped and covered by the specs of record:
+Shipped, and covered by the specs of record:
 
-- Daily challenge with midnight-Pacific rollover, post-solve countdown, confetti
-- Answer evaluation (numeric, word-number, formula, and multi-phrasing matching)
-- Earned hints, and solutions that unlock the day after a challenge runs
-- **No archive** — only today's puzzle is reachable ([PRD 04](04-archive-and-discovery.md))
-- **The Twenty Four game** — endlessly replayable, generates its own puzzles, so it
-  can't exhaust the teaser bank ([PRD 07](07-twenty-four.md))
-- **Recycling rotation** — once the queue of new teasers runs dry, past ones are drawn
-  back out of a box, so the daily habit survives a dry spell and newcomers reach the
-  back catalogue ([PRD 08](08-recycling-rotation.md))
-- Authoring tools: scheduling, difficulty, backend tags, support images
-- Community feedback: teaser suggestions and issue reports with triage, screened for
-  automation ([PRD 06](06-community-feedback.md)), and emailed to the author
-  ([PRD 14](14-email-notifications.md))
-- **Daily email** — the day's challenge at 7am Pacific for anyone who confirms their
-  address; one click to leave ([PRD 15](15-email-subscriptions.md))
-- **Visual design system** — editorial layout, one centred reading column
-  ([PRD 09](09-visual-design.md))
+- The daily challenge — midnight-Pacific rollover, countdown, confetti ([01](01-daily-challenge.md))
+- Generous answer checking — numbers, number words, formulas, alternatives ([02](02-answer-evaluation.md))
+- Earned hints; solutions published the day after a challenge runs ([03](03-hints-and-solutions.md))
+- **No archive** — only today's puzzle can be reached ([04](04-archive-and-discovery.md))
+- **Twenty Four** — a game that makes its own puzzles, so it can't use up the teasers ([07](07-twenty-four.md))
+- **Recycling** — past teasers come back when none is scheduled, so dry spells don't show and newcomers see the back catalogue ([08](08-recycling-rotation.md))
+- Authoring — scheduling, difficulty, private tags, pictures ([05](05-authoring-and-admin.md))
+- Suggestions and issue reports, screened for bots ([06](06-community-feedback.md)) and emailed to the author ([14](14-email-notifications.md))
+- **Daily email** at 7am Pacific for anyone who confirms their address; one click to leave ([15](15-email-subscriptions.md))
+- **Visual design** — editorial, one centred reading column ([09](09-visual-design.md))
 
-**Explicit non-goals** (considered and declined): user accounts, comment threads,
-per-user profiles and scores, and any leaderboard.
+**Non-goals** (considered and declined): user accounts, comment threads, per-user profiles and
+scores, and any leaderboard.
 
 ## Architecture summary
 
-- **C# / Blazor Server, .NET 10**, interactive server rendering
-- **No database.** JSON files in `OneADay/App_Data/`: `teasers.json`,
-  `stats.json`, `suggestions.json`, `issues.json`, `rotation.json`,
-  `subscribers.json`, plus `teaser-images/`. The folder is gitignored — it holds
-  subscriber addresses, so it must never reach the public repository.
-- **One clock.** `AppTime` pins every day boundary to `America/Los_Angeles`
-- **Admin lives on the author's machine.** The live site has no `/admin`; teasers are
-  written locally and published by copying `teasers.json` ([PRD 10](10-admin-authentication.md))
+- **C# and Blazor Server, .NET 10.** Pages are built on the server, and each visitor's browser
+  keeps a live connection to it.
+- **No database.** JSON files in `OneADay/App_Data/` — `teasers.json`, `stats.json`,
+  `suggestions.json`, `issues.json`, `rotation.json`, `subscribers.json` — plus the
+  `teaser-images/` and `keys/` folders. The folder never goes in the public repository: it holds
+  every future answer and every subscriber's address. *History: the folder itself was excluded on
+  2026-07-30, before any of it was committed. The authoring draft `BrainTeaserQuestions.txt` —
+  questions with hints and solutions — was committed on 2026-07-29 and 2026-08-11 and only excluded
+  on 2026-08-26. It stays in the public history, and because merged pull requests keep their old
+  changes on GitHub, only making the repository private removes it completely.*
+- **One clock.** `AppTime`, pinned to Pacific Time.
+- **Admin only on the author's machine.** Teasers are published by copying `teasers.json`
+  ([PRD 10](10-admin-authentication.md)).
 
-Storage is intentionally the simplest thing that works. All reads and writes funnel
-through the `*Store` services, so swapping JSON for SQLite later is a contained
-change.
+Storage is the simplest thing that works. All reading and writing goes through the `*Store`
+classes, so moving to a database (SQLite) later is a contained change.
 
 ## Success measures
 

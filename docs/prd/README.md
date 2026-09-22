@@ -1,16 +1,12 @@
 # Stumpty — Product Requirements
 
-This folder holds the product requirements documents for **Stumpty**, a daily
-brain teaser web app.
+Requirements for **Stumpty**, a daily brain-teaser website. Each doc is both a spec and a diary:
+how a feature works, plus the decisions and mistakes that shaped it.
 
-Two kinds of document live here — the table below says which each one is. The number
-is only the order they were written in, not the kind.
+- **Spec of record** — built and shipped. If the code and the doc disagree, one of them is a bug.
+- **Proposed** — not built yet: the problem, the requirements, and how we'll know it's done.
 
-- **Spec of record** — describes behaviour that is **built and shipped**.
-  These are the reference for how the product is supposed to work; if the code and
-  the doc disagree, one of them is a bug.
-- **Proposals** — features **not yet built**. These define the problem,
-  the requirements, and the acceptance criteria before implementation starts.
+The number is only the order the docs were written in.
 
 | Doc | Status |
 |---|---|
@@ -33,29 +29,30 @@ is only the order they were written in, not the kind.
 
 ## Conventions
 
-- **Must / should / may** carry their usual RFC-style weight.
-- "Solver" = a visitor answering puzzles. "Author" = the person publishing them
-  (currently a single person, the site owner).
-- Dates and day boundaries always mean **Pacific Time** — see
-  [01 — Daily challenge](01-daily-challenge.md).
-- **"Mutation-verified"** means the safeguard was deliberately broken to confirm a test
-  actually noticed. A test that passes whether or not the code works is worse than no
-  test, because it stops anyone from looking. Where a criterion carries this tag, that
-  check was done.
-- **"Author's decision"** with a date marks a product call, not a technical constraint —
-  it can be revisited, but it wasn't an accident.
+- Each doc opens with **In plain terms**. **Implementation notes** at the end are for developers.
+- **Must** is a hard rule, **should** a strong default, **may** optional.
+- **Solver** = a visitor answering puzzles. **Author** = the person publishing them — today, the
+  site owner alone.
+- Dates and day boundaries always mean **Pacific Time**.
+- **History** notes record past decisions and mistakes. They're kept on purpose.
+- **Author's decision** (dated) marks a product call rather than a technical limit — open to
+  revisiting, but not an accident.
+- **Mutation-verified**: the safeguard was deliberately broken to confirm its test fails. A test
+  that passes whether or not the code works is worse than none — it stops anyone looking.
+- **Settings are written two ways.** `Email:AppPassword` in the settings file or user-secrets and
+  `Email__AppPassword` as a server's environment variable are the same setting: environment
+  variables can't contain a colon, so it becomes a double underscore.
 
 ### Keeping these honest
 
-A spec of record that has drifted is worse than no spec, because people trust it. Two
-rules earned the hard way in an audit of all of these on 2026-09-08:
+A drifted spec is worse than none, because people trust it. An audit of every doc on 2026-09-08
+set two rules:
 
-- **A `[x]` means verified, not intended.** Three ticked criteria were false — a
-  "dated note" that had been deliberately removed, a "maintenance page" replaced by a
-  shipped game, and a test count off by 140. Each one stopped anyone from looking.
-- **Behaviour changes in the same pass as the doc.** Every inconsistency found traced
-  to work that shipped without a doc pass beside it. The specs that were current were
-  current because they were edited *while* the feature was built.
+- **`[x]` means verified, not intended.** Three ticked criteria were false: a "dated note" removed
+  on purpose, a "maintenance page" long since replaced by a game, and a test count off by 140.
+- **Change the doc in the same pass as the behaviour.** Every inconsistency traced to work shipped
+  without a doc edit beside it; the docs that stayed accurate were edited while the feature was
+  built.
 
-Don't pin numbers that drift on their own (total test counts, file sizes). Pin the
-thing that proves the behaviour instead.
+Don't pin numbers that drift on their own, such as total test counts or file sizes. Pin the thing
+that proves the behaviour.
