@@ -142,16 +142,31 @@ visible.
 - **A determined attacker rotating IPs still gets through.** True of IP limits
   generally, and accepted. Escalation path if it is ever actually abused: a CAPTCHA
   (Cloudflare Turnstile — free, invisible to most visitors, no ad-tech tracking).
-- ⚠️ **The IP layer will misbehave behind a reverse proxy.** `RemoteIpAddress` is
-  whoever connected to Kestrel; behind nginx, Cloudflare, or Azure App Service that is
-  *the proxy*, collapsing every visitor into one hash — after three submissions the form
-  would close for everyone, every day. **`UseForwardedHeaders` must be configured before
-  the app goes behind a proxy.** See [PRD 11](11-deployment.md).
-- ⚠️ **The stored IP hash is reversible.** Plain SHA-256 over an IP is not
-  pseudonymisation: IPv4 is only 2³² values, so the whole keyspace is minutes of GPU
-  work, and a localhost hash was reversed by hand in six guesses. HMAC with a
-  server-side secret would fix it. Until then, treat `suggestions.json` as containing
-  visitor IPs, not anonymised data.
+- ~~**The IP layer will misbehave behind a reverse proxy.**~~ **Fixed 2026-09-16.**
+  `RemoteIpAddress` is whoever connected to Kestrel; behind nginx, Cloudflare, or Azure
+  App Service that is *the proxy*, collapsing every visitor into one hash — after three
+  submissions the form would close for everyone, every day. `Services/ProxyOptions.cs`
+  now reads the forwarded headers, **off by default** because the author's machine has no
+  proxy. Switching it on without naming a trusted source **refuses the start**: the
+  middleware would otherwise trust only loopback, ignore every header in silence, and
+  leave the failure in place with no error to chase. See [PRD 11](11-deployment.md).
+- ~~**The stored IP hash is reversible.**~~ **Fixed 2026-09-16.** Plain SHA-256 over an IP
+  is not pseudonymisation: IPv4 is only 2³² values, so the whole keyspace is minutes of GPU
+  work, and a localhost hash was reversed by hand in six guesses. `Services/IpHasher.cs`
+  now uses HMAC-SHA256 with a server-side key — the same determinism, so the cap is
+  unchanged, but inverting it means guessing 256 bits rather than walking four billion.
+
+  The key is a secret: user-secrets locally (`Privacy:IpHashKey`), `Privacy__IpHashKey` in
+  production, never `appsettings.json`. **Outside Development a missing or token-length key
+  refuses the start**, rather than falling back to an unkeyed hash and looking protected
+  while storing recoverable addresses.
+
+  These two shipped together deliberately. Behind a proxy without forwarded headers the
+  stored value is a hash of *the proxy's* address, which reveals nothing; fixing that alone
+  would have started recording real visitor addresses under the weak hash. Migration was
+  nothing: the cap only compares entries from **today** (`ReachedLimit`), so old unkeyed
+  hashes stop matching for at most the rest of one day, and the 7-day prune clears them.
+  The same holds if the key is ever rotated.
 - **`IHttpContextAccessor` in an interactive component is unsupported by design.** It
   works today (the context flows into the circuit), but Microsoft documents it as
   unsafe in interactive Blazor components, and it may return a stale or disposed
@@ -264,9 +279,60 @@ Verified in the browser against the running app:
 - [x] The real `issues.json` migrated from the old format with its report intact
 - [x] Both blocked counts surface in admin
 
+### The keyed IP hash — covered by `IpHasherTests`
+
+- [x] The same address always hashes the same way, so the cap still recognises a repeat
+      visitor
+- [x] Different addresses hash differently
+- [x] **The key changes the hash** — mutation-verified, and the load-bearing one: an unkeyed
+      implementation passes every other test in this list and fails only this
+- [x] The result is not the plain SHA-256 of the address, guarding that regression directly
+- [x] No address at all hashes to null, so the store falls back to the per-device limit
+      rather than counting every anonymous visitor as one person
+- [x] Outside Development a missing, blank or token-length key **refuses the start** — in
+      Staging as well as Production (mutation-verified: switching the refusal off fails six)
+- [x] A real key starts, and Development starts with no key at all — the control cases
+- [x] The refusal names the environment variable to set. Unlike the Development-mode guard,
+      naming it here is the fix rather than a bypass
+
+### Forwarded headers — covered by `ProxyHeadersTests`, real requests on a loopback port
+
+- [x] Switched off, a forwarded address is ignored
+- [x] A sender that isn't a known proxy is ignored — which also pins that explicit
+      configuration **replaces** the middleware's built-in trust of loopback rather than
+      adding to it (mutation-verified: appending instead of replacing fails this, and would
+      have made the configuration look authoritative when it wasn't)
+- [x] A known proxy, a known network, and trust-everything each believe the header
+- [x] Announcing a proxy without trusting one **refuses the start**, rather than silently
+      ignoring every header and leaving both failures in place (mutation-verified)
+
+### Unreadable stored values — covered by `ProtectedStorageTests`
+
+The visitor id lives in `ProtectedLocalStorage`, and `GetAsync` **throws** rather than
+reporting failure when a value can't be decrypted. Unhandled, that kills the visitor's
+circuit — their page stops working. Found 2026-09-16 by moving the Data Protection key ring
+([PRD 11](11-deployment.md) requirement 4), which made every browser holding an older value
+hit it at once.
+
+- [x] A value this server cannot decrypt reads as *no value*, so a new id is minted instead
+      of the page dying (mutation-verified: rethrowing makes this fail, and the exception it
+      throws is the real one — `CryptographicException`, the same seen in the live log)
+- [x] Nothing stored reads as no value
+- [x] **A readable value still comes back** — the control case, and load-bearing:
+      mutation-verified that a helper always returning `default` fails here while passing
+      both tests above. Without it, every returning visitor would silently get a fresh
+      identity on every page load
+
 ### Not covered
 
-- [ ] Behaviour behind a reverse proxy (`X-Forwarded-For`) — see the open risk above
+- [ ] A real client IP arriving through a **real** proxy on the real host. The trust rules
+      are covered above, but only the live deploy proves the host's proxy is the one
+      configured — submit from two devices and confirm they count separately
+      ([PRD 11](11-deployment.md))
+- [ ] The `FormatException` and `JsonException` branches of `ReadOrDefaultAsync`. Mutation
+      testing showed **neither is reached** by any test: rethrowing from either changes no
+      result. They are defensive breadth against a malformed or reshaped entry, not verified
+      behaviour, and are labelled as such in the source rather than counted as covered
 
 > **Regression on record:** the status `<select>` initially set both a `value`
 > attribute *and* `selected` on its options. Those two sources of truth can

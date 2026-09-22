@@ -1,11 +1,10 @@
 @page "/contact"
-@using System.Security.Cryptography
-@using System.Text
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @inject SuggestionStore Suggestions
 @inject EmailNotifier Notifier
 @inject ProtectedLocalStorage LocalStorage
 @inject IHttpContextAccessor HttpAccessor
+@inject IpHasher Hasher
 
 <PageTitle>One a Day — Contact us</PageTitle>
 
@@ -98,10 +97,12 @@
         }
         _formShownAt = DateTime.UtcNow;
 
-        var stored = await LocalStorage.GetAsync<Guid>(VisitorKey);
-        if (stored.Success && stored.Value != Guid.Empty)
+        // See ProtectedStorageExtensions: a value this server can no longer decrypt must not
+        // throw from here, or the visitor loses the page instead of the stored id.
+        var stored = await LocalStorage.ReadOrDefaultAsync<Guid>(VisitorKey);
+        if (stored != Guid.Empty)
         {
-            _visitorId = stored.Value;
+            _visitorId = stored;
         }
         else
         {
@@ -196,12 +197,11 @@
             ? parsed.ToString()
             : nameof(Difficulty.Medium);
 
-    /// <summary>Hashed client IP — never stored raw. Null if unavailable.</summary>
-    private string? GetIpHash()
-    {
-        var ip = HttpAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
-        return string.IsNullOrEmpty(ip)
-            ? null
-            : Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(ip)));
-    }
+    /// <summary>
+    /// Keyed hash of the client IP — never stored raw, and never a plain hash either: see
+    /// <see cref="IpHasher"/> for why an unkeyed one is the address wearing a hat. Null when
+    /// there is no address to hash, which the store reads as "no IP layer for this one".
+    /// </summary>
+    private string? GetIpHash() =>
+        Hasher.Hash(HttpAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString());
 }

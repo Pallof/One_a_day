@@ -40,18 +40,59 @@ environment: state lives in **local JSON files**, and Blazor Server keeps a
    re-resolvable, so a past day can come back with a *different* teaser — retroactively
    changing what "yesterday's solution" was ([PRD 08](08-recycling-rotation.md)).
 
-3. **Behind a proxy, forwarded headers are mandatory.** `RemoteIpAddress` is whoever
-   connected to Kestrel; behind nginx, Cloudflare, or Azure App Service that is **the
-   proxy**, which collapses every visitor into one IP. The suggestion form's
-   three-per-IP cap would then close the form for the entire internet after three
-   submissions, every day. Configure `UseForwardedHeaders` and verify a real client IP
-   arrives before going public. Deferred here by [PRD 06](06-community-feedback.md).
+3. **Behind a proxy, forwarded headers are mandatory.** ✅ **Built 2026-09-16** —
+   `Services/ProxyOptions.cs`. Set `Proxy:Enabled` and name a trusted source on the host;
+   the app refuses to start if one is announced without the other.
 
-4. **Persist the Data Protection keys.** They default to a local folder that does not
-   survive a container restart. Lose them and every `ProtectedLocalStorage` value
-   becomes undecryptable: each visitor looks brand new, unique-attempter counts
-   inflate, and the one-suggestion-per-day limit resets for everyone. It fails
-   *silently* — the app keeps working — so it will not be noticed without checking.
+   Two separate failures, one cause. `RemoteIpAddress` is whoever connected to Kestrel;
+   behind nginx, Cloudflare, or Azure App Service that is **the proxy**, which collapses
+   every visitor into one IP, so the suggestion form's three-per-IP cap closes the form for
+   the entire internet after three submissions, every day. **And the site does not load at
+   all**: the proxy terminates TLS and forwards plain HTTP, so `UseHttpsRedirection`
+   redirects to HTTPS, the proxy forwards plain HTTP again, and the browser gives up with
+   `ERR_TOO_MANY_REDIRECTS`. The redirect loop is the more severe of the two and was *not*
+   previously recorded here — found 2026-09-16 while reading the pipeline.
+
+   `UseProxyHeaders()` therefore runs **first in the pipeline**, above `UseHsts` and
+   `UseHttpsRedirection`, both of which read the scheme. Placed below them the loop returns
+   while the code still looks correct.
+
+   Still to verify on the real host: that a genuine client IP arrives (see acceptance
+   criteria). Prefer `KnownProxies`/`KnownNetworks` over `TrustAllProxies` wherever the host
+   documents a fixed address — trusting every sender lets a client name its own address and
+   step past the cap, which [PRD 06](06-community-feedback.md) already accepts as reachable
+   by other means, but there's no reason to make it free.
+
+4. **Persist the Data Protection keys.** ✅ **Built 2026-09-16** — persisted to
+   `App_Data/keys/`, which is the volume requirement 2 already covers and `.gitignore`
+   already excludes.
+
+   They default to a local folder that does not survive a container restart. Lose them and
+   every `ProtectedLocalStorage` value becomes undecryptable: each visitor looks brand new,
+   unique-attempter counts inflate, and the one-suggestion-per-day limit resets for
+   everyone.
+
+   > **Correction, found 2026-09-16 while verifying this.** An earlier draft of this
+   > requirement said the failure was *silent* — that the app keeps working and only the
+   > numbers drift. That was wrong, and the mistake mattered.
+   > `ProtectedLocalStorage.GetAsync` does **not** catch decryption failures: it throws a
+   > `CryptographicException` out of `OnAfterRenderAsync`, which is unhandled, which **kills
+   > the visitor's circuit**. Their page stops working. Moving the key ring made this
+   > immediately observable — every browser still holding a value from the old default ring
+   > logged `The key {…} was not found in the key ring` and lost its circuit.
+   >
+   > Reading now goes through `ProtectedStorageExtensions.ReadOrDefaultAsync`, which treats
+   > an unreadable value as no value: a new id is minted and the stale value is overwritten
+   > on the next write. Only with that in place is the *silent* description accurate — and
+   > it is the behaviour any future key rotation, restore-from-backup, or ring move depends
+   > on.
+
+   The application name is **pinned** to `OneADay` rather than left to default. The default
+   discriminator is the assembly name, so renaming the project would silently invalidate
+   every stored value and reset every visitor. This is what makes the pending rename safe.
+
+   Note for backups (requirement 8): `App_Data/keys/` is unencrypted at rest, so it inherits
+   the same "as private as the host" rule the subscriber list already carries.
 
 5. **Single instance.** The JSON stores assume one writer; the app must not be scaled
    to multiple instances without first moving to a real database.
@@ -73,6 +114,26 @@ environment: state lives in **local JSON files**, and Blazor Server keeps a
     and **`Site__BaseUrl` set to the public HTTPS address** ([PRD 15](15-email-subscriptions.md)).
     The second is easy to miss and fails silently: every link in every email — confirm,
     unsubscribe, solve — is built from it, and the default points at `localhost`.
+
+13. **Privacy and proxy settings.** Two more, both added 2026-09-16:
+
+    | Setting | Required? | If it's wrong |
+    |---|---|---|
+    | `Privacy__IpHashKey` | **Yes** — a secret, ≥32 chars | The app **refuses to start** |
+    | `Proxy__Enabled` + a trusted source | Yes, behind a proxy | Refuses to start if one is set without the other |
+
+    Unlike every other setting here, a missing `Privacy__IpHashKey` **stops the deploy**
+    rather than degrading quietly — deliberately, because the quiet version stores
+    recoverable visitor addresses while looking fine ([PRD 06](06-community-feedback.md)).
+    Generate it once and keep it: rotating it resets everyone's daily suggestion cap for
+    the rest of that day.
+
+    ```bash
+    openssl rand -base64 32
+    ```
+
+    For the proxy, set either `Proxy__KnownProxies__0` / `Proxy__KnownNetworks__0` (preferred,
+    where the host documents a fixed address) or `Proxy__TrustAllProxies=true`.
 13. **A publish command for teasers.** One command copies `teasers.json` and any new
     images into the server's `App_Data/` and restarts the app — **never the whole
     folder**, which would overwrite live stats, rotation history and subscribers

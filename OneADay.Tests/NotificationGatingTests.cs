@@ -97,6 +97,11 @@ public class NotificationGatingTests : BunitContext
 
         Services.AddDataProtection();
         Services.AddScoped<ProtectedLocalStorage>();
+
+        // The page hashes the address above before storing it. A fixed key keeps the hash
+        // stable across the run, so the per-IP cap stays reachable here — the same reason
+        // FixedHttpContextAccessor exists.
+        Services.AddSingleton(IpHasher.WithKey("notification-gating-tests-fixed-key-00"));
         return notifier;
     }
 
