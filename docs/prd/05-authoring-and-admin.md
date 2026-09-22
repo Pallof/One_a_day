@@ -2,6 +2,15 @@
 
 **Status:** Spec of record · **Route:** `/admin`, on the author's machine only
 
+## In plain terms
+
+One person writes every puzzle by hand, so adding one has to be fast — if it's tedious the
+queue runs dry and the site breaks its only promise. This page is the form for that: the
+question, the accepted answers, an optional hint, solution and picture. It defaults the date to
+the next empty day, so you can queue a week in one sitting without retyping anything.
+
+It exists **only on the author's own computer**. The live site has no admin page at all.
+
 ## Problem
 
 The product's whole premise is one new teaser per day, published by one person by

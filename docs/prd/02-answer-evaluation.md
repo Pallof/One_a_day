@@ -2,6 +2,20 @@
 
 **Status:** Spec of record · **Owner:** `Models/BrainTeaser.cs`
 
+## In plain terms
+
+People type answers in free text, so the site has to be generous about *how* an answer is
+phrased without ever accepting one that's actually wrong:
+
+- `A Keyboard!` matches `a keyboard` — case and punctuation ignored
+- `forty-eight` matches `48` — spelled-out numbers count as their value
+- `9.0` matches `9`, and `1,000` matches `1000`
+- But `12+12` does **not** solve a make-24 puzzle built from 5, 5, 5 and 1 — right answer,
+  wrong numbers
+
+The failure that would destroy trust fastest is telling someone who *is* right that they're
+wrong, so the rules lean generous. They just never lean so far that a wrong answer gets through.
+
 ## Problem
 
 Free-text answers are the core interaction, and the failure mode that would kill

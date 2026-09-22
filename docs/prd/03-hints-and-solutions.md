@@ -2,6 +2,16 @@
 
 **Status:** Spec of record
 
+## In plain terms
+
+Help exists, but it's earned. A hint stays locked until you've made one attempt. The full
+solution **never** appears on the day a puzzle is live, however many times you try — it unlocks
+the next day, on the "yesterday's solution" page. **Time earns the answer, not effort.**
+
+The subtle part: because old puzzles get recycled as today's challenge, *"is this puzzle old?"*
+is not the same question as *"is this puzzle live?"* Confusing the two would hand over the
+answer to the puzzle people are currently solving.
+
 ## Problem
 
 Help has to exist — an unsolvable puzzle with no way forward is just a dead end. But

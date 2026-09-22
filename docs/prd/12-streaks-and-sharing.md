@@ -2,6 +2,15 @@
 
 **Status:** Proposed · **Priority: P2 — post-launch retention**
 
+## In plain terms
+
+**Not built yet — this is a proposal.** Two ideas to give people a reason to come back and to
+tell other people: a **streak** (how many days in a row you've solved), and a **share button**
+that copies a short result containing no spoilers — the mechanic that made Wordle spread.
+
+Both work without accounts. The streak lives in your own browser, which means clearing your
+browser loses it — the honest cost of having no logins.
+
 ## Problem
 
 Nothing currently brings a solver back tomorrow except memory. The post-solve

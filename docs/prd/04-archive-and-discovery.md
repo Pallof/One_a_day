@@ -3,6 +3,18 @@
 **Status:** Spec of record · **Routes:** `/twentyfour` (and legacy `/questions`)
 · **Supersedes:** the Archive & discovery spec, removed 2026-08-17
 
+## In plain terms
+
+**There is no way to browse old puzzles, and that's deliberate rather than missing.** An
+archive let a visitor burn through the entire bank in one sitting and then have no reason to
+come back tomorrow — which defeats the whole point of a daily puzzle. It was removed rather
+than tuned, because the feature itself was at odds with the goal.
+
+Old puzzle addresses now return "not found" rather than being merely unlinked, because
+unlinking leaves the whole bank one guessed address away. The slot it used to occupy holds the
+24 game instead, which invents its own puzzles and so can be played all afternoon without using
+any up.
+
 ## Problem
 
 The product's whole premise is **one puzzle a day**: the daily rhythm is what makes

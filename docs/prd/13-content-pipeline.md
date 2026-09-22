@@ -2,6 +2,16 @@
 
 **Status:** Proposed · **Priority: P2 — author quality of life**
 
+## In plain terms
+
+**Not built yet — this is a proposal.** Two conveniences for whoever writes the puzzles. First,
+a **warning when they're about to run out**: during development the schedule ran dry for four
+days and nothing said so. Second, a way to **paste in a whole week at once** instead of adding
+puzzles one at a time.
+
+Plus a nudge when a new question looks a lot like an existing one — two near-identical puzzles
+slipped in and were only spotted by eye later.
+
 ## Problem
 
 The product promises a puzzle every day, and one person supplies them by hand. The

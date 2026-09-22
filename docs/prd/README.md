@@ -38,6 +38,12 @@ is only the order they were written in, not the kind.
   (currently a single person, the site owner).
 - Dates and day boundaries always mean **Pacific Time** — see
   [01 — Daily challenge](01-daily-challenge.md).
+- **"Mutation-verified"** means the safeguard was deliberately broken to confirm a test
+  actually noticed. A test that passes whether or not the code works is worse than no
+  test, because it stops anyone from looking. Where a criterion carries this tag, that
+  check was done.
+- **"Author's decision"** with a date marks a product call, not a technical constraint —
+  it can be revisited, but it wasn't an accident.
 
 ### Keeping these honest
 

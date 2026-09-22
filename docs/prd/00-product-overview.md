@@ -1,3 +1,4 @@
+# This is both a Product Diary and a PRD of past and ongoing developments of Stumpty
 # PRD 00 — Product overview
 
 **Status:** Spec of record · **Last updated:** 2026-09-11

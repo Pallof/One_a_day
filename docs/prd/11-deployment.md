@@ -2,206 +2,175 @@
 
 **Status:** Proposed · **Priority: P1 — the remaining launch blocker**
 
-## Problem
+## In plain terms
 
-The app only runs on the author's Mac, so it has no users. Publishing it is what turns
-the project into a product. Two properties of the current design need care in a hosted
-environment: state lives in **local JSON files**, and Blazor Server keeps a
-**stateful WebSocket circuit** per visitor.
+The site runs only on the author's Mac, so nobody can use it. Putting it online is what turns
+this from a project into a product. Two things about how it's built need care on a real server:
+**all the data lives in plain files on disk**, so the server needs storage that survives a
+restart; and **every visitor holds an open connection**, so it needs a host that allows those
+and never goes to sleep.
+
+The single biggest risk is storage. On many hosts the disk is wiped on every deploy — which
+would silently destroy every puzzle, every statistic and every subscriber.
 
 ## Goals
 
-- A public URL serving today's challenge over HTTPS.
-- Data (teasers, stats, suggestions, issues, **rotation**, subscribers, images)
-  survives restarts and redeploys.
+- A public HTTPS address serving today's challenge at `stumpty.com`.
+- Data (teasers, stats, suggestions, issues, **rotation**, subscribers, images) survives
+  restarts and redeploys.
 - Deploying an update is one repeatable command or a push.
 
 ## Non-goals
 
 - Autoscaling or multi-region
-- Migrating off JSON storage (see Risks)
-- A custom domain (nice, not required for v1)
+- Migrating off file storage (see Risks)
 
 ## Requirements
 
-1. **Run in Production — never Development.** The live site has no admin page only
-   because it doesn't run in Development ([PRD 10](10-admin-authentication.md)). The app
-   now enforces this itself: it refuses to start in Development unless it's a Debug build
-   on a machine marked as the author's computer. Deploy a **published** build — Release,
-   so the fence holds even if the host sets `ASPNETCORE_ENVIRONMENT=Development` — and
-   **never mark the server** as the author's machine. Most hosts default to Production;
-   confirm it anyway.
-2. **Persistent storage.** `App_Data/` must be on a volume that survives restarts and
-   redeploys. Ephemeral container filesystems would silently discard every teaser and
-   every stat — this is the single biggest deployment risk.
+1. **Run in Production — never Development.** The live site has no admin page only because it
+   doesn't run in Development ([PRD 10](10-admin-authentication.md)). The app enforces this
+   itself: it refuses to start in Development unless it's a Debug build on a machine marked as
+   the author's. Deploy a **published** build, and **never mark the server**. Most hosts default
+   to Production; confirm it anyway.
 
-   This includes **`rotation.json`**, which is easy to mistake for a cache. It is not:
-   it holds which teaser ran on which day. Losing it makes already-published days
-   re-resolvable, so a past day can come back with a *different* teaser — retroactively
-   changing what "yesterday's solution" was ([PRD 08](08-recycling-rotation.md)).
+2. **Persistent storage.** `App_Data/` must be on a volume that survives restarts and redeploys.
+   Ephemeral container filesystems would silently discard everything — **the single biggest
+   deployment risk.**
 
-3. **Behind a proxy, forwarded headers are mandatory.** ✅ **Built 2026-09-16** —
-   `Services/ProxyOptions.cs`. Set `Proxy:Enabled` and name a trusted source on the host;
-   the app refuses to start if one is announced without the other.
+   This includes **`rotation.json`**, which is easy to mistake for a cache. It isn't: it records
+   which teaser ran on which day. Losing it lets an already-published day resolve to a
+   *different* teaser, retroactively changing what "yesterday's solution" was
+   ([PRD 08](08-recycling-rotation.md)).
 
-   Two separate failures, one cause. `RemoteIpAddress` is whoever connected to Kestrel;
-   behind nginx, Cloudflare, or Azure App Service that is **the proxy**, which collapses
-   every visitor into one IP, so the suggestion form's three-per-IP cap closes the form for
-   the entire internet after three submissions, every day. **And the site does not load at
-   all**: the proxy terminates TLS and forwards plain HTTP, so `UseHttpsRedirection`
-   redirects to HTTPS, the proxy forwards plain HTTP again, and the browser gives up with
-   `ERR_TOO_MANY_REDIRECTS`. The redirect loop is the more severe of the two and was *not*
-   previously recorded here — found 2026-09-16 while reading the pipeline.
+3. **Behind a proxy, forwarded headers are mandatory.** ✅ **Built 2026-09-16.** Set
+   `Proxy:Enabled` and name a trusted source; the app refuses to start if one is set without the
+   other.
 
-   `UseProxyHeaders()` therefore runs **first in the pipeline**, above `UseHsts` and
-   `UseHttpsRedirection`, both of which read the scheme. Placed below them the loop returns
-   while the code still looks correct.
+   Two failures, one cause. Without them every visitor collapses into the proxy's address, so
+   the three-per-IP cap closes the suggestion form for the entire internet after three
+   submissions a day. **And the site doesn't load at all:** the proxy handles the secure
+   connection and passes an insecure one inward, the app redirects to the secure address, the
+   proxy passes insecure again, and the browser gives up. The redirect loop is the more severe
+   of the two and was *not* previously recorded here — found 2026-09-16 while reading the code.
 
-   Still to verify on the real host: that a genuine client IP arrives (see acceptance
-   criteria). Prefer `KnownProxies`/`KnownNetworks` over `TrustAllProxies` wherever the host
-   documents a fixed address — trusting every sender lets a client name its own address and
-   step past the cap, which [PRD 06](06-community-feedback.md) already accepts as reachable
-   by other means, but there's no reason to make it free.
+   `UseProxyHeaders()` therefore runs **first**, above anything that reads the connection
+   scheme. Placed below, the loop returns while the code still looks correct. Prefer naming a
+   fixed proxy address over trusting every sender wherever the host documents one.
 
-4. **Persist the Data Protection keys.** ✅ **Built 2026-09-16** — persisted to
-   `App_Data/keys/`, which is the volume requirement 2 already covers and `.gitignore`
-   already excludes.
+4. **Persist the Data Protection keys.** ✅ **Built 2026-09-16** — kept in `App_Data/keys/`,
+   which requirement 2 already covers and `.gitignore` already excludes.
 
-   They default to a local folder that does not survive a container restart. Lose them and
-   every `ProtectedLocalStorage` value becomes undecryptable: each visitor looks brand new,
-   unique-attempter counts inflate, and the one-suggestion-per-day limit resets for
-   everyone.
+   These keys encrypt the anonymous visitor id in each browser. They default to a folder that
+   doesn't survive a restart, and losing them makes every stored id unreadable: visitors look
+   brand new, attempter counts inflate, and daily limits reset for everyone.
 
-   > **Correction, found 2026-09-16 while verifying this.** An earlier draft of this
-   > requirement said the failure was *silent* — that the app keeps working and only the
-   > numbers drift. That was wrong, and the mistake mattered.
-   > `ProtectedLocalStorage.GetAsync` does **not** catch decryption failures: it throws a
-   > `CryptographicException` out of `OnAfterRenderAsync`, which is unhandled, which **kills
-   > the visitor's circuit**. Their page stops working. Moving the key ring made this
-   > immediately observable — every browser still holding a value from the old default ring
-   > logged `The key {…} was not found in the key ring` and lost its circuit.
-   >
-   > Reading now goes through `ProtectedStorageExtensions.ReadOrDefaultAsync`, which treats
-   > an unreadable value as no value: a new id is minted and the stale value is overwritten
-   > on the next write. Only with that in place is the *silent* description accurate — and
-   > it is the behaviour any future key rotation, restore-from-backup, or ring move depends
-   > on.
+   > **A correction worth keeping.** An earlier draft of this requirement said the failure was
+   > *silent*. It wasn't — reading an unreadable value **threw**, which killed the visitor's
+   > connection and broke their page. Moving the key ring made this visible immediately.
+   > Reading now goes through `ProtectedStorageExtensions.ReadOrDefaultAsync`, which treats an
+   > unreadable value as no value. Only *with that in place* is "silent" accurate — and every
+   > future key rotation or restore-from-backup depends on it.
 
-   The application name is **pinned** to `OneADay` rather than left to default. The default
-   discriminator is the assembly name, so renaming the project would silently invalidate
-   every stored value and reset every visitor. This is what makes the pending rename safe.
+   The application name is **pinned** rather than left to default, because the default is the
+   project name — so renaming the project would silently invalidate every stored id. This is
+   what makes the Stumpty rename safe.
 
-   Note for backups (requirement 8): `App_Data/keys/` is unencrypted at rest, so it inherits
-   the same "as private as the host" rule the subscriber list already carries.
+   `App_Data/keys/` is unencrypted at rest, so it inherits the same "as private as the host"
+   rule as the subscriber list (requirement 8).
 
-5. **Single instance.** The JSON stores assume one writer; the app must not be scaled
-   to multiple instances without first moving to a real database.
+5. **Single instance.** The file stores assume one writer; don't scale to multiple instances
+   without first moving to a real database.
 6. **HTTPS** with automatic certificate management.
-7. **Timezone independence.** Already handled — `AppTime` pins day boundaries to
-   Pacific regardless of server locale — but must be verified on the host, since a
-   server running UTC is the exact case this protects against.
-8. **Backups.** A scheduled copy of `App_Data/` off the host. Restoring must be
-   documented and tested at least once. The folder holds subscriber email addresses
-   ([PRD 15](15-email-subscriptions.md)), so the copy must be as private as the host.
+7. **Timezone independence.** Already handled — day boundaries are pinned to Pacific regardless
+   of server locale — but verify on the host, since a server running UTC is the exact case this
+   protects against.
+8. **Backups.** A scheduled copy of `App_Data/` off the host, with a restore **tested at least
+   once**. It holds subscriber email addresses and the encryption keys, so the copy must be as
+   private as the host.
 9. **Logging** sufficient to notice unhandled exceptions.
-10. **Reasonable WebSocket support** for Blazor Server circuits (rules out hosts that
-    only serve static content or short-lived functions).
-11. **Self-host the webfonts.** The app currently loads Lora and Atkinson Hyperlegible
-    from `fonts.googleapis.com`, which puts a third party on the render path and
-    exposes visitor IPs to Google. Serving the woff2 files from `wwwroot` removes both
-    ([PRD 09](09-visual-design.md)).
-12. **Email settings.** `Email__AppPassword` as a secret ([PRD 14](14-email-notifications.md)),
-    and **`Site__BaseUrl` set to the public HTTPS address** ([PRD 15](15-email-subscriptions.md)).
-    The second is easy to miss and fails silently: every link in every email — confirm,
-    unsubscribe, solve — is built from it, and the default points at `localhost`.
+10. **Support for long-lived connections** — rules out hosts that only serve static content or
+    short-lived functions.
+11. **Self-host the webfonts.** The app loads Lora and Atkinson Hyperlegible from Google, which
+    puts a third party on the render path and exposes visitor IPs to them. Serving the files
+    from `wwwroot` removes both ([PRD 09](09-visual-design.md)).
 
-13. **Privacy and proxy settings.** Two more, both added 2026-09-16:
+12. **Settings the deploy needs.** Four, and two of them stop the app starting:
 
-    | Setting | Required? | If it's wrong |
+    | Setting | Required | If it's wrong |
     |---|---|---|
-    | `Privacy__IpHashKey` | **Yes** — a secret, ≥32 chars | The app **refuses to start** |
-    | `Proxy__Enabled` + a trusted source | Yes, behind a proxy | Refuses to start if one is set without the other |
+    | `Privacy__IpHashKey` | **Yes** — a secret, ≥32 chars | **Refuses to start** |
+    | `Proxy__Enabled` + a trusted source | Behind a proxy | **Refuses to start** if one is set without the other |
+    | `Email__AppPassword` | For any email | No mail; site unaffected ([PRD 14](14-email-notifications.md)) |
+    | `Site__BaseUrl` = `https://stumpty.com` | Yes | **Fails silently** — every link in every email is built from it and defaults to localhost ([PRD 15](15-email-subscriptions.md)) |
 
-    Unlike every other setting here, a missing `Privacy__IpHashKey` **stops the deploy**
-    rather than degrading quietly — deliberately, because the quiet version stores
-    recoverable visitor addresses while looking fine ([PRD 06](06-community-feedback.md)).
-    Generate it once and keep it: rotating it resets everyone's daily suggestion cap for
-    the rest of that day.
+    The refusals are deliberate. A missing hash key quietly stores recoverable visitor
+    addresses while looking fine ([PRD 06](06-community-feedback.md)), so stopping the deploy is
+    the lesser harm. Generate the key once and **keep it** — rotating it resets everyone's daily
+    suggestion cap for the rest of that day:
 
     ```bash
     openssl rand -base64 32
     ```
 
-    For the proxy, set either `Proxy__KnownProxies__0` / `Proxy__KnownNetworks__0` (preferred,
-    where the host documents a fixed address) or `Proxy__TrustAllProxies=true`.
-13. **A publish command for teasers.** One command copies `teasers.json` and any new
-    images into the server's `App_Data/` and restarts the app — **never the whole
-    folder**, which would overwrite live stats, rotation history and subscribers
-    ([PRD 10](10-admin-authentication.md)). The bank must be in place before the first
-    start: the live site refuses to start without one. `dotnet publish` never includes
-    `App_Data/` — the project file excludes it, because by default it would ship every
-    future answer and real subscriber address with each deploy.
+13. **A publish command for teasers.** One command copies `teasers.json` and any new images into
+    the server's `App_Data/` and restarts — **never the whole folder**, which would overwrite
+    live stats, rotation history and subscribers ([PRD 10](10-admin-authentication.md)). The bank
+    must be in place before the first start, because the live site refuses to start without one.
+    `dotnet publish` never includes `App_Data/`; the project file excludes it, since by default
+    it would ship every future answer and real subscriber address on every deploy.
 
 ## Candidate hosts
 
-| Host | Fit |
-|---|---|
-| **Fly.io** | Good — persistent volumes, cheap, WebSockets fine |
-| **Azure App Service** | Good — first-class .NET |
-| **A small VPS** | Most control, most maintenance |
-| **Raspberry Pi at home** | Cheapest; needs tunnelling and has home-uptime caveats |
+| Host | Fit | Cost |
+|---|---|---|
+| **Fly.io** | Best fit — persistent volumes, long connections, always-on | ~$4/month (512MB + 1GB volume) |
+| **Azure App Service** | First-class .NET, least friction | ~$13/month (B1) |
+| **A small VPS** | Most control, most maintenance — and the only option where the proxy is on the same machine, so it can be named exactly | ~$5–6/month |
+| **Raspberry Pi at home** | Cheapest; needs tunnelling, and home uptime caveats | hardware |
+
+On any platform host, **switch off scale-to-zero** — see the cold-start risk below.
 
 ## Acceptance criteria
 
-- [ ] Public HTTPS URL serves the current challenge
-- [ ] `/admin` shows the not-found page on the live site — typed into the address bar and
-      clicked through from inside the app
-- [ ] Publishing a teaser reaches the live site without touching its stats, rotation or
-      subscribers
-- [ ] Adding a teaser, then redeploying, retains it (persistence proven, not assumed)
-- [ ] **`rotation.json` survives a redeploy** — check a past day still resolves to the
-      same teaser afterwards, not merely that the file exists
-- [ ] **A real client IP reaches the app**, not the proxy's (submit twice from two
-      devices and confirm they are counted separately)
-- [ ] Data Protection keys persist across a restart — a visitor is not treated as new
-- [ ] Day rollover verified correct on a UTC-clock server
+- [ ] Public HTTPS address serves the current challenge
+- [ ] `/admin` shows not-found on the live site — typed in, *and* clicked through from inside
+      the app
+- [ ] Publishing a teaser reaches the site without touching its stats, rotation or subscribers
+- [ ] Adding a teaser, then redeploying, retains it — persistence proven, not assumed
+- [ ] **`rotation.json` survives a redeploy** — check a past day still resolves to the same
+      teaser, not merely that the file exists
+- [ ] **A real client IP reaches the app**, not the proxy's — submit from two devices and
+      confirm they count separately
+- [ ] Data Protection keys persist across a restart — a visitor isn't treated as new
+- [ ] Day rollover correct on a UTC-clock server
 - [ ] A backup has been taken **and restored** once
-- [ ] The links in a real email open the public site — `Site__BaseUrl` is set
-- [ ] Documented deploy command in the README
+- [ ] Links in a real email open the public site
+- [ ] Deploy command documented in the README
 
 ## Risks
 
-- **Data loss from ephemeral storage** — the top risk; verify the volume before
-  trusting it with content.
-- ~~**Torn writes.**~~ **Fixed 2026-09-09.** Every store persisted with
-  `File.WriteAllText`, which truncates the file *then* writes — a crash inside that
-  window left a file that no longer parses, losing the whole store rather than the last
-  record. Every store now goes through `Services/AtomicFile.cs`: write a sibling temp file,
-  then `File.Move(..., overwrite: true)`, which is an atomic rename within one
-  filesystem.
+- **Data loss from ephemeral storage** — the top risk. Verify the volume before trusting it
+  with content.
+- **A failed write still throws into the UI.** Atomic writes protect the *data*, not the caller:
+  a full disk or permissions error propagates out and kills that visitor's connection. The store
+  is intact and nothing is lost, but the visitor sees a broken page rather than a message.
+  Narrower than it was, still open.
+- **Concurrency.** File writes are guarded within one process only. One instance is fine for
+  hundreds of daily solvers; beyond that, swap the stores for SQLite. Contained, because all
+  access already funnels through them.
+- **Cold starts** on scale-to-zero hosting drop connections — and it's *required*, not
+  preferred, for the daily email: an app asleep at 7am sends nothing until a visitor wakes it,
+  and a day with no visitor is skipped entirely ([PRD 15](15-email-subscriptions.md)).
+- ~~**Torn writes.**~~ **Fixed 2026-09-09.** Stores used to write by truncating the file *then*
+  writing, so a crash inside that window left a file that no longer parsed — losing the whole
+  store rather than the last record. Every store now writes to a temporary file beside the
+  target and renames it, which the filesystem does atomically.
 
-  Measured before and after, killing the process mid-write on a 21 MB file, 20 trials
-  each, starting from a valid file: **`File.WriteAllText` left the file unreadable
-  18 times out of 20; the atomic version 0 out of 20.**
+  Measured by killing the process mid-write on a 21 MB file, 20 trials each: **the old way left
+  the file unreadable 18 times out of 20; the new way 0 out of 20.**
 
-  Two properties to preserve if this is ever touched. The temp file must stay a
-  **sibling** of the target — a rename is only atomic within one filesystem, and using
-  the system temp directory silently degrades it to copy-then-delete across a mount
-  boundary. And `flushToDisk` remains **opt-in**: the rename alone survives process
-  crash, OOM, restart and deploy, while forcing a disk sync additionally survives power
-  loss at the cost of a real fsync on every write — which `StatsStore` performs on every
-  answer submitted.
-
-- **A failed write still throws into the UI.** Atomic writes protect the *data*, not the
-  caller: a full disk or a permissions error propagates out of `Persist()`, through
-  `TryAdd`, and out of a component's `Submit()`, which kills that visitor's SignalR
-  circuit. The store is intact and nothing is lost, but the visitor sees a broken page
-  rather than a message. Narrower than it was, and still open.
-- **Concurrency.** JSON writes are lock-guarded in-process only. One instance is fine
-  for hundreds of daily solvers; beyond that, or if scaling is ever needed, swap
-  `TeaserStore`/`StatsStore` for SQLite. That change is contained because all access
-  already funnels through those services.
-- **Cold starts** on scale-to-zero hosting would drop Blazor circuits; prefer an
-  always-on instance. It is required, not preferred, for the daily email: an app
-  asleep at 7am sends nothing until a visitor wakes it, and a day with no visitor is
-  skipped entirely ([PRD 15](15-email-subscriptions.md)).
+  Two properties to preserve if this is ever touched. The temporary file must stay **beside**
+  the target — a rename is only atomic within one filesystem, and using the system temp
+  directory silently degrades it to copy-then-delete. And forcing a disk sync stays
+  **opt-in**: the rename alone survives a crash, restart or deploy, while a sync additionally
+  survives power loss at the cost of real disk I/O on every write.

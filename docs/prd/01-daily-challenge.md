@@ -2,6 +2,16 @@
 
 **Status:** Spec of record · **Route:** `/`
 
+## In plain terms
+
+The home page shows one puzzle a day. Days change at **midnight California time** no matter
+where the server is, so everyone gets the same puzzle on the same day. Solve it and you get
+confetti, the box locks, and a countdown says when the next one arrives — and the page reloads
+itself at midnight, so a tab left open overnight isn't showing yesterday's.
+
+One thing it deliberately never does: show the puzzle's own date. Because old puzzles get
+recycled, printing the date would announce that today's is a repeat.
+
 ## Problem
 
 A daily puzzle only builds a habit if "today's puzzle" is unambiguous and the same
