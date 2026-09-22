@@ -125,8 +125,9 @@
     @if (_solved && _stats is not null && _stats.TotalSubmissions > 0)
     {
         <p class="cv-stats">
-            🧠 @_stats.UniqueAttempters.ToString("N0") @Wording.Plural(_stats.UniqueAttempters, "mind has", "minds have") taken on this challenge
-            — @_stats.SuccessfulSubmissions.ToString("N0")/@_stats.TotalSubmissions.ToString("N0") successful attempts
+            @_stats.SuccessfulSubmissions.ToString("N0") out of @_stats.TotalSubmissions.ToString("N0")
+            total @Wording.Plural(_stats.TotalSubmissions, "submission")
+            @Wording.Plural(_stats.SuccessfulSubmissions, "was", "were") correct
         </p>
     }
 </div>
@@ -168,8 +169,9 @@
         @if (_stats is not null && _stats.TotalSubmissions > 0)
         {
             <p class="cv-solved-stats">
-                🧠 @_stats.UniqueAttempters.ToString("N0") @Wording.Plural(_stats.UniqueAttempters, "mind has", "minds have")
-                taken this on — @_stats.SuccessfulSubmissions.ToString("N0")/@_stats.TotalSubmissions.ToString("N0") successful
+                @_stats.SuccessfulSubmissions.ToString("N0") out of @_stats.TotalSubmissions.ToString("N0")
+                total @Wording.Plural(_stats.TotalSubmissions, "submission")
+                @Wording.Plural(_stats.SuccessfulSubmissions, "was", "were") correct
             </p>
         }
 
@@ -183,7 +185,6 @@
 @code {
     private const int MinAttemptsBeforeHint = 1;
     private const int MaxSubmissionLength = 300;
-    private const string VisitorKey = "oad-visitor-id";
 
     /// <summary>Wrong answers before we suggest a change of scene.</summary>
     private const int AttemptsBeforeNudge = 3;
@@ -212,7 +213,6 @@
     private bool _revealed;
     private bool _showHint;
     private int _attempts;
-    private Guid _visitorId;
     private StatsSnapshot? _stats;
     private Timer? _countdownTimer;
     private DateOnly _solvedOn;
@@ -275,23 +275,10 @@
         {
             return;
         }
-        // Anonymous device id so "unique minds" can be counted without accounts. Read through
-        // ReadOrDefaultAsync: a value this server can no longer decrypt — after the key ring
-        // is rotated, restored or moved — would otherwise throw from here and kill the
-        // circuit, taking the visitor's page down instead of quietly minting a new id.
-        var stored = await LocalStorage.ReadOrDefaultAsync<Guid>(VisitorKey);
-        if (stored != Guid.Empty)
-        {
-            _visitorId = stored;
-        }
-        else
-        {
-            _visitorId = Guid.NewGuid();
-            await LocalStorage.SetAsync(VisitorKey, _visitorId);
-        }
-
-        // Respect an earlier dismissal before any trigger can fire. An unreadable value means
-        // the nudge shows once more, which is the harmless way to be wrong.
+        // Respect an earlier dismissal before any trigger can fire. Read through
+        // ReadOrDefaultAsync: a value this server can no longer decrypt — after the key ring is
+        // rotated, restored or moved — would otherwise throw from here and kill the circuit.
+        // An unreadable value just means the nudge shows once more, the harmless way to be wrong.
         _nudgeDismissed = await LocalStorage.ReadOrDefaultAsync<bool>(NudgeDismissedKey);
 
         // Start the quiet-period clock from the moment the page is usable.
@@ -418,11 +405,7 @@
             }
         }
 
-        if (_visitorId == Guid.Empty)
-        {
-            _visitorId = Guid.NewGuid();
-        }
-        Stats.RecordSubmission(Teaser.Id, _visitorId, _solved);
+        Stats.RecordSubmission(Teaser.Id, _solved);
         _stats = Stats.Get(Teaser.Id);
 
         if (_solved)

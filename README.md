@@ -30,7 +30,7 @@ Built with **C# / Blazor Server (.NET 10)**.
 - **Difficulty badges** — Easy / Medium / Hard, colour-coded green / yellow / red
 - **Confetti** on a correct answer 🎉
 - **Post-solve countdown** to the next challenge
-- **Community stats** — "466/13,502 successful attempts", revealed only after you solve
+- **Community stats** — "342 out of 1,208 total submissions were correct", revealed only after you solve
 - **Suggest a teaser** — visitors can submit their own (rate-limited to one per day)
 
 **For the author (`/admin`)**
@@ -126,8 +126,8 @@ so the whole site can be backed up by copying a folder or edited by hand:
 ### Design decisions worth knowing
 
 - **No accounts.** An early login page was removed — accounts accomplished nothing
-  here. Solvers are counted with an anonymous per-device ID, so "unique minds" works
-  without collecting anything personal.
+  here. Statistics are just two numbers per puzzle — answers submitted, and answers
+  correct — so they record nothing about who answered.
 - **Pacific-pinned clock.** Every page and the post-solve countdown share one
   `America/Los_Angeles` day boundary, so the timer hitting 00:00:00 and the new
   teaser appearing are always the same moment.

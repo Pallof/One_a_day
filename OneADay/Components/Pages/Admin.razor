@@ -517,7 +517,7 @@
         var stats = Stats.Get(teaserId);
         return stats.TotalSubmissions == 0
             ? "—"
-            : $"{stats.UniqueAttempters:N0} {(stats.UniqueAttempters == 1 ? "mind" : "minds")} · {stats.SuccessfulSubmissions:N0}/{stats.TotalSubmissions:N0} successful";
+            : $"{stats.SuccessfulSubmissions:N0}/{stats.TotalSubmissions:N0} successful";
     }
 
     private void Delete(Guid id)

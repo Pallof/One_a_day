@@ -2,17 +2,16 @@
 
 **Status:** Spec of record · **Route:** `/admin`, on the author's machine only
 
-## Problem
+## In plain terms
 
-The product's whole premise is one new teaser per day, published by one person by
-hand. If authoring has any friction, the queue runs dry and the site breaks its only
-promise. The realistic failure mode is not a bug — it's the author not getting around
-to it.
+One person writes every puzzle by hand, so adding one has to be fast. The realistic failure isn't
+a bug — it's the author not getting round to it, the queue running dry, and the site breaking its
+only promise. This page is the form: question, accepted answers, and an optional hint, explanation
+and picture. The date defaults to the next empty day, so a week can be queued in one sitting.
 
-> **This page exists only on the author's machine.** The live site has no `/admin`;
-> teasers written here are published by copying `teasers.json` — see
-> [PRD 10](10-admin-authentication.md). The review queues and the rotation reset below
-> act on this machine's copy of that data, not the live site's.
+It exists **only on the author's computer**; teasers reach the live site by copying `teasers.json`
+across ([PRD 10](10-admin-authentication.md)). So the review queues and rotation reset below act on
+the author's copy of the data, not the live site's.
 
 ## Requirements
 
@@ -20,67 +19,57 @@ to it.
 
 | Field | Required | Behaviour |
 |---|---|---|
-| **Show on date** | yes | The day it becomes the challenge. Defaults to the **next date with no teaser**, so repeated adds queue forward without retyping. |
-| **Difficulty** | yes (defaults Medium) | Easy / Medium / Hard. Rendered to solvers as a tinted pill with a coloured dot — green / gold / red ([PRD 09](09-visual-design.md)). |
+| **Show on date** | yes | The day it becomes the challenge. Defaults to the **next date with no teaser**, so repeated adds queue forward. |
+| **Difficulty** | yes (default Medium) | Easy / Medium / Hard, shown to solvers as a pill with a green, gold or red dot ([PRD 09](09-visual-design.md)). |
 | **Question** | yes | The teaser text. |
-| **Answer** | yes | Accepted answers, `;`-separated ([PRD 02](02-answer-evaluation.md)). |
-| **Tags** | no | Comma-separated labels for the author's own classification. **Never shown to solvers** — admin-only, for sorting and spotting themes. |
-| **Support image** | no | For puzzles needing a diagram. |
-| **Hint** | no | Unlocks after the solver's first attempt. |
-| **Solution** | no | Shown on solve, or revealable the day after the challenge runs. |
+| **Answer** | yes | Accepted answers, separated by `;` ([PRD 02](02-answer-evaluation.md)). |
+| **Tags** | no | Labels for the author's own sorting. **Never shown to solvers.** |
+| **Support image** | no | For puzzles that need a diagram. |
+| **Hint** | no | Unlocks after the first attempt ([PRD 03](03-hints-and-solutions.md)). |
+| **Solution** | no | Shown on solving, and on `/yesterday` the day after the challenge runs. |
 
-### Scheduling rules
+### Scheduling
 
-- Two teasers must never occupy the same date. Attempting it must **warn and refuse**
-  rather than silently overwrite.
-- Dates may be scheduled arbitrarily far ahead.
-- A gap in the schedule is allowed. It is no longer a degraded case: the recycling
-  box fills it with a past teaser ([PRD 08](08-recycling-rotation.md)), so a dry
-  stretch is invisible to solvers. **The author still needs to know**, which is what
-  the rotation panel below is for.
+- Two teasers never share a date: trying must **warn and refuse**, never silently overwrite.
+- Dates may be any distance ahead.
+- Gaps are allowed — recycling fills them ([PRD 08](08-recycling-rotation.md)), so solvers never see
+  a dry spell. **The author still needs to know**, which is what the rotation panel is for.
 
 ### Support images
 
-- Accepted types: **PNG, JPG, GIF, WebP**; max **3 MB**. Both checks enforced
-  server-side.
-- Stored under `App_Data/teaser-images/` with a **random GUID filename** — the
-  uploader's filename is never trusted or reused on disk.
-- Served read-only from `/teaser-images/{name}`.
-- Lifecycle must not leak files: replacing an image deletes the old one, "Remove
-  image" clears it, deleting a teaser deletes its image, and an upload abandoned
-  without saving is cleaned up.
+- **PNG, JPG, GIF or WebP**, up to **3 MB**, both checked on the server.
+- Saved in `App_Data/teaser-images/` under a **random file name** — the uploaded name is never
+  trusted or reused — and served read-only from `/teaser-images/{name}`.
+- No files left behind: replacing an image deletes the old one, "Remove image" clears it, deleting
+  a teaser deletes its image, and an upload abandoned without saving is cleaned up.
 
-### Management table
+### Teaser table
 
-- Lists every teaser (scheduled and past) with date, difficulty, question, tags,
-  answer, per-teaser stats, and a **Shown** count with the teaser's current draw
-  weight ([PRD 08](08-recycling-rotation.md)).
-- Today's row is highlighted; future rows are visually de-emphasised.
-- **Edit** loads a teaser back into the form (carrying every field, including
-  difficulty, tags, and image); **Delete** removes the teaser, its stats, and its image.
-- Wide tables scroll **inside their own container**; they must never widen the page
-  itself ([PRD 09](09-visual-design.md)).
+- Every teaser, scheduled and past: date, difficulty, question, tags, answer, statistics, and a
+  **Shown** count with its current draw weight ([PRD 08](08-recycling-rotation.md)). Today's row
+  is highlighted; future rows are faded.
+- **Edit** loads every field back into the form; **Delete** removes the teaser, its statistics and
+  its image.
+- Wide tables scroll **inside their own box** and never widen the page ([PRD 09](09-visual-design.md)).
 
 ### Rotation panel
 
-Surfaces the recycling box so the author can see it working without reading
-`rotation.json`:
+The recycling box at a glance, without opening `rotation.json`:
 
-- Slips remaining, bank size, and the refill threshold.
-- **How many new teasers are scheduled ahead** — the real signal for whether the
-  queue is running dry, and the reason a gap is no longer visible to solvers.
-- The last 14 days: date, which teaser ran, and whether it was `new` or `recycled`.
-- **Reset the box now**, starting a fresh cycle over the whole bank.
+- Slips left, bank size, and the refill point
+- **How many new teasers are scheduled ahead** — the real sign of a queue running dry, since
+  solvers never see a gap
+- The last 14 days: which teaser ran, and whether it was `new` or `recycled`
+- **Reset the box now**, starting a fresh cycle over the whole bank
 
 ### Review queues
 
-The admin page also hosts the two inbound queues — visitor suggestions and issue
-reports — specified in [PRD 06](06-community-feedback.md).
+Suggestions and issue reports are reviewed here too ([PRD 06](06-community-feedback.md)).
 
 ## Non-goals
 
-- Multiple authors, roles, or an edit history
-- Rich-text or Markdown in questions (plain text only)
+- Several authors, roles, or an edit history
+- Formatting in questions — plain text only
 - Scheduling by rule (e.g. "hard puzzles on Fridays")
 
 ## Acceptance criteria
@@ -93,10 +82,8 @@ reports — specified in [PRD 06](06-community-feedback.md).
 
 ## Implementation notes
 
-`Pages/Admin.razor` with `TeaserStore`, `StatsStore`, `ImageStore`, `SuggestionStore`,
-`IssueStore`, and `RotationStore`. Runtime-uploaded images need an explicit
-`UseStaticFiles` mapping in `Program.cs` — the .NET template's `MapStaticAssets` only
-serves build-time `wwwroot` content, not files written after build.
-
-Admin is the one route that opts into the **wide** measure rather than the reading
-column, because its tables don't fit 680px ([PRD 09](09-visual-design.md)).
+`Components/Pages/Admin.razor`, with `TeaserStore`, `StatsStore`, `ImageStore`, `SuggestionStore`,
+`IssueStore` and `RotationStore`. Uploaded images need their own `UseStaticFiles` line in
+`Program.cs`, because `MapStaticAssets` only serves files that existed at build time. Admin is the
+one page on the **wide** layout, because its tables don't fit the 680px reading column
+([PRD 09](09-visual-design.md)).

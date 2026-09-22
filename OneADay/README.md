@@ -62,12 +62,11 @@ All teasers are stored in a single human-readable file: `App_Data/teasers.json`.
 You can edit it by hand or back it up by copying it. It is created automatically
 (with a few sample riddles) on first run.
 
-Attempt statistics live next to it in `App_Data/stats.json` — per teaser: which
-anonymous visitors attempted it, total submissions, and how many were correct.
-The home page shows a line like "🧠 466 minds have taken on this challenge —
-466/13,502 successful attempts", and the admin table has a per-teaser Stats
-column. Visitors are counted by a random device id in browser storage (no
-accounts involved), so the "unique minds" number is per-device.
+Attempt statistics live next to it in `App_Data/stats.json` — per teaser, just
+two numbers: total submissions, and how many were correct. Nothing about who
+answered is stored. Once you solve, the home page shows a line like "342 out of
+1,208 total submissions were correct", and the admin table has a
+per-teaser Stats column.
 
 ## Pages (matching the wireframe site map)
 

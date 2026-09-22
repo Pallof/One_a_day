@@ -1,232 +1,185 @@
 # PRD 14 — Email notifications
 
-**Status:** Spec of record · **Config:** `Email` section + `Email:AppPassword` secret
+**Status:** Spec of record · **Config:** `Email` settings + the `Email:AppPassword` secret
 
-## Problem
+## In plain terms
 
-Suggestions and issue reports land in `App_Data/*.json` and are visible only to
-someone who opens `/admin`. Nothing announces them. The inbox held a suggestion from
-**15 July that went unseen until 8 September** — nearly two months.
+Suggestions and issue reports were saved, but nothing announced them — only someone opening admin
+would see them. One suggestion from **15 July went unseen until 8 September**. The failure isn't lost
+data, it's silence: a broken question stays broken because nobody read the report, and a visitor who
+reports a problem and sees nothing change assumes reporting is pointless.
 
-The failure mode isn't lost data, it's silence. A broken question stays broken because
-the report nobody read said so, and a good suggestion goes stale. Both are worse than
-they look: a visitor who reports a problem and sees nothing change assumes reporting
-is pointless.
-
-## Decision
-
-**Both channels also email the author.** Suggestions and issue reports are written to
-JSON exactly as before, and a notification is queued afterwards.
+So both now also **email the author**, under one rule: **save first, email second.** A mail problem
+must never cost a visitor their submission.
 
 ## The contract
 
 > **Saved first, notified second. A mail failure must never affect the save.**
 
-This is the whole design. `Submit()` runs on the **SignalR circuit**, so anything slow
-or throwing on that path costs a real person their submission. The suggestion is the
-valuable artefact; the email is a convenience. Ordering follows:
+Submitting happens over the visitor's live connection, so anything slow or failing on that path
+costs a real person their submission. The submission is what matters; the email is a convenience:
 
-1. Write to the store — the visitor's confirmation depends only on this
-2. Queue the notification — returns immediately, never throws
-3. A background service drains the queue and sends
+1. Save it — the visitor's confirmation depends only on this.
+2. Queue the notification — instant, and it never fails.
+3. A background job works through the queue and sends.
 
-Consequences that must hold:
+So:
 
-- **Enqueuing never blocks and never throws.** Every failure inside it is swallowed
-  and logged.
-- **Unconfigured is a supported state.** With no app password the notifier does
-  nothing, silently. Dev, CI, and an unconfigured deployment all work unchanged.
-- **The queue is bounded (100) and drops when full.** Issue reports are uncapped by
-  design ([PRD 06](06-community-feedback.md)), so an unbounded queue would be a memory
-  leak with a hostile trigger. Dropping is safe — the item is already on disk.
-- **Automated and rate-limited submissions never mail.** The `SubmissionGuard` check
-  and the daily caps both sit *before* the notify call, and both return early.
+- **Queuing never waits and never fails**; any problem inside it is caught and logged.
+- **No email set up is a supported state.** Without an app password the notifier quietly does
+  nothing, so development, tests and an unconfigured server work unchanged.
+- **The queue holds at most 100 and drops when full.** Reports are unlimited by design
+  ([PRD 06](06-community-feedback.md)), so an endless queue would be a memory leak anyone could
+  trigger. Dropping is safe — the item is already saved.
+- **Blocked submissions never send mail.** The bot checks and daily limits both stop the submission
+  *before* the notify step.
 
-> **This is the load-bearing one.** If a blocked submission still notified, the
-> honeypot would be worse than useless on this path — it would look like protection
-> while a script quietly filled the author's inbox. And an email inbox has no admin
-> page to clear it from, so the damage outlasts the attack in a way the JSON inbox's
-> does not.
->
-> The whole guarantee rests on one early `return` in each component. Nothing else in
-> the suite would notice if it moved, so `NotificationGatingTests` pins it directly:
-> honeypot hit, too-fast submit, and over-cap all assert **zero queued** alongside
-> zero saved.
+> **That last one matters most.** If a blocked submission still sent mail, the decoy field would be
+> worse than useless — it would look like protection while a script quietly filled the author's
+> inbox, which has no admin page to clear it from. It rests on one early `return` in each form, and
+> nothing else would notice if that moved, so `NotificationGatingTests` pins it directly.
 
-## Requirements
-
-### What gets sent
+## What gets sent
 
 | Trigger | Subject | Body carries |
 |---|---|---|
-| New suggestion | `Stumpty — new teaser suggestion (Hard)` | difficulty, timestamp, the teaser, the solution + hint |
-| Issue report | `Stumpty — issue reported (answer not accepted)` | category, page, timestamp, the teaser on screen, the details |
+| New suggestion | `Stumpty — new teaser suggestion (Hard)` | difficulty, time, the teaser, the solution + hint |
+| Issue report | `Stumpty — issue reported (answer not accepted)` | category, page, time, the teaser on screen, the details |
 
-- **Plain text only.** Nothing to escape, renders everywhere. Subscriber mail is styled
-  like the site ([PRD 15](15-email-subscriptions.md)); these stay plain on purpose —
-  they have one reader, who wants to scan them.
-- **Subject lines carry no visitor text**, only the difficulty or category. Categories
-  are shortened for the subject — the real ones are long sentences, and a subject that
-  starts with forty identical characters is unscannable.
-- Visitor text is **stripped of CR/LF before reaching any header**. A newline in a
-  subject is header injection; strip rather than trusting the mail library to notice.
+- **Plain text only** — nothing to escape, displays everywhere. Subscriber emails are styled like the
+  site ([PRD 15](15-email-subscriptions.md)); these have one reader, who wants to scan them.
+- **Subjects carry no visitor text** — only difficulty or category, and categories are shortened: the
+  real ones are long sentences, and forty identical characters at the start of every subject can't
+  be scanned.
+- Visitor text has **line breaks stripped before it reaches any email header** — a line break in a
+  subject lets an attacker add their own headers. Strip rather than trust the mail code to notice.
 
-### Delivery
+## Delivery
 
-Sending lives in `SmtpMailer`, shared with the daily email
-([PRD 15](15-email-subscriptions.md)), so the timeout and retry rules below apply to
-both. The queue and the cap are this feature's own.
+Sending is done by `SmtpMailer`, shared with the daily email, so the timeout and retry rules cover
+both; the queue and the daily cap belong to this feature.
 
-- **Gmail SMTP** (`smtp.gmail.com:587`, STARTTLS) using the built-in
-  `System.Net.Mail.SmtpClient`, so the project keeps its **zero NuGet packages**.
-- Auth is a Gmail **app password** — requires 2FA on the account. A normal password
-  will not work; Google stopped accepting those in 2022.
-- `From` must equal the Gmail account. Gmail rewrites or rejects anything else.
-- **Three attempts** with backoff, then give up and log. The item is already saved, so
-  a permanent failure costs a ping, not data.
-- **A 15-second timeout per attempt.** `SmtpClient` defaults to 100 seconds, and because
-  the queue is drained one message at a time, a single unreachable host would otherwise
-  block everything for over five minutes — during which new notifications are discarded
-  once the queue fills.
-- **A daily cap** (default 25, Pacific day), in `Models/DailySendBudget.cs`. Reports are
-  uncapped in the product, so this is what stops a burst burying the inbox. Hitting it
+- **Gmail** (`smtp.gmail.com:587`) through .NET's built-in mail sender, so the project still uses
+  **no third-party packages**. It signs in with a Gmail **app password**, which needs two-step
+  verification (Google stopped accepting normal passwords for this in 2022), and the sender address
+  must be the Gmail account itself, or Gmail rejects the mail.
+- **Three tries**, waiting longer each time, then give up and log — the item is already saved, so a
+  permanent failure costs a ping, not data.
+- **15 seconds per try.** The default is 100 seconds, and the queue sends one at a time, so one
+  unreachable mail server would block everything for over five minutes while new notifications were
+  thrown away as the queue filled.
+- **A daily cap** (default 25, per Pacific day) stops a burst of reports burying the inbox. Hitting it
   skips the mail, never the save.
-- **The cap counts deliveries, not attempts.** A slot is spent only once a send
-  succeeds. Counting attempts would let an SMTP outage burn the whole day's budget on
-  mail that never arrived — and when service returned, the first *working* notifications
-  of the day would be the ones dropped.
-- **Queue overflow discards the oldest, not the newest.** Under a burst the most recent
-  activity is the half worth keeping; `DropWrite` would have kept the first hundred and
-  silently binned everything after. Note that `TryWrite` returns **true even when it
-  drops**, so overflow is detected by checking queue depth, not by its return value.
+- **The cap counts deliveries, not tries.** Counting tries would let an outage burn the day's
+  allowance on mail that never arrived, then drop the first *working* notifications once service
+  returned.
+- **Overflow drops the oldest, not the newest** — under a burst, the latest activity is the half worth
+  keeping. The queue reports success even when it drops something, so overflow is detected by
+  checking how full it is.
 
-### Untrusted field values
+## Values the visitor controls
 
-Bound form values are constrained by the *browser*, not the server — Blazor does not
-verify that a `<select>` value was one of the rendered options, so a client driving the
-circuit can send anything.
+The browser limits what a form sends, but the server can't rely on that: nothing checks that a
+dropdown value was one of the options shown, so someone driving the connection directly can send
+anything.
 
-- The suggestion form's **difficulty** is normalised through `Enum.TryParse`, falling
-  back to `Medium`, before it is stored or used in a subject. Unchecked, arbitrary text
-  would be persisted to `suggestions.json` and interpolated into a mail header — a
-  40,000-character subject that Gmail rejects would burn three retries and a cap slot.
-- The report dialog's **category** is already safe: `ShortCategory` maps through a
-  `switch` whose default is `"other"`.
+- The suggestion form's **difficulty** is forced back to a known value (default `Medium`) before
+  it's saved or put in a subject. Unchecked, a 40,000-character subject that Gmail rejects would burn
+  three tries and a slot in the cap.
+- The report dialog's **category** is already safe: it maps through a fixed list with a default.
 
-### Secrets
+## Secrets
 
-The app password is the first real secret in this project, and the repo has had
-content leak into git history before ([PRD 00](00-product-overview.md)).
+The app password is the project's first real secret, and the repository has leaked content before
+([PRD 00](00-product-overview.md)).
 
-- **Local:** `dotnet user-secrets set "Email:AppPassword" "..."` — stored outside the
-  repo entirely.
-- **Production:** the `Email__AppPassword` environment variable.
-- **`appsettings.json` holds only non-secret shape** — recipient, host, port, cap.
-  The password key is deliberately absent, not blank.
-- The author's address stays server-side. [PRD 06](06-community-feedback.md) keeps it
-  off the page on purpose; this is outbound-only and does not change that.
+- **On the Mac:** `dotnet user-secrets set "Email:AppPassword" "..."` — stored outside the project.
+- **On the server:** the `Email__AppPassword` environment variable.
+- **`appsettings.json` holds only the non-secret parts** (recipient, server, port, cap); the password
+  entry is deliberately absent, not blank.
 
 ## Non-goals
 
-- HTML email, templates, or branding for these notifications
-- Notifying anyone but the author — subscriber mail is its own feature,
-  [PRD 15](15-email-subscriptions.md)
+- HTML or branding for these notifications
+- Emailing anyone but the author — subscriber email is [PRD 15](15-email-subscriptions.md)
 - Email as a *reply* channel — reporters are anonymous by design
-- Daily summaries for the author (see below)
 
 ## Known ceiling
 
-**This does not scale, and that is accepted for now.**
+**This doesn't scale, and that's accepted for now.** Gmail allows roughly 500 messages a day and
+slows senders well before that; this feature's 25 is one line of the shared budget in
+[PRD 15](15-email-subscriptions.md). .NET's built-in mail sender is officially not recommended for new
+work, and mail from a cloud server through a personal Gmail account doesn't always get delivered —
+sending to yourself is the forgiving case.
 
-- Gmail caps around **500 messages/day** and throttles well before that from a server
-  IP. Fine at one-a-day volume; not fine if the site ever gets popular. That allowance
-  is now **shared with the daily email** — this feature's 25 is one line of the budget
-  in [PRD 15](15-email-subscriptions.md).
-- `SmtpClient` is documented as not recommended for new development. It is adequate for
-  low-volume mail to a single inbox and nothing more.
-- Mail from a cloud IP through a personal Gmail account has mediocre deliverability.
-  Sending to yourself is the forgiving case; anything else would need better.
+**The upgrade path:** swap `SmtpMailer`'s sending for an email service (Resend, Postmark, SES). The
+queue, the contract and both forms stay as they are — which is why the notifier and the sender are
+separate.
 
-**The upgrade path**, when volume or reliability justifies it: swap `SmtpMailer`'s send
-for a transactional API (Resend, Postmark, SES). The queue, the contract, and both call
-sites stay as they are — only the send method changes. That containment is the point of
-splitting the notifier from the sender.
-
-> **The better long-term answer is probably a daily summary, not more mail.** One message
-> a day carrying "2 new suggestions · 3 days of teasers left" would also solve a problem
-> this project already has: since the recycling box hides a dry queue from visitors
-> ([PRD 08](08-recycling-rotation.md)), the author has *no signal at all* that content
-> is running low. [PRD 13](13-content-pipeline.md) proposes the warning; a summary would
-> deliver it. Immediate mail was chosen first because volume is currently about one
-> suggestion every two months.
+> **The better long-term answer is probably one daily summary, not more mail.** A single message like
+> *"2 new suggestions · 3 days of teasers left"* would also fix a gap: recycling hides a dry queue
+> from visitors ([PRD 08](08-recycling-rotation.md)), and nothing warns the author — the count of
+> teasers scheduled ahead sits in admin, seen only when they look. [PRD 13](13-content-pipeline.md)
+> proposes the warning; a summary would deliver it. Immediate mail came first because volume is
+> about one suggestion every two months.
 
 ## Acceptance criteria
 
-- [x] A suggestion is saved to JSON **and** queued for email
-- [x] An issue report is saved to JSON **and** queued for email
+- [x] A suggestion is saved to JSON **and** queued for email; likewise an issue report
 - [x] With no app password configured, nothing is queued and nothing throws
 
-### The guards gate the email too — `NotificationGatingTests`
+### The bot checks gate the email too — `NotificationGatingTests`
 
-- [x] A honeypot hit on the **suggestion** form saves nothing and queues nothing
-- [x] A honeypot hit on the **report** dialog saves nothing and queues nothing
-- [x] A submission faster than the 5-second floor queues nothing (both forms)
-- [x] A suggestion over the daily cap queues nothing
-- [x] Over the cap the form is not rendered **and** driving `Submit()` directly still
-      queues nothing — hiding the UI must not be the only thing protecting the inbox
-- [x] An empty form queues nothing even when `Submit()` is invoked directly
-- [x] Emails queued never exceed items stored (nothing is mailed that wasn't saved)
-- [x] A genuine submission on each form queues **exactly one** — without this control,
-      the tests above would pass even if the notifier were never wired up at all
-- [x] `IsConfigured` is false if any of enabled/to/from/host/password is missing
-- [x] Enqueuing 50 messages with no reader returns in well under a second
-- [x] CR/LF are stripped from subjects; the body is left intact
-- [x] A 5,000-message flood drops to the queue bound rather than growing
-- [x] The daily cap defaults to a value that is neither zero nor unlimited
-- [x] Submitting still saves correctly with the notifier wired in (verified in-app)
+- [x] A decoy hit saves and queues nothing, on **both** forms; so does a submission faster than the
+      5-second minimum
+- [x] A suggestion over the daily cap queues nothing — the form isn't shown, **and** calling
+      `Submit()` directly still queues nothing, so hiding the form isn't the only protection; an
+      empty form queues nothing even when `Submit()` is called directly
+- [x] Emails queued never exceed items stored — nothing is mailed that wasn't saved
+- [x] A genuine submission on each form queues **exactly one** — the control case, without which
+      everything above would pass on a notifier that was never connected
+- [x] `IsConfigured` is false if any of enabled/to/from/host/password is missing, and the daily cap
+      defaults to neither zero nor unlimited
+- [x] Queuing 50 messages with nothing reading them returns in well under a second; a 5,000-message
+      flood drops to the queue limit rather than growing
+- [x] Line breaks are stripped from subjects; the body is left intact
 
 ### The daily budget — `DailySendBudgetTests`
 
-- [x] Checking for room spends nothing; only a recorded send does
-- [x] **Failed sends cost nothing** — 100 failures leave the allowance untouched
-- [x] A new day restores the full allowance; yesterday's total isn't carried forward
+- [x] Checking for room uses nothing; only a recorded send does — **failed sends cost nothing**
+      (100 failures leave the allowance untouched)
+- [x] A new day restores the full allowance, without carrying yesterday's total forward
 - [x] A cap of zero fails closed rather than sending without limit
-- [x] Both behaviours are mutation-verified: reverting to count-on-check fails 4 tests,
-      and removing the day rollover fails 4
+- [x] Both mutation-verified: counting on the check fails 4 tests; removing the new-day reset fails 4
 
 ### Untrusted values — `NotificationGatingTests`
 
-- [x] A forged 40,000-character difficulty is stored as `Medium` and never reaches the
-      subject (mutation-verified: removing the guard fails 4 tests)
-- [x] Genuine values round-trip, including differing case; unknown values fall back
+- [x] A forged 40,000-character difficulty is stored as `Medium` and never reaches the subject
+      (mutation-verified); genuine values round-trip in any letter case, and unknown values fall back
 
 ### Not covered
 
-- [x] ~~An actual send against Gmail~~ — verified manually 2026-09-08: a suggestion
-      submitted through the form arrived in the inbox.
-- [ ] Behaviour when Gmail rejects or throttles (the retry path has never run against a
-      real server that refuses)
-- [ ] `EmailSenderService` itself — the extraction of `DailySendBudget` covers the cap
-      and the rollover, but the drain loop is untested. The send operation is now
-      injectable (`SmtpMailer.SendAsync` is virtual, and PRD 15's tests fake it), so
-      this is reachable; it just hasn't been written.
-- [ ] `SmtpMailer`'s retry loop and timeout — reaching them needs an SMTP server that
-      refuses or stalls. (The message it builds is tested: `SmtpMailerTests`.)
+- [x] ~~An actual send through Gmail~~ — verified by hand 2026-09-08: a suggestion submitted through
+      the form arrived in the inbox
+- [ ] What happens when Gmail rejects or slows the sender — the retry path has never run against a
+      real server that refuses
+- [ ] `EmailSenderService`'s sending loop. The cap and new-day reset are covered; the loop is now
+      testable (the send can be swapped out) but the test isn't written
+- [ ] `SmtpMailer`'s retry and timeout — needs a mail server that refuses or stalls. The message it
+      builds *is* tested (`SmtpMailerTests`)
 
 ## Implementation notes
 
-Four pieces, split so the sending method can be replaced without touching the callers:
+Four pieces, split so the sending method can be replaced without touching the forms:
 
 | File | Role |
 |---|---|
-| `Services/EmailOptions.cs` | Config + `IsConfigured` |
-| `Services/EmailNotifier.cs` | The queue. Injected into components; never sends. |
-| `Services/EmailSenderService.cs` | `BackgroundService` that drains the queue and counts against the cap |
-| `Services/SmtpMailer.cs` | The SMTP send — timeout, retry, logging. Shared with [PRD 15](15-email-subscriptions.md). |
+| `Services/EmailOptions.cs` | Settings, and `IsConfigured` |
+| `Services/EmailNotifier.cs` | The queue. Given to the forms; never sends |
+| `Services/EmailSenderService.cs` | Background job that works through the queue and counts against the cap |
+| `Services/SmtpMailer.cs` | The send — timeout, retry, logging. Shared with [PRD 15](15-email-subscriptions.md) |
 
-Call sites are `Components/Pages/Contact.razor` and `Components/ReportIssue.razor`,
-both immediately **after** their store write.
-
-> The notifier is deliberately the only thing components see. A component that could
-> reach the sender directly could block the circuit, which is the exact failure this
-> design exists to prevent.
+The callers, `Components/Pages/Contact.razor` and `Components/ReportIssue.razor`, queue immediately
+**after** their save. The notifier is deliberately the only piece they can reach: a form that could
+reach the sender directly could stall the visitor's connection — the exact failure this design
+prevents.

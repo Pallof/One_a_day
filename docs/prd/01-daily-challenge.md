@@ -2,85 +2,61 @@
 
 **Status:** Spec of record · **Route:** `/`
 
-## Problem
+## In plain terms
 
-A daily puzzle only builds a habit if "today's puzzle" is unambiguous and the same
-for everyone, and if finishing it leaves the solver with a reason to return.
+One puzzle a day, on the home page. A daily puzzle only builds a habit if "today's puzzle" is the
+same for everyone and finishing it gives a reason to come back. So the day changes at **midnight
+California time** wherever the server is; solving brings confetti and a countdown to the next
+one; and the page reloads itself at midnight, so a tab left open overnight isn't stale.
+
+It never shows the puzzle's own date: puzzles get recycled, and the date would give away a repeat.
 
 ## Requirements
 
-### Selecting today's teaser
+### Which teaser
 
-- The home page must show the teaser scheduled for **today in Pacific Time**.
-- If today has no scheduled teaser, one is **recycled** from the bank — see
-  [PRD 08](08-recycling-rotation.md), which owns the selection rules.
-- If no teaser exists at all, show a friendly "check back soon" message.
-- Teasers dated in the future must never appear here.
+- The teaser scheduled for **today (Pacific)**; if there isn't one, a **recycled** one
+  ([PRD 08](08-recycling-rotation.md)); if there are no teasers at all, a friendly "check back
+  soon".
+- Never a teaser dated in the future.
 
-> **Superseded, and worth knowing why.** This used to read: *fall back to the most
-> recent past teaser, and label it "From Friday 3 July — today's teaser hasn't been
-> posted yet."* Both halves are now wrong.
->
-> The fallback left the **same puzzle on the front page for days** during a dry
-> spell, which is what the recycling box exists to prevent. And the dated label
-> would now be actively harmful: a recycled teaser was written months ago, so
-> printing its date announces that the puzzle is a repeat. There is deliberately no
-> date note on a teaser anywhere on this page.
+> **History:** this once fell back to the latest past teaser, labelled *"From Friday 3 July —
+> today's teaser hasn't been posted yet."* The fallback left the **same puzzle up for days** in a
+> dry spell, which recycling now prevents, and the label would now reveal that a recycled puzzle
+> is a repeat.
 
-### Today's date
+### Dates and the clock
 
-- A **dateline** sits above the masthead showing the current day (*"Tuesday,
-  September 1"*).
-- It must come from `AppTime.Today` — **today's date, never the teaser's**. The
-  distinction is the whole point: with recycling those two routinely differ, and
-  rendering the teaser's date would leak that it is a repeat.
+- A **dateline** above the masthead shows **today's** date (*"Tuesday, September 1"*), never the
+  teaser's — with recycling the two routinely differ.
+- Days roll over at **midnight `America/Los_Angeles`**, correct through daylight saving, wherever
+  the server runs.
+- Everything that asks "what day is it?" — home, admin's date defaults, the countdown — uses one
+  clock, `AppTime`. A page reading the computer's own clock is a bug.
 
-### Day boundary
+### Answering
 
-- Days roll over at **midnight `America/Los_Angeles`**, regardless of where the
-  server runs, and the boundary must be DST-correct (PDT/PST).
-- Every surface that reasons about "today" — home, admin
-  defaults, the countdown — must share this one clock. A single source
-  (`AppTime`) is required; per-page `DateTime.Now` is a defect.
+- One answer box; **Submit answer** is disabled while it's empty.
+- Answers are capped at **300 characters**, in the browser *and* on the server, so a crafted
+  request can't get round it. How answers are judged: [PRD 02](02-answer-evaluation.md).
+- **Wrong** → an encouraging message; unlimited retries.
+- **Right** → *"Correct! Solved in N attempts. 🎉"*, the box locks, and the author's explanation
+  shows if there is one. **Confetti** fires — self-contained (no outside library), and skipped for
+  anyone whose device asks for reduced motion.
 
-### Submission
+### After solving
 
-- One multi-line answer box and a **Submit answer** button.
-- Submit is disabled while the box is empty.
-- Input is capped at **300 characters**, enforced in the browser *and* server-side
-  (a crafted request must not bypass it).
-- Evaluation rules: see [PRD 02](02-answer-evaluation.md).
-
-### Feedback
-
-- **Correct** → `Correct! Solved in N attempt(s). 🎉`, the box and button lock, and
-  the worked solution appears if the author wrote one.
-- **Incorrect** → an encouraging retry message; the solver may try again without limit.
-- A correct answer must trigger a **celebration animation** (confetti).
-  - It must respect `prefers-reduced-motion` and not render for solvers who have
-    asked their OS to reduce motion.
-  - It must be self-contained (no external library or CDN).
-
-### Post-solve state
-
-After solving today's challenge, show:
-- The message *"Please come back soon for when the next challenge arrives!"*
-- A **live countdown** (per-second) to midnight Pacific.
-- A note naming the timezone.
-- When the countdown reaches zero, the page must **reload itself** and serve the
-  new challenge, so a tab left open overnight is correct.
-
-The countdown belongs to the daily challenge, which since [PRD 04](04-archive-and-discovery.md)
-is the only place a teaser is playable.
-
-### Statistics
-
-Community stats are hidden until the solver has solved the puzzle themselves —
-see [PRD 06](06-community-feedback.md#statistics).
+- A **dialog** announces the solve, with the countdown, the explanation and the statistics.
+  *History: the countdown used to sit only below the answer box, off-screen on most displays.*
+- The page keeps *"Please come back soon for when the next challenge arrives!"*, a countdown
+  **ticking each second** to midnight Pacific, and a note naming the time zone — so closing the
+  dialog loses nothing.
+- At zero the page **reloads itself** with the new challenge.
+- Statistics appear only after solving ([PRD 06](06-community-feedback.md#statistics)).
 
 ## Non-goals
 
-- Any notion of "missing" a day (there is no streak penalty; see [PRD 12](12-streaks-and-sharing.md))
+- Any notion of "missing" a day — no streak penalty ([PRD 12](12-streaks-and-sharing.md))
 
 ## Acceptance criteria
 
@@ -94,16 +70,12 @@ see [PRD 06](06-community-feedback.md#statistics).
 
 ## Implementation notes
 
-`Components/Pages/Home.razor` selects the teaser via **`DailySchedule.ForDay`**,
-which applies the recycling rules in [PRD 08](08-recycling-rotation.md). All
-challenge UI lives in `Components/ChallengeView.razor`; since [PRD 04](04-archive-and-discovery.md)
-removed the archive, **Home is its only caller**. `Services/AppTime.cs` owns the
-clock. `wwwroot/js/confetti.js` is a dependency-free canvas animation invoked by JS
-interop.
+`Components/Pages/Home.razor` picks the teaser with `DailySchedule.ForDay` (the PRD 08 rules).
+`Components/ChallengeView.razor` holds the challenge itself; since the archive went
+([PRD 04](04-archive-and-discovery.md)), Home is its only user. `Services/AppTime.cs` is the
+clock; `wwwroot/js/confetti.js` the confetti.
 
-> **Dead code, deliberately left in place.** `TeaserStore.GetCurrent` and
-> `GetPreviousBefore` implemented the old date-based selection. Nothing in the app
-> calls either any more — `DailySchedule` replaced both — but they still have test
-> coverage, so they are alive in `OneADay.Tests` and dead in production. If either
-> is ever reached for again, check it against PRD 08 first: they do **not** respect
-> the rotation, and using one is how the yesterday page regressed before.
+> **Dead code, kept on purpose.** `TeaserStore.GetCurrent` and `GetPreviousBefore` did the old
+> date-based selection. Nothing calls them now, but tests still cover them. They ignore the
+> rotation — using one is how the yesterday page regressed before
+> ([PRD 03](03-hints-and-solutions.md)) — so check PRD 08 before reaching for either.

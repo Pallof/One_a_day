@@ -2,18 +2,20 @@
 
 **Status:** Proposed · **Priority: P2 — author quality of life**
 
-## Problem
+## In plain terms
 
-The product promises a puzzle every day, and one person supplies them by hand. The
-most likely way the site fails is not a crash — it's the author not getting to it on a
-busy Thursday. Nothing currently warns that the queue is about to run dry.
+**Not built yet — this is a proposal.** The site promises a puzzle every day and one person
+supplies them by hand, so the likeliest failure isn't a crash — it's the author not getting to it
+on a busy Thursday. Three conveniences would help:
 
-This is not hypothetical: during development the schedule ran out for four days, and
-the only signal was the home page quietly showing *"today's teaser hasn't been posted
-yet"* with an older puzzle. The fallback worked; the warning didn't exist.
-
-Adding teasers is also strictly one-at-a-time, which makes stocking a week more
-tedious than it needs to be.
+- **A warning before the queue runs out.** During development the schedule ran dry for four days,
+  and the only sign was the home page quietly showing an older puzzle with *"today's teaser hasn't
+  been posted yet"*. The fallback worked; the warning didn't exist. Admin now counts the teasers
+  scheduled ahead ([PRD 05](05-authoring-and-admin.md)), but only if the author looks — and
+  recycling hides any gap from solvers.
+- **Pasting in a whole week at once**, instead of adding puzzles one at a time.
+- **A nudge when a new question looks like an existing one** — two near-identical average-speed
+  puzzles slipped in and were only spotted by eye later.
 
 ## Goals
 
@@ -24,38 +26,34 @@ tedious than it needs to be.
 
 - Generating puzzles automatically
 - Scheduling rules (e.g. "Hard on Fridays")
-- Multi-author workflow or approvals
+- Several authors, or approvals
 
 ## Requirements
 
-### Dry-queue warning
+### Running-dry warning
 
-1. Admin must show a prominent warning when fewer than **N days** (default 3) of
-   *upcoming* teasers are scheduled, naming the last scheduled date.
-2. The warning must state the specific gap — e.g. *"⚠️ Nothing scheduled after Sun 3
-   Aug. Tomorrow is empty."*
-3. It must distinguish **"tomorrow is empty"** (urgent) from **"running low"** (soon).
-4. A **gap in the middle** of the schedule (a skipped date between two scheduled ones)
-   must also be surfaced, since the fallback hides it from solvers.
-5. Optional stretch: a discreet reminder for the author only — not shown to solvers.
+1. Admin shows a prominent warning when fewer than **N days** (default 3) of *upcoming* teasers are
+   scheduled, naming the last scheduled date.
+2. It states the gap — e.g. *"⚠️ Nothing scheduled after Mon 3 Aug. Tomorrow is empty."*
+3. It tells **"tomorrow is empty"** (urgent) apart from **"running low"** (soon).
+4. A **gap mid-schedule** (a skipped date between two scheduled ones) is flagged too, since
+   recycling hides it from solvers.
+5. Optional: a quiet reminder for the author only — never shown to solvers.
 
 ### Bulk import
 
-6. Accept a paste of multiple teasers in a simple text or JSON format and create them
-   all at once.
-7. Auto-assign each to the **next free date** in order, skipping occupied dates.
-8. Show a **preview** of what will be created — date, difficulty, question, answer —
-   and require confirmation before writing.
-9. Validate every row before importing any: required fields present, difficulty
-   recognised, no duplicate dates. On any error, import nothing and report the row.
-10. The paste format should mirror the plain-text style the author already writes in
-    (`Question:` / `Hint:` / `Solution:` / `Tag:` / `Difficulty:` blocks), so notes
-    can be pasted directly.
+6. Accept a paste of several teasers, as simple text or JSON, and create them all at once.
+7. Give each the **next free date** in order, skipping taken dates.
+8. **Preview** what will be created — date, difficulty, question, answer — and require confirmation
+   before saving.
+9. Check every row before importing any: required fields present, difficulty recognised, no
+   duplicate dates. On any error, import nothing and name the row.
+10. Match the plain-text layout the author already writes in (`Question:` / `Hint:` / `Solution:` /
+    `Tag:` / `Difficulty:` blocks), so notes paste straight in.
 
 ### Duplicate detection
 
-11. Warn when a new question closely matches an existing one. Two near-identical
-    average-speed puzzles were added and only caught by eye later.
+11. Warn when a new question closely matches an existing one.
 
 ## Acceptance criteria
 
@@ -68,6 +66,6 @@ tedious than it needs to be.
 
 ## Open questions
 
-- Threshold for "running low": 3 days, or a week? Suggest 3 to start.
-- Should duplicate detection block saving or merely warn? Suggest warn — the author
-  may want deliberate variations.
+- "Running low" threshold: 3 days or a week? Suggest 3 to start.
+- Should a likely duplicate block saving, or just warn? Suggest warn — the author may want
+  deliberate variations.

@@ -1,223 +1,177 @@
 # PRD 15 — Email subscriptions
 
-**Status:** Spec of record · **Config:** `Subscriptions` + `Site` sections; shares the
-`Email` account and secret with [PRD 14](14-email-notifications.md)
+**Status:** Spec of record · **Config:** `Subscriptions` + `Site` settings; shares the Gmail account
+and password with [PRD 14](14-email-notifications.md)
 
-## Problem
+## In plain terms
 
-Stumpty is a daily habit with nothing that forms the habit. A visitor who enjoyed
-today's puzzle has to remember to come back tomorrow, and nothing reminds them — no
-accounts, no app, no notifications. For a daily puzzle, the reminder that works is the
-puzzle itself arriving on its own.
+Stumpty is a daily habit with nothing that forms the habit — no accounts, no app, no notifications.
+For a daily puzzle, the reminder that works is the puzzle itself arriving.
 
-## Decision
+So anyone can ask for it by email: type an address, click the link in a confirmation email to prove
+it's theirs, then get one email each morning at **7am Pacific** with the day's question — never the
+answer. One click in any email removes them for good. Sign-up is on the home page.
 
-**An opt-in daily email carrying the day's question — never its answer — at 7am
-Pacific**, to anyone who asks for it and confirms their address. Signing up happens on
-the home page; leaving takes one click from any email.
-
-### This is not an account
-
-[PRD 00](00-product-overview.md)'s first principle is that nothing about a daily puzzle
-needs identity. That still holds: the address is kept for one purpose — sending this
-email — and nothing else is attached to it. It is not linked to answers, stats, or the
-per-device visitor id; there is no login and no profile; and unsubscribing deletes it.
-The site still knows nothing about what any person does on it.
+**This is not an account.** [PRD 00](00-product-overview.md)'s first principle still holds. The
+address is kept for one purpose — sending this email — and linked to nothing else: not answers, not
+statistics, not the anonymous device ID. No login, no profile; unsubscribing deletes it.
 
 ## The contract
 
-Most of what matters here is what the feature must **not** do. Each of these fails
-silently, and in a way a subscriber would notice before the author did:
+Mostly this is about what must **not** happen. Each would fail silently, and a subscriber would
+notice before the author did:
 
-- **Nothing is sent to an address that didn't confirm.** Anyone can type anyone's
-  address; without confirmation the form is a way to sign strangers up for daily mail
-  from the author's Gmail.
-- **The sign-up form says the same thing whatever happened** — new, already pending,
-  already subscribed, or dropped as a bot. Anything else lets a stranger test whether an
-  address is on the list.
-- **No answer or hint ever reaches an inbox.** The email sends the question and a link;
-  solving happens on the site, where the spoiler rules live ([PRD 03](03-hints-and-solutions.md)).
-- **Never the same challenge twice, never an email at night.** One send a day, at 7am.
-- **Unsubscribing deletes the address**, rather than flagging it.
+- **Nothing is sent to an address that hasn't confirmed.** Anyone can type anyone's address; without
+  confirmation, the form is a way to sign strangers up for daily mail.
+- **The form says the same thing whatever happened** — new, pending, already subscribed, or dropped as
+  a bot. Anything else would let a stranger test whether an address is on the list.
+- **No answer or hint ever reaches an inbox** — just the question and a link. Solving happens on the
+  site, where the spoiler rules live ([PRD 03](03-hints-and-solutions.md)).
+- **One send a day, at 7am.** Never the same challenge twice, never at night.
+- **Unsubscribing deletes the address**, rather than marking it.
 - **Subscriber addresses never reach the public repository.**
 
-## Requirements
+## Signing up
 
-### Signing up
+The link, "Get the daily challenge by email", sits in the footer of the **home page only**: the offer
+is "this, every morning", which makes sense under today's challenge and is clutter anywhere else.
+*(Author's decision, 2026-09-11.)*
 
-- The link — "Get the daily challenge by email" — sits in the footer of the **home page
-  only**. The offer is "this, every morning", which makes sense under today's challenge
-  and nowhere else; elsewhere it is clutter. *(Author's decision, 2026-09-11.)*
-- It opens a dialog with a single email field. Addresses go through
-  `EmailAddress.Normalise`: trimmed and lower-cased, exactly one `@`, a dotted domain,
-  at most 254 characters. **Control characters are rejected, never repaired** — the
-  value becomes the `To` header, and a CR/LF there is header injection. The check runs
-  on the raw input, before trimming, because `Trim()` would quietly remove a trailing
-  line break and let the value through.
-- An unusable address gets an error. That is the only message allowed to differ — it is
-  about what was typed, not about who is subscribed.
-- Every other outcome shows **"Check your inbox"**, and only a new sign-up (or a stale
-  one, below) queues a confirmation. That screen also says to check the spam folder: mail
-  from a new sender often lands there, and a confirmation nobody finds is a subscriber
-  lost **silently** — they assume the sign-up failed.
+It opens a dialog with one field. Addresses are trimmed, lower-cased, and must have exactly one `@`,
+a dotted domain, and at most 254 characters. **Invisible control characters are rejected, never
+repaired**: the address becomes the email's *To* line, and a line break there lets an attacker add
+their own headers. The check runs on the text exactly as typed, because trimming would quietly remove
+a trailing line break and let it through.
 
-**Automation checks.** The same two layers as [PRD 06](06-community-feedback.md) — a
-honeypot field and a minimum time on the form — with one difference: the floor is
-**1.5 seconds, not 5**. Five seconds is right for writing a riddle and wrong for an
-email field: with autofill a real person can click, pick their address and press Enter
-in two. Held to five, they would be silently dropped — shown "Check your inbox" and
-then sent nothing, which is worse than an error. A short floor still catches the naive
-scripts the check exists for, which submit in milliseconds. A caught submission sees the
-ordinary confirmation screen, not an error.
+An unusable address gets an error — **the only message allowed to differ**, because it's about what
+was typed, not who is subscribed. Everything else shows **"Check your inbox"**, and only a new
+sign-up sends a confirmation. That screen mentions the spam folder: mail from a new sender often
+lands there, and a confirmation nobody finds is a subscriber lost **silently** — they assume the
+sign-up failed.
 
-**Limits on confirmation mail.** A confirmation is the one email an unconfirmed address
-can receive, so it is what a hostile script would aim at:
+**Bot checks** are PRD 06's two — a decoy field and a minimum time on the form — but the minimum is
+**1.5 seconds, not 5**: with autofill, a real person can click, pick an address and press Enter in
+two seconds, and held to five they'd be silently dropped. The shorter minimum still catches naive
+scripts, which submit in milliseconds. A caught bot sees the ordinary "Check your inbox".
 
-- **At most one per pending address per 24 hours.** Signing up again sooner sends
-  nothing.
-- **At most 50 a day, in total** (`MaxConfirmationsPerDay`). A per-IP limit can't bound
-  this — IPs rotate, and on a circuit the IP is often unknown — so a fixed global cap
-  does. Past it, confirmations are **dropped, not deferred**; the sign-up stays pending
-  and can be requested again after 24 hours.
-- **An unconfirmed sign-up is deleted after 7 days.** There was never consent to keep it.
+**Confirmation limits.** A confirmation is the one email an unconfirmed address can receive, so it's
+what a hostile script would aim at:
 
-### Confirming
+| Limit | Behaviour |
+|---|---|
+| One per pending address per 24 hours | Signing up again sooner sends nothing |
+| 50 a day in total (`MaxConfirmationsPerDay`) | Past it, confirmations are **dropped, not delayed**; the sign-up stays pending and can be requested again after 24 hours |
+| Unconfirmed sign-ups deleted after 7 days | There was never consent to keep them |
 
-- The confirmation email links to `/subscribe/confirm?token=…`. The token is 256 random
-  bits, hex-encoded, and never derived from the address — **whoever holds it controls
-  the subscription**, so it must be unguessable.
-- **Confirming takes a button press**, not just opening the link. Some mail filters,
-  mostly corporate ones, open every link in incoming mail to scan it. If the page load
-  confirmed, the scanner — not the person — would be saying yes, which defeats double
-  opt-in for everyone behind one.
-- Confirming twice is harmless, and a used link shows the success state.
-- The confirm page shows the address **masked** (`d****g@gmail.com`), so it can say which
-  subscription it means without printing the whole address to whoever holds the link.
+A per-IP limit can't do this — addresses change, and on a live connection are often unknown — so a
+fixed daily total does.
 
-### The daily email
+## Confirming
 
-- **Sent at 7am Pacific** (`SendHourPacific`). Midnight is when the challenge changes,
-  but nobody wants a midnight email. *(Author's decision, 2026-09-11.)*
-- **Only subscribers confirmed before that day's send get that day's email.** Someone
-  confirming at 11:50pm has just seen today's challenge — the sign-up link sits under it
-  — and "send it now" would be exactly the late-night email the 7am send exists to
-  avoid. Their first email is the next morning's.
-- **Polls once a minute** rather than sleeping until 7am: that gets DST, laptop sleep and
-  restarts right with no extra code. It also heals itself. Delivery is recorded per
-  subscriber, so a crash halfway down the list resumes with the rest; a server that was
-  down at 7am sends when it comes back the same day. **A day missed entirely is skipped**,
-  not sent late the next morning — by then it is no longer the puzzle on the site.
-- **The teaser comes from `DailySchedule.ForDay`**, the path the home page uses, so the
-  email and the site agree. If nobody has visited yet, the 7am send is what settles the
-  day ([PRD 08](08-recycling-rotation.md)).
+- The email links to `/subscribe/confirm?token=…`. The token is 256 random bits, never derived from
+  the address: **whoever holds it controls the subscription**, so it must be unguessable.
+- **Confirming takes a button press**, not just opening the link. Some mail filters, mostly at
+  companies, open every link in incoming mail to scan it; if loading the page confirmed, the scanner
+  would be saying yes, not the person — defeating confirmation for everyone behind one.
+- Confirming twice is harmless; a used link shows the success screen.
+- The page shows the address **partly hidden** (`d****g@gmail.com`), so it can say which
+  subscription it means without printing the address for whoever holds the link.
 
-**What it carries:**
+## The daily email
+
+- **Sent at 7am Pacific** (`SendHourPacific`). The challenge changes at midnight, but nobody wants a
+  midnight email. *(Author's decision, 2026-09-11.)*
+- **Only people confirmed before that day's send get that day's email.** Someone confirming at
+  11:50pm has just seen today's challenge (the sign-up link sits under it); emailing them straight
+  away would be exactly the late-night email the 7am rule avoids.
+- **Checks once a minute** rather than sleeping until 7am, which copes with daylight saving, laptop
+  sleep and restarts for free. Each delivery is recorded, so a crash halfway down the list resumes,
+  and a server that was down at 7am sends when it returns the same day. **A day missed entirely is
+  skipped** — by then it's no longer the puzzle on the site.
+- **The teaser comes from `DailySchedule.ForDay`**, the same path as the home page, so email and site
+  always agree. If nobody has visited yet, the 7am send is what settles the day
+  ([PRD 08](08-recycling-rotation.md)).
 
 | Part | Content |
 |---|---|
 | Subject | `Stumpty — Friday, September 11 · Medium` |
-| Preview line | The difficulty and the start of the question |
-| Body | Date, "Challenge of the day", the question with its difficulty pill, and one button: **Solve today's challenge** |
-| Picture | Not embedded; a teaser with one says so, rather than sending a question that makes no sense without it |
-| Footer | The site's tagline and a one-click **Unsubscribe** |
-| Headers | `List-Unsubscribe` and `List-Unsubscribe-Post` ([RFC 8058](https://www.rfc-editor.org/rfc/rfc8058)) |
+| Preview line | Difficulty and the start of the question |
+| Body | Date, "Challenge of the day", the question with its difficulty pill, one button: **Solve today's challenge** |
+| Picture | Not included; a teaser with one says so, rather than sending a question that makes no sense without it |
+| Footer | The site tagline and a one-click **Unsubscribe** |
+| Headers | `List-Unsubscribe` and `List-Unsubscribe-Post` — the standard ([RFC 8058](https://www.rfc-editor.org/rfc/rfc8058)) that lets mail apps show their own Unsubscribe button |
 
 ### How the emails look
 
-**Styled like the site, with a plain-text twin.** Both emails go out as
-`multipart/alternative`: plain text first, HTML last. Clients show the last part they
-can render, so HTML wins where it's supported and the text remains everywhere else —
-including for spam filters, which distrust HTML-only mail. *(Plain text alone was the
-first version; the author asked for the site's look on 2026-09-11.)* The author's own
-notifications ([PRD 14](14-email-notifications.md)) stay plain text on purpose.
+**Styled like the site, with a plain-text twin.** Every email carries both — plain text first, the
+styled (HTML) version last. Mail apps show the last one they can display, so the styled version wins
+where it can and plain text remains everywhere else, including for spam filters, which distrust
+styled-only mail. *(History: plain text alone came first; the author asked for the site's look on
+2026-09-11.)* The author's own notifications ([PRD 14](14-email-notifications.md)) stay plain on
+purpose.
 
-Email HTML is its own dialect, and these rules are what make it render:
+Styled email is its own dialect. Five rules make it display properly:
 
-- **Every style is inline and the layout is tables.** Gmail ignores most of a
-  `<style>` block, and Outlook for Windows renders with Word. The one `<style>` block
-  is progressive only (phone padding, iOS data detectors).
-- **Colours are literal copies of the `app.css` tokens** — email clients don't support
-  CSS variables. `Models/EmailLayout.cs` must be kept in step when the palette changes.
-- **Georgia and the system sans stand in for Lora and Atkinson Hyperlegible.** Webfonts
-  would load only in Apple Mail.
-- **Everything that isn't a fixed string is HTML-encoded**, the teaser included.
-  Teasers are written by the author, not visitors, but a question about `a < b` must
-  arrive as text.
-- **The HTML is base64-encoded on the wire.** Its lines run far past SMTP's 998-byte
-  limit, and a relay may cut a raw line mid-tag.
+| Rule | Because |
+|---|---|
+| Every style written inline, layout built with tables | Gmail ignores most shared style blocks; Outlook draws email with Word |
+| Colours are literal copies of the `app.css` values | Mail apps don't understand the site's colour names (CSS variables) — keep `EmailLayout.cs` in step when the palette changes |
+| Georgia and the system's sans-serif stand in for Lora and Atkinson Hyperlegible | Web fonts only load in Apple Mail |
+| Everything that isn't fixed text is escaped, teasers included | A question about `a < b` must arrive as text |
+| The HTML is base64-encoded for sending | Its lines run past email's 998-character line limit, and a relay may cut one mid-tag |
 
-### Unsubscribing
+## Unsubscribing
 
-**One click, no button.** The unsubscribe link in every email opens the site, which says
-**"Sorry to see you go — you're now unsubscribed."** Nothing else to press. *(Author's
-decision, 2026-09-11.)*
+**One click, no button.** The link opens the site, which says **"Sorry to see you go — you're now
+unsubscribed."** Nothing else to press. *(Author's decision, 2026-09-11.)*
 
-> **It happens when the page goes live in a browser, not when the page is fetched.**
-> The same link scanners that open confirmation links open unsubscribe links. If the
-> plain fetch unsubscribed, readers behind one would be removed the moment the digest
-> landed, without ever seeing it. A scanner downloads the HTML — Blazor's prerender,
-> where this page does nothing — and doesn't run the page and hold the live connection
-> open, which is the step that does the work. A real reader never notices the
-> difference.
->
-> It is not airtight: a scanner that drives a full browser would still count. That is
-> accepted. The failure costs a subscription, not an unwanted email, and it is the
-> reverse of why confirmation *does* keep its button — a scanner wrongly saying "yes"
-> sends mail to someone who never asked, which is the harm double opt-in exists to
-> prevent.
+It happens only when the page **actually runs in a browser**, not when it's merely fetched. The
+scanners that open confirmation links open unsubscribe links too; if a fetch unsubscribed, people
+behind one would be removed the moment the email landed. A scanner downloads the page but doesn't
+run it and hold the live connection open — the step that does the work. Not airtight (a scanner
+driving a full browser still counts) and accepted, because that failure costs a subscription rather
+than mailing someone who never asked. That imbalance is exactly why confirmation *does* keep its
+button.
 
-- **Unsubscribing deletes the record** — not a flag, not a soft delete.
-- **A used or broken link says "You're not subscribed"** and points to the newest email
-  if mail is still arriving. Because records are deleted, a used link and a mangled one
-  look the same, so the page can't honestly promise the emails have stopped.
-- **Mail clients' own Unsubscribe button** (Gmail, Outlook, Apple Mail) never opens the
-  page: RFC 8058 has the client POST to the same URL. That endpoint
-  (`SubscriptionEndpoints`) always answers 200, so it can't be used to test which tokens
-  exist. Antiforgery is off for it, which is safe — CSRF abuses credentials a browser
-  already holds, and this endpoint takes none; the token *is* the authorisation.
+- **Unsubscribing deletes the record** — not a flag, not a soft delete. So a used link and a mangled
+  one look the same: both say **"You're not subscribed"** and point to the newest email if mail is
+  still arriving, because the page can't honestly promise the emails have stopped.
+- **Mail apps' own Unsubscribe button** never opens the page: under RFC 8058 the app sends a direct
+  request (a POST) to the same address. That always answers "OK" (200), so it can't be used to test
+  which tokens exist.
 
-> **Route order matters.** Blazor maps every page for form POSTs too, so `/unsubscribe`
-> the page and `/unsubscribe` the endpoint both claim POST. Without `WithOrder(-1)` on
-> the endpoint, that is an `AmbiguousMatchException` — a 500 to every mail client's
-> button while the page looks fine in a browser. Found in testing on 2026-09-11 and now
-> pinned by a test over real HTTP.
+> **History — route order matters (found 2026-09-11).** The framework lets every page accept form
+> posts, so the `/unsubscribe` page and the `/unsubscribe` endpoint both claimed the mail app's POST.
+> Without `WithOrder(-1)` on the endpoint, every mail app's button got a server error (500) while the
+> page still looked fine in a browser. Now pinned by a test over real requests.
 
-### Privacy and storage
+## Privacy and storage
 
-- Subscribers live in **`App_Data/subscribers.json`**. `App_Data/` is gitignored, so the
-  file is ignored from the moment it is created and can never reach the public
-  repository — verified with `git check-ignore`, and a test fails if the `.gitignore`
-  line is ever removed.
-- **Not encrypted at rest, deliberately.** The threat is the public repo, which the
-  gitignore closes completely. Encryption at rest would add protection only against
-  someone who can read the server's disk — who can also read the key, since the Data
-  Protection key ring lives on the same disk. And it adds a way to lose everything: lose
-  the key ring (it does not survive a container restart by default —
-  [PRD 11](11-deployment.md)) and the whole list is unreadable.
-- **Addresses never appear in logs.** A failed send logs the subject, not the recipient —
-  logs outlive subscriptions.
-- **Retention is the minimum:** pending sign-ups expire after 7 days; unsubscribing
-  deletes.
+- Subscribers live in **`App_Data/subscribers.json`**, excluded from the repository from the moment
+  it's created — checked with `git check-ignore`, and a test fails if the exclusion is removed.
+- **Not encrypted on disk, deliberately.** The threat is the public repository, which the exclusion
+  closes completely. Encryption would only help against someone who can read the server's disk — who
+  could read the key too, since it's on the same disk — and it adds a way to lose the whole list.
+- **Addresses never appear in logs.** A failed send logs the subject, not the recipient; logs outlive
+  subscriptions.
 - **Backups of `App_Data/` now contain personal data** and must be treated that way.
 
-### Configuration
+## Configuration
 
-| Key | Default | Notes |
+| Setting | Default | Notes |
 |---|---|---|
-| `Site:BaseUrl` | `http://localhost:5178` | **Must be the public address in production** (`Site__BaseUrl`). Every link in every email is built from it; a wrong value silently breaks every unsubscribe link ever sent. |
+| `Site:BaseUrl` | `http://localhost:5178` | **Must be the public address in production.** Every link in every email is built from it; a wrong value silently breaks every unsubscribe link ever sent |
 | `Subscriptions:SendHourPacific` | `7` | |
 | `Subscriptions:MaxConfirmationsPerDay` | `50` | |
 | `Subscriptions:MaxDigestsPerDay` | `400` | |
 
-The Gmail account and app password are [PRD 14](14-email-notifications.md)'s. With no
-password configured, nothing is queued or sent and the site works unchanged.
+The Gmail account and password belong to [PRD 14](14-email-notifications.md); with no password set,
+nothing is queued or sent and the site works unchanged.
 
 ## Known ceiling
 
-**This does not scale past a few hundred subscribers, and that is accepted for now.**
-
-Gmail allows roughly **500 messages a day** from one account, and every email this site
-sends shares it:
+**This doesn't scale past a few hundred subscribers, and that's accepted for now.** Gmail allows
+roughly 500 messages a day from one account, and everything shares it:
 
 | Use | Daily cap |
 |---|---|
@@ -226,144 +180,116 @@ sends shares it:
 | Daily email | 400 |
 | **Total** | **475** of ~500 |
 
-So **about 400 confirmed subscribers is the hard ceiling.** Past the digest cap, the
-rest of the list gets nothing that day and a warning is logged. The fix is not raising
-the numbers — that only brings an account suspension closer — but moving the daily email
-to a bulk provider (Resend, Postmark, SES). `SmtpMailer` is the one class that talks to
-SMTP, so that change doesn't reach the store, the schedule or the wording.
+So **about 400 confirmed subscribers is the hard ceiling.** Past the daily-email cap, the rest of the
+list gets nothing that day and a warning is logged. The fix isn't raising the numbers — that only
+brings an account suspension closer — but moving the daily email to a bulk email service (Resend,
+Postmark, SES). `SmtpMailer` is the only part that talks to the mail server, so that change doesn't
+touch storage, scheduling or wording.
 
-Mail sent through a personal Gmail account also has mediocre deliverability, and Gmail's
-own Unsubscribe button needs a public HTTPS address to POST to — it can't be tested on
-`localhost`.
-
-> **Observed on 2026-09-11: the first emails landed in Gmail's spam folder.**
-> Authentication isn't the cause — both ends are Gmail, so SPF, DKIM and DMARC pass.
-> The likely causes are that **every link points at `http://localhost:5178`**, which
-> reads as a suspicious URL to any filter, and that the sending address has no
-> reputation and no history with the recipient. Both resolve with the move above: a real
-> domain, a mail provider, and `Site__BaseUrl` pointing at the live HTTPS site. Until
-> then, expect spam placement in testing — and note that a confirmation lost to spam is
-> a subscriber lost **silently**, which is why the sign-up dialog says to look there.
+> **History — the first emails landed in spam (2026-09-11).** Not a sign-in problem: both ends are
+> Gmail, so the standard sender checks (SPF, DKIM, DMARC) pass. The likely causes: every link pointed
+> at `http://localhost:5178`, which looks suspicious to any filter, and the sending address had no
+> reputation. A real domain, an email service and `Site__BaseUrl` pointing at the live site fix both;
+> until then, expect spam in testing.
 
 ## Known gaps
 
-- **A teaser dated today and published after 7am.** [PRD 08](08-recycling-rotation.md)'s
-  precedence lets a teaser scheduled for a date outrank a day that has already settled,
-  so the site switches to the new teaser while subscribers already have the old one.
-  This is a PRD 08 issue the email makes visible, parked until it causes a problem.
-- **A confirmation is marked sent when it's requested, not when it's delivered.** If
-  Gmail fails all three attempts, or the daily cap or a full queue drops it, that
-  address can't get another confirmation for 24 hours.
-- **A scanner that runs a full browser can unsubscribe someone** (see Unsubscribing).
+- **A teaser dated today and published after 7am** takes over a day that has already settled
+  ([PRD 08](08-recycling-rotation.md)), so the site switches while subscribers already have the old
+  one. A PRD 08 issue the email makes visible; parked.
+- **A confirmation counts as sent when requested, not when delivered.** If Gmail fails all three
+  tries, that address can't get another for 24 hours.
+- **A scanner running a full browser can unsubscribe someone** (see Unsubscribing).
 
 ## Non-goals
 
-- Choosing a send time or time zone per subscriber
-- More than one email a day, or reminders, streak nudges, or marketing
-- Embedding the teaser's picture — the email says there is one
+- A send time or time zone per subscriber
+- More than one email a day, reminders, streak nudges or marketing
+- Putting the teaser's picture in the email — the email says there is one
 - Open or click tracking
-- A subscriber list in `/admin` (`SubscriberStore.Counts` exists; nothing shows it yet)
+- A subscriber list in `/admin`
 
 ## Acceptance criteria
 
-### The sign-up dialog — `SubscribeDialogTests`
+### Sign-up dialog — `SubscribeDialogTests`
 
-- [x] A new address is stored pending and queues **exactly one** confirmation — the
-      control case, without which the rest would pass on a dialog wired to nothing
-- [x] An address already subscribed, or already pending, sees the **same screen** and
-      queues nothing (mutation-verified: revealing the outcome fails it)
-- [x] A honeypot hit and a submission inside the 1.5-second floor both see that same
-      screen, and store and queue nothing (mutation-verified)
+- [x] A new address is stored as pending and queues **exactly one** confirmation — the control case,
+      without which the rest would pass on a dialog connected to nothing
+- [x] An already-subscribed or already-pending address sees the **same screen** and queues nothing
+      (mutation-verified)
+- [x] A decoy hit and a submission inside 1.5 seconds both see that same screen and store nothing
+      (mutation-verified)
 - [x] An unusable address is the one message allowed to differ
-- [x] The confirmation carries an absolute link with that subscriber's own token
-- [x] The screen points people at their spam folder
+- [x] The confirmation carries a full link with the subscriber's own token, and the screen points to
+      the spam folder
 
-### Addresses and the subscriber lifecycle — `SubscriptionTests`
+### Addresses and lifecycle — `SubscriptionTests`
 
-- [x] Valid addresses are normalised; unusable ones are rejected
-- [x] A line break is rejected **before** trimming could remove it (mutation-verified)
-- [x] Masking hides the address but keeps it recognisable
-- [x] Signing up twice in a row sends one confirmation; after 24 hours, another
-- [x] Signing up a confirmed address again sends nothing
-- [x] A wrong or empty token confirms and unsubscribes nothing
-- [x] Confirming twice is harmless
+- [x] Valid addresses normalised, unusable ones rejected; a line break is rejected **before** trimming
+      could remove it (mutation-verified); masking hides the address but keeps it recognisable
+- [x] Signing up twice sends one confirmation, and another after 24 hours; a confirmed address
+      signing up again gets nothing
+- [x] A wrong or empty token confirms and unsubscribes nothing; confirming twice is harmless
 - [x] Unsubscribing **deletes** the record
 - [x] Tokens are 64 hex characters, unique, and unrelated to the address
 - [x] Unconfirmed sign-ups expire after 7 days; confirmed ones never do
-- [x] Subscriptions survive a restart
-- [x] `.gitignore` keeps `App_Data/` — and so the subscriber file — out of the repo
+- [x] Subscriptions survive a restart, and `.gitignore` keeps the file out of the repository
 
 ### The daily email — `DailyDigestTests`
 
-- [x] Nothing goes out before 7am
-- [x] Every confirmed subscriber gets one after 7am; an unconfirmed address never does
+- [x] Nothing before 7am; after it, every confirmed subscriber gets one and an unconfirmed address
+      never does (mutation-verified)
+- [x] Running again the same day sends nothing (mutation-verified); a failed send retries on the next
+      check; a new day sends again
+- [x] The daily cap stops the send, and the rest stay owed
+- [x] Confirming after the send waits for next morning; before it, gets that morning's
       (mutation-verified)
-- [x] Running again the same day sends nothing (mutation-verified: never recording a
-      send is caught)
-- [x] A failed send is retried on the next tick, not skipped
-- [x] A new day sends again
-- [x] The daily cap stops the send and the rest stay owed
-- [x] Confirming after the send waits for the next morning; before it, gets that
-      morning's (mutation-verified)
-- [x] Each email carries its own subscriber's unsubscribe link and both headers
-- [x] The email carries the site's challenge and **no answer or hint — in either
-      version**
-- [x] Every email goes out styled, with a plain-text twin
+- [x] Each email carries its own unsubscribe link and both headers, and the site's challenge with
+      **no answer or hint, in either version**
 
 ### Content and format — `SubscriptionTests`, `SmtpMailerTests`
 
-- [x] Both versions carry the question and the links, and neither carries an answer or
-      hint
+- [x] Both versions carry the question and links, and neither an answer nor a hint; a teaser with a
+      picture says so in both
 - [x] Teaser text is HTML-encoded (mutation-verified)
-- [x] A teaser with a picture says so, in both versions
-- [x] The difficulty pill uses the site's colour for each level
-- [x] The confirmation link appears as a button **and** as printed text
-- [x] On the wire: plain text first, HTML last; a plain mail stays one part; the
-      unsubscribe headers survive; no line exceeds 998 characters
+- [x] The difficulty pill uses the site's colour for each level; the confirmation link appears as a
+      button **and** as printed text
+- [x] As sent: plain text first, HTML last; a plain email stays one part; the unsubscribe headers
+      survive; no line exceeds 998 characters
 
 ### Unsubscribing — `UnsubscribePageTests`, `OneClickUnsubscribeTests`
 
 - [x] Opening the link in a browser unsubscribes, with no button on the page
-- [x] The prerender — what a link scanner fetches — changes nothing, checked both in
-      bUnit and over real HTTP (mutation-verified: acting on the prerender fails both)
+- [x] A plain fetch — what a scanner does — changes nothing, checked in both a component test and
+      over real requests (mutation-verified)
 - [x] A used or broken link says "You're not subscribed" instead of claiming success
 - [x] The RFC 8058 POST unsubscribes and answers 200; an unknown token also gets 200
-      (mutation-verified: removing the route order returns the 500)
+      (mutation-verified: removing the route order brings back the 500)
 
 ### Verified by hand — 2026-09-11
 
-- [x] End to end against Gmail, plain-text version: signed up at 12:35 PM Pacific, the
-      confirmation arrived, the link confirmed, and the email arrived within a minute
-- [x] The styled daily email renders at desktop and phone widths, and the confirmation
-      at phone width, checked in a browser
-- [x] The styled email in a real inbox — it arrived, and **landed in spam** (see Known
-      ceiling)
-- [x] One-click unsubscribe from a real email: the link removed the subscriber with no
-      further click, and `subscribers.json` went back to an empty array
+- [x] End to end through Gmail: signed up, the confirmation arrived, the link confirmed, and the
+      daily email arrived within a minute
+- [x] The styled email displays correctly at desktop and phone widths
+- [x] The styled email in a real inbox — it arrived, and **landed in spam** (see Known ceiling)
+- [x] One-click unsubscribe from a real email removed the subscriber with no further click
 - [ ] Gmail's own Unsubscribe button — needs the public HTTPS site
 
 ### Not covered
 
-- [ ] The confirm page has no component test.
-- [ ] `ConfirmationSender` itself — its budget is `DailySendBudget`
-      ([PRD 14](14-email-notifications.md)'s tests), but the drain loop is untested.
+- [ ] The confirm page has no component test
+- [ ] `ConfirmationSender`'s sending loop (its budget is covered by PRD 14's tests)
 
 ## Implementation notes
 
-| File | Role |
-|---|---|
-| `Components/SubscribeDialog.razor` | The sign-up link and dialog; home page footer only (`MainLayout`) |
-| `Components/Pages/ConfirmSubscription.razor` | `/subscribe/confirm` — the button that confirms |
-| `Components/Pages/Unsubscribe.razor` | `/unsubscribe` — unsubscribes once the page is live |
-| `Services/SubscriptionEndpoints.cs` | The RFC 8058 one-click POST |
-| `Services/SubscriberStore.cs` | `subscribers.json` — lifecycle, tokens, retention |
-| `Services/ConfirmationMail.cs` | Confirmation queue, and its sender with the global cap |
-| `Services/DailyDigestService.cs` | The 7am send |
-| `Services/SmtpMailer.cs` | SMTP, timeout, retry, and the MIME message; shared with PRD 14 |
-| `Models/SubscriptionMail.cs` | The wording of both emails, HTML and plain text |
-| `Models/EmailLayout.cs` | The HTML shell and parts, mirroring `app.css` |
-| `Models/EmailAddress.cs` | Validation, normalisation, masking |
+The dialog is `Components/SubscribeDialog.razor` (home page footer only); the confirm and unsubscribe
+pages are `Components/Pages/ConfirmSubscription.razor` and `Unsubscribe.razor`; the one-click POST is
+`Services/SubscriptionEndpoints.cs`. `Services/SubscriberStore.cs` owns `subscribers.json` — the
+lifecycle, tokens and retention; `Services/ConfirmationMail.cs` queues and sends confirmations under
+the daily total; `Services/DailyDigestService.cs` is the 7am send; `Services/SmtpMailer.cs` sends
+everything (shared with PRD 14). The emails' wording is `Models/SubscriptionMail.cs`, their HTML shell
+`Models/EmailLayout.cs` (mirroring `app.css`), and address checking and masking
+`Models/EmailAddress.cs`.
 
-> The sign-up dialog runs on the SignalR circuit, so — as with [PRD 14](14-email-notifications.md) —
-> it only ever **queues** a confirmation. Sending happens in the background, where a
-> slow or failing SMTP server can't cost a visitor their page.
+> The dialog runs on the visitor's live connection, so it only ever **queues** a confirmation. Sending
+> happens in the background, where a slow mail server can't cost a visitor their page.
