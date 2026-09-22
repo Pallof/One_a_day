@@ -4,7 +4,7 @@
 
 ## Problem
 
-One a Day publishes one teaser a day, and every teaser is written by hand by a single
+Stumpty publishes one teaser a day, and every teaser is written by hand by a single
 author. That creates two failure modes that have nothing to do with the quality of the
 puzzles:
 
@@ -119,7 +119,7 @@ panel reflects that machine's copy unless the live file is copied down first
 ## Non-goals
 
 - **Per-solver rotation.** Everyone sees the same puzzle on the same day — that is what
-  "One a Day" means, and it is what makes the challenge shareable. The rotation is a
+  "one a day" means, and it is what makes the challenge shareable. The rotation is a
   property of the calendar, not of the visitor.
 - Tracking which teasers a given person has already seen.
 - Balancing difficulty across a cycle, or theming days.

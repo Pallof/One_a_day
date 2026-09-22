@@ -1,6 +1,6 @@
-# One a Day — Product Requirements
+# Stumpty — Product Requirements
 
-This folder holds the product requirements documents for **One a Day**, a daily
+This folder holds the product requirements documents for **Stumpty**, a daily
 brain teaser web app.
 
 Two kinds of document live here — the table below says which each one is. The number

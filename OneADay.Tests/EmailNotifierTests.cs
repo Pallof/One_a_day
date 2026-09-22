@@ -69,10 +69,10 @@ public class EmailNotifierTests
     {
         var notifier = Build(Configured());
 
-        notifier.Enqueue("One a Day — new teaser suggestion (Hard)", "the body");
+        notifier.Enqueue("Stumpty — new teaser suggestion (Hard)", "the body");
 
         Assert.True(notifier.Reader.TryRead(out var queued));
-        Assert.Equal("One a Day — new teaser suggestion (Hard)", queued!.Subject);
+        Assert.Equal("Stumpty — new teaser suggestion (Hard)", queued!.Subject);
         Assert.Equal("the body", queued.Body);
     }
 

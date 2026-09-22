@@ -79,7 +79,7 @@ public static class EmailLayout
         <tr><td class="oad-pad" style="padding:22px 28px 16px;border-bottom:1px solid {{Line}};">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
         <td width="34" height="34" align="center" valign="middle" bgcolor="{{Gold}}" style="width:34px;height:34px;border-radius:17px;background-color:{{Gold}};font-size:17px;line-height:34px;text-align:center;">&#129504;</td>
-        <td style="padding-left:10px;font-family:{{Serif}};font-size:23px;line-height:34px;font-weight:700;color:{{Ink}};"><a href="{{E(siteUrl)}}" style="color:{{Ink}};text-decoration:none;">One a Day</a></td>
+        <td style="padding-left:10px;font-family:{{Serif}};font-size:23px;line-height:34px;font-weight:700;color:{{Ink}};"><a href="{{E(siteUrl)}}" style="color:{{Ink}};text-decoration:none;">Stumpty</a></td>
         </tr></table>
         </td></tr>
         <tr><td class="oad-pad" style="padding:30px 28px 34px;">
@@ -175,7 +175,7 @@ public static class EmailLayout
         $$"""<p style="margin:{{margin}};font-family:{{Sans}};font-size:14px;line-height:22px;color:{{InkSoft}};">{{html}}</p>""";
 
     /// <summary>The site's own footer tagline.</summary>
-    public static string Tagline => FooterLine("One a Day &#129504; — a small daily workout for your mind.");
+    public static string Tagline => FooterLine("Stumpty &#129504; — one puzzle a day to sharpen how you think.");
 
     /// <summary>The soft ink, for links that sit in the footer.</summary>
     public static string FooterLink(string href, string label) => Link(href, label, InkSoft);

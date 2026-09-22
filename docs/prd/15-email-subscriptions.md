@@ -5,7 +5,7 @@
 
 ## Problem
 
-One a Day is a daily habit with nothing that forms the habit. A visitor who enjoyed
+Stumpty is a daily habit with nothing that forms the habit. A visitor who enjoyed
 today's puzzle has to remember to come back tomorrow, and nothing reminds them — no
 accounts, no app, no notifications. For a daily puzzle, the reminder that works is the
 puzzle itself arriving on its own.
@@ -115,7 +115,7 @@ can receive, so it is what a hostile script would aim at:
 
 | Part | Content |
 |---|---|
-| Subject | `One a Day — Friday, September 11 · Medium` |
+| Subject | `Stumpty — Friday, September 11 · Medium` |
 | Preview line | The difficulty and the start of the question |
 | Body | Date, "Challenge of the day", the question with its difficulty pill, and one button: **Solve today's challenge** |
 | Picture | Not embedded; a teaser with one says so, rather than sending a question that makes no sense without it |

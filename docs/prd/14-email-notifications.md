@@ -59,8 +59,8 @@ Consequences that must hold:
 
 | Trigger | Subject | Body carries |
 |---|---|---|
-| New suggestion | `One a Day — new teaser suggestion (Hard)` | difficulty, timestamp, the teaser, the solution + hint |
-| Issue report | `One a Day — issue reported (answer not accepted)` | category, page, timestamp, the teaser on screen, the details |
+| New suggestion | `Stumpty — new teaser suggestion (Hard)` | difficulty, timestamp, the teaser, the solution + hint |
+| Issue report | `Stumpty — issue reported (answer not accepted)` | category, page, timestamp, the teaser on screen, the details |
 
 - **Plain text only.** Nothing to escape, renders everywhere. Subscriber mail is styled
   like the site ([PRD 15](15-email-subscriptions.md)); these stay plain on purpose —

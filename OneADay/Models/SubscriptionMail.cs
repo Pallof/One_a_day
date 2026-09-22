@@ -24,10 +24,10 @@ public static class SubscriptionMail
 {
     public static MailContent Confirmation(string confirmUrl, string siteUrl)
     {
-        const string subject = "One a Day — please confirm your email";
+        const string subject = "Stumpty — please confirm your email";
 
         var text = $"""
-            Thanks for signing up for One a Day — one brain teaser, every morning.
+            Thanks for signing up for Stumpty — one brain teaser, every morning.
 
             Please confirm this is your address by opening this link:
 
@@ -40,7 +40,7 @@ public static class SubscriptionMail
         var body =
             Masthead(dateline: null, "Confirm your email") +
             Card(
-                Lead("Thanks for signing up for One a Day — one brain teaser, every morning.") +
+                Lead("Thanks for signing up for Stumpty — one brain teaser, every morning.") +
                 Soft("Confirm this is your address and your first challenge arrives at 7am Pacific. " +
                      "Nothing is sent until you do.") +
                 Spacer(24) +
@@ -68,7 +68,7 @@ public static class SubscriptionMail
         DateOnly day, Difficulty difficulty, string question, bool hasImage, DigestLinks links)
     {
         var date = day.ToString("dddd, MMMM d", CultureInfo.InvariantCulture);
-        var subject = $"One a Day — {date} · {difficulty}";
+        var subject = $"Stumpty — {date} · {difficulty}";
         const string pictureNote = "This one comes with a picture — open it on the site to see it.";
 
         var text = $"""
@@ -79,7 +79,7 @@ public static class SubscriptionMail
             Solve today's challenge: {links.Solve}
 
             —
-            You're receiving this because you subscribed to One a Day.
+            You're receiving this because you subscribed to Stumpty.
             Unsubscribe in one click: {links.Unsubscribe}
             """;
 

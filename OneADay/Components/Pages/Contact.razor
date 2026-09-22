@@ -6,7 +6,7 @@
 @inject IHttpContextAccessor HttpAccessor
 @inject IpHasher Hasher
 
-<PageTitle>One a Day — Contact us</PageTitle>
+<PageTitle>Stumpty — Contact us</PageTitle>
 
 <div class="oad-static">
     <div class="oad-banner">Contact us</div>
@@ -155,7 +155,7 @@
             // a mail problem can't cost this visitor their suggestion — it is already
             // on disk and visible in admin either way.
             Notifier.Enqueue(
-                $"One a Day — new teaser suggestion ({suggestion.Difficulty})",
+                $"Stumpty — new teaser suggestion ({suggestion.Difficulty})",
                 $"""
                  A visitor suggested a teaser.
 
