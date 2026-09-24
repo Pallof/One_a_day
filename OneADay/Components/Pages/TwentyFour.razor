@@ -231,6 +231,14 @@
 
     public async ValueTask DisposeAsync()
     {
+        // Only the live copy of this page registered with the script. The server first
+        // renders the page as plain HTML, and that copy never reaches OnAfterRenderAsync —
+        // calling the script from it throws, because there's no live connection yet. That
+        // logged an unhandled exception on every direct visit to /twentyfour.
+        if (_selfRef is null)
+        {
+            return;
+        }
         try
         {
             await JS.InvokeVoidAsync("oadTwentyFour.unregister");
