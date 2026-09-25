@@ -176,9 +176,10 @@ roughly 500 messages a day from one account, and everything shares it:
 | Use | Daily cap |
 |---|---|
 | Author notifications ([PRD 14](14-email-notifications.md)) | 25 |
+| Traffic alert ([PRD 14](14-email-notifications.md)) | 1 |
 | Confirmations | 50 |
 | Daily email | 400 |
-| **Total** | **475** of ~500 |
+| **Total** | **476** of ~500 |
 
 So **about 400 confirmed subscribers is the hard ceiling.** Past the daily-email cap, the rest of the
 list gets nothing that day and a warning is logged. The fix isn't raising the numbers — that only

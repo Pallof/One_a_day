@@ -128,8 +128,10 @@ exists, showing it again is nagging.
 ### Removed on purpose
 
 - **Bootstrap** (a ready-made style library) — nothing used it, so it was ~230 KB whose only effect
-  was fighting this site's own styles. The page no longer loads it, but its unused files (8.4 MB)
-  are still in `wwwroot/lib/bootstrap/` and still go out with every publish.
+  was fighting this site's own styles. The page stopped loading it first, but its 8.4 MB of files
+  stayed in `wwwroot/lib/bootstrap/` until 2026-09-24. They were deleted because the server still
+  handed them to anyone who asked. The largest, at 664 KB, was the most expensive thing a bot could
+  make the server send.
 - **Two glossy gradient buttons**, one with a looping animated shine. Nothing else has a gradient,
   and a moving highlight beside a puzzle competes with the puzzle.
 
@@ -146,7 +148,8 @@ exists, showing it again is nagging.
 - [x] Both webfonts load and apply
 - [x] Nav swaps to the hamburger at 900px, and the panel opens on touch
 - [x] No page sets its own maximum width
-- [x] Bootstrap is no longer loaded, and nothing regressed
+- [x] Bootstrap is no longer loaded or shipped, and nothing regressed. Its address returns 404, and
+      every route loads all of its files
 
 ### Not yet converted
 
