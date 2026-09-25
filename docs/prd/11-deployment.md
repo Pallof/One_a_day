@@ -47,9 +47,14 @@ destroy every puzzle, statistic and subscriber.
    proxy keeps passing visits on as insecure, until the browser gives up. *History: that loop, the
    worse failure, wasn't recorded here until it was found by reading the code on 2026-09-16.*
 
-   So `UseProxyHeaders()` runs **first**, before anything that checks for a secure connection —
-   placed later, the loop returns while the code still looks right. Where the host documents a fixed
-   proxy address, name it rather than trusting every sender.
+   So `UseProxyHeaders()` runs before anything that checks for a secure connection, after only
+   the Cloudflare lock and the traffic count (requirement 14). Placed later, the loop returns while the code still looks
+   right. Where the host documents a fixed proxy address, name it rather than trusting every sender.
+
+   With Cloudflare in front of Fly, a visitor arrives through **two** proxies, so
+   `Proxy__ForwardLimit` must be 2 or every visitor looks like a Cloudflare address. The lock makes
+   trusting every sender safe here: nothing reaches the app without passing through both. Confirm
+   it with the two-device check below.
 
 4. **Keep the encryption keys.** ✅ **Built 2026-09-16** — in `App_Data/keys/`, which requirement 2
    already covers and the repository already excludes.
@@ -84,11 +89,12 @@ destroy every puzzle, statistic and subscriber.
 11. **Serve the fonts ourselves.** Loading Lora and Atkinson Hyperlegible from Google puts a third
     party on every page load and shows it visitors' IP addresses; serving them from `wwwroot`
     removes both ([PRD 09](09-visual-design.md)).
-12. **Settings the deploy needs.** Four; two of them stop the app starting:
+12. **Settings the deploy needs.** Five; three of them stop the app starting:
 
     | Setting | Required | If it's wrong |
     |---|---|---|
     | `Privacy__IpHashKey` | **Yes** — a secret, at least 32 characters | **Refuses to start** |
+    | `CloudflareLock__Secret` | **Yes** — a secret, at least 32 characters, the same value as Cloudflare's header rule | **Refuses to start**, unless `CloudflareLock__Enabled` is false (requirement 14) |
     | `Proxy__Enabled` + a trusted source | Behind a proxy | **Refuses to start** if one is set without the other |
     | `Email__AppPassword` | For any email | No mail; the site is unaffected ([PRD 14](14-email-notifications.md)) |
     | `Site__BaseUrl` = `https://stumpty.com` | Yes | **Fails silently** — every link in every email is built from it, and it defaults to a local address ([PRD 15](15-email-subscriptions.md)) |
@@ -107,6 +113,53 @@ destroy every puzzle, statistic and subscriber.
     statistics, rotation history and subscribers ([PRD 10](10-admin-authentication.md)). The bank
     must be in place before the first start, because the live site won't start without one. The
     build itself already leaves `App_Data/` out (PRD 10).
+
+14. **Only answer Cloudflare.** ✅ **Built 2026-09-24.** Cloudflare's rate limit and cache only cover
+    traffic that goes through it, but every Fly app also answers at its own `.fly.dev` address. Fly
+    bills $0.02 per GB sent, and a bot picks the biggest file it can find. Measured on the published
+    build, one machine re-downloading the 196 KB Blazor script that way could cost about $1,100 a
+    month. So Cloudflare stamps a secret header on every request it forwards, and the app turns away
+    anything without it before any other code runs (`Services/CloudflareLock.cs`). The refusal is an
+    empty 403 of 99 bytes, so a nonstop flood costs about $2 a month.
+
+    - **Cloudflare:** Rules → Create rule → Request Header Transform Rule, for all incoming
+      requests: **Set static** `X-Origin-Verify` to the secret. "Set static" overwrites any value a
+      visitor sends.
+    - **Host:** `CloudflareLock__Secret`, the same value, made with the `openssl` command above.
+      To change it, change both at once; until they match, every visitor gets the 403.
+    - **On unless switched off.** A production start without the secret refuses. A local production
+      rehearsal sets `CloudflareLock__Enabled=false`.
+    - **Health checks** must be TCP checks or send the header.
+    - **The airtight version** is a Cloudflare Tunnel, which gives the server no public address at
+      all. That's a deploy-time choice, and the lock stays useful behind it.
+
+    Two free Cloudflare settings go with it:
+    - **Rate limiting:** more than 50 requests in 10 seconds from one address blocks it for 10
+      seconds. A real first visit makes about 10. This caps one attacker loading pages at about
+      $1.70 a month.
+    - **Caching level: Ignore query string.** Otherwise `?x=123` on a file's address skips the
+      cache and reaches the server every time.
+
+    Fly has no billing alerts or spending caps, so the site sends its own. The first time a day
+    passes 50,000 requests, the author gets one email ([PRD 14](14-email-notifications.md)). Raise
+    `TrafficAlert__DailyThreshold` as the site grows.
+
+15. **Compress pages.** ✅ **Built 2026-09-25.** Cloudflare compresses what it hands visitors, but Fly
+    bills what leaves the server, before Cloudflare. Measured on the published build, gzip at its
+    best setting makes every page about 2.4 times smaller (the home page goes from 11.6 KB to 5.3 KB,
+    headers included) for under 15% more CPU (`Services/PageCompression.cs`). The most a flood of
+    page requests could cost drops by the same 2.4 times, and one rate-limited attacker from about
+    $1.51 a month to $0.70. Brotli came out within 1%, so gzip alone. About 1.8 KB of every page is
+    encrypted Blazor data that can't compress, which is why it isn't more.
+
+    Compression is switched on for HTTPS deliberately: behind Cloudflare every request is HTTPS, and
+    compression skips HTTPS by default. The default exists because compression can leak a secret
+    (the BREACH attack) when a page shows back text a visitor controls next to that secret. The page
+    shrinks a little whenever the visitor's text matches part of the secret, so an eavesdropper
+    watching response sizes can learn it a character at a time. **No Stumpty page shows back its
+    address.** Only Unsubscribe and ConfirmSubscription read it, and both use the token to find a
+    subscriber without displaying it. A future page that echoes its address next to anything
+    secret must be left out of compression.
 
 ## Candidate hosts
 
@@ -134,6 +187,31 @@ On any platform host, **switch off sleeping when idle** ("scale to zero") — se
 - [ ] A backup has been taken **and restored** once
 - [ ] Links in a real email open the public site
 - [ ] Deploy command documented in the README
+- [ ] The server's own `.fly.dev` address gets an empty 403, while stumpty.com loads
+
+### The Cloudflare-only lock — `CloudflareLockTests`
+
+- [x] Without the header, or with anything but the exact secret (a prefix, extra characters, other
+      letter case, a second value alongside it), a request gets an empty 403; the exact secret gets
+      the page
+- [x] With no settings at all the lock is on and refuses to start; a missing or short secret refuses
+- [x] Proven against the real files: the lock is the first thing in Program.cs's pipeline, and
+      appsettings.json switches it on while holding no secret
+- [x] Mutation-verified: six breaks, each caught — letting a missing header through, accepting any
+      value, moving the lock below the static files, defaulting it off, accepting a short secret, and
+      switching it off in the production settings
+
+### Page compression — `PageCompressionTests`
+
+- [x] A page goes out gzip-compressed to anyone who accepts it and arrives identical; a client that
+      doesn't ask gets the plain page
+- [x] Pages are compressed over HTTPS, as every request is behind Cloudflare
+- [x] gzip runs at its best setting, which the measured savings assume
+- [x] Proven against the real Program.cs: compression is registered, and comes before everything
+      that writes a page
+- [x] Mutation-verified: five breaks, each caught by the test written for it
+- [x] Checked in the running app on 2026-09-25: the home page went out as 4,462 of its 10,016 bytes,
+      and the live connection still worked
 
 ## Risks
 

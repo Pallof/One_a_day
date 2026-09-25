@@ -84,9 +84,11 @@ public static class ProxyHeaders
     /// Rewrites the connection's address and scheme from the proxy's forwarded headers.
     /// </summary>
     /// <remarks>
-    /// <b>Register this first.</b> Anything that reads the scheme or the address must run
-    /// after it — <c>UseHsts</c> and <c>UseHttpsRedirection</c> both read the scheme, and
-    /// placing this below them leaves the redirect loop in place while the code looks right.
+    /// <b>Register this early — after only <see cref="CloudflareLock.UseCloudflareLock"/> and
+    /// <see cref="TrafficCount.UseTrafficCount"/>.</b>
+    /// Anything that reads the scheme or the address must run after it — <c>UseHsts</c> and
+    /// <c>UseHttpsRedirection</c> both read the scheme, and placing this below them leaves the
+    /// redirect loop in place while the code looks right.
     /// </remarks>
     public static WebApplication UseProxyHeaders(this WebApplication app)
     {

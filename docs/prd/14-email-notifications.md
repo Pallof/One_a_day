@@ -1,6 +1,6 @@
 # PRD 14 — Email notifications
 
-**Status:** Spec of record · **Config:** `Email` settings + the `Email:AppPassword` secret
+**Status:** Spec of record · **Config:** `Email` settings + the `Email:AppPassword` secret, and `TrafficAlert`
 
 ## In plain terms
 
@@ -45,6 +45,7 @@ So:
 |---|---|---|
 | New suggestion | `Stumpty — new teaser suggestion (Hard)` | difficulty, time, the teaser, the solution + hint |
 | Issue report | `Stumpty — issue reported (answer not accepted)` | category, page, time, the teaser on screen, the details |
+| A day passes the traffic alert line | `Stumpty — unusual traffic: 50,000 requests today` | requests served and turned away, yesterday's total, what to do |
 
 - **Plain text only** — nothing to escape, displays everywhere. Subscriber emails are styled like the
   site ([PRD 15](15-email-subscriptions.md)); these have one reader, who wants to scan them.
@@ -76,6 +77,24 @@ both; the queue and the daily cap belong to this feature.
 - **Overflow drops the oldest, not the newest** — under a burst, the latest activity is the half worth
   keeping. The queue reports success even when it drops something, so overflow is detected by
   checking how full it is.
+
+## Traffic alert
+
+The host bills for data sent and has no billing alerts or spending caps of its own
+([PRD 11](11-deployment.md)), so the site watches for itself. The first time a Pacific day passes
+**50,000 requests**, the author gets one email.
+
+- **Every request that reaches the server counts**, including the ones the Cloudflare lock turns
+  away. The email reports the two apart. Mostly served means heavy traffic through Cloudflare;
+  mostly turned away means someone is using the server's own address.
+- **Once a day at most**, however long a flood lasts. A restart forgets, so it can send once more.
+- **Sent directly, not through the queue.** The queue's 25-a-day cap is shared with issue reports,
+  which are uncapped, so a bot filing reports could spend the day's allowance first. This would
+  then be the email dropped. At once a day, it can't bury the inbox by itself.
+- **Logged as a warning either way**, so the host's logs carry it when email isn't set up.
+- **The line is a setting**, `TrafficAlert:DailyThreshold`, and 0 switches it off. With Cloudflare
+  serving the scripts and styles, a page view reaches the server about four times, so a
+  1,000-visitor day is roughly 10,000 requests. Raise it as the site grows.
 
 ## Values the visitor controls
 
@@ -157,6 +176,20 @@ separate.
 - [x] A forged 40,000-character difficulty is stored as `Medium` and never reaches the subject
       (mutation-verified); genuine values round-trip in any letter case, and unknown values fall back
 
+### The traffic alert — `TrafficAlertTests`
+
+- [x] Nothing below the line; one report at it, and none after, however many more requests arrive
+      that day
+- [x] Requests the lock turns away count toward the line and are reported apart, checked with
+      real requests on both sides of the lock
+- [x] A new Pacific day starts from zero and can alert again; yesterday's total appears only when
+      the whole day was counted
+- [x] The author gets exactly one email; without email set up, the alert is still logged as a
+      warning and nothing throws
+- [x] Proven against the real files: counting comes straight after the lock in Program.cs, and
+      appsettings.json switches the alert on
+- [x] Mutation-verified: seven breaks, each caught by the test written for it
+
 ### Not covered
 
 - [x] ~~An actual send through Gmail~~ — verified by hand 2026-09-08: a suggestion submitted through
@@ -183,3 +216,7 @@ The callers, `Components/Pages/Contact.razor` and `Components/ReportIssue.razor`
 **after** their save. The notifier is deliberately the only piece they can reach: a form that could
 reach the sender directly could stall the visitor's connection — the exact failure this design
 prevents.
+
+The traffic alert is separate. `Services/TrafficMonitor.cs` counts requests and decides when a day
+passes the line; `Services/TrafficAlertService.cs` checks once a minute, logs, and sends through
+`SmtpMailer` directly.
