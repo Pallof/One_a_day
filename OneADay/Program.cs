@@ -59,6 +59,9 @@ builder.Services.AddHttpContextAccessor();
 // than a recoverable one. See ProxyOptions and IpHasher.
 builder.Services.Configure<ProxyOptions>(builder.Configuration.GetSection(ProxyOptions.Section));
 builder.Services.Configure<CloudflareLockOptions>(builder.Configuration.GetSection(CloudflareLockOptions.Section));
+
+// Pages go out compressed: the host bills for what leaves the server. See PageCompression.
+builder.Services.AddPageCompression();
 builder.Services.AddSingleton(IpHasher.Create(builder.Environment, builder.Configuration));
 
 // Data Protection encrypts every ProtectedLocalStorage value, the anonymous visitor id among
@@ -120,6 +123,11 @@ app.UseTrafficCount();
 // both read the scheme, and below them the app would see the proxy's inward hop as plain
 // HTTP and redirect to HTTPS forever. See ProxyOptions and PRD 11.
 app.UseProxyHeaders();
+
+// Compress pages on the way out — less than half the size, and the host bills for what
+// leaves. Before anything that writes a page, or that page goes out uncompressed. See
+// PageCompression and PRD 11.
+app.UsePageCompression();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

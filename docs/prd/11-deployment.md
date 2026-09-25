@@ -144,6 +144,23 @@ destroy every puzzle, statistic and subscriber.
     passes 50,000 requests, the author gets one email ([PRD 14](14-email-notifications.md)). Raise
     `TrafficAlert__DailyThreshold` as the site grows.
 
+15. **Compress pages.** ✅ **Built 2026-09-25.** Cloudflare compresses what it hands visitors, but Fly
+    bills what leaves the server, before Cloudflare. Measured on the published build, gzip at its
+    best setting makes every page about 2.4 times smaller (the home page goes from 11.6 KB to 5.3 KB,
+    headers included) for under 15% more CPU (`Services/PageCompression.cs`). The most a flood of
+    page requests could cost drops by the same 2.4 times, and one rate-limited attacker from about
+    $1.51 a month to $0.70. Brotli came out within 1%, so gzip alone. About 1.8 KB of every page is
+    encrypted Blazor data that can't compress, which is why it isn't more.
+
+    Compression is switched on for HTTPS deliberately: behind Cloudflare every request is HTTPS, and
+    compression skips HTTPS by default. The default exists because compression can leak a secret
+    (the BREACH attack) when a page shows back text a visitor controls next to that secret. The page
+    shrinks a little whenever the visitor's text matches part of the secret, so an eavesdropper
+    watching response sizes can learn it a character at a time. **No Stumpty page shows back its
+    address.** Only Unsubscribe and ConfirmSubscription read it, and both use the token to find a
+    subscriber without displaying it. A future page that echoes its address next to anything
+    secret must be left out of compression.
+
 ## Candidate hosts
 
 | Host | Fit | Cost |
@@ -183,6 +200,18 @@ On any platform host, **switch off sleeping when idle** ("scale to zero") — se
 - [x] Mutation-verified: six breaks, each caught — letting a missing header through, accepting any
       value, moving the lock below the static files, defaulting it off, accepting a short secret, and
       switching it off in the production settings
+
+### Page compression — `PageCompressionTests`
+
+- [x] A page goes out gzip-compressed to anyone who accepts it and arrives identical; a client that
+      doesn't ask gets the plain page
+- [x] Pages are compressed over HTTPS, as every request is behind Cloudflare
+- [x] gzip runs at its best setting, which the measured savings assume
+- [x] Proven against the real Program.cs: compression is registered, and comes before everything
+      that writes a page
+- [x] Mutation-verified: five breaks, each caught by the test written for it
+- [x] Checked in the running app on 2026-09-25: the home page went out as 4,462 of its 10,016 bytes,
+      and the live connection still worked
 
 ## Risks
 
