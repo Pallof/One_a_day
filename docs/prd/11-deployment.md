@@ -76,7 +76,7 @@ destroy every puzzle, statistic and subscriber.
    the host (requirement 8).
 
 5. **One copy of the app.** File storage assumes a single writer; don't run several copies without
-   first moving to a real database.
+   first moving to a real database. On Fly, deploy with `fly deploy --ha=false`, or it adds a spare.
 6. **HTTPS**, with certificates renewed automatically.
 7. **Time zone.** Already handled — days are pinned to Pacific whatever the server's clock — but
    check on the host, since a server on UTC is exactly the case this guards against.
@@ -114,6 +114,11 @@ destroy every puzzle, statistic and subscriber.
     must be in place before the first start, because the live site won't start without one. The
     build itself already leaves `App_Data/` out (PRD 10).
 
+    **The first upload is built (2026-09-25).** On a new, empty disk, `deploy/start.sh` waits for
+    the bank instead of letting the site crash and restart in a loop, and
+    `fly ssh sftp put OneADay/App_Data/teasers.json /app/App_Data/teasers.json` delivers it. The
+    one command for later updates is still to build.
+
 14. **Only answer Cloudflare.** ✅ **Built 2026-09-24.** Cloudflare's rate limit and cache only cover
     traffic that goes through it, but every Fly app also answers at its own `.fly.dev` address. Fly
     bills $0.02 per GB sent, and a bot picks the biggest file it can find. Measured on the published
@@ -129,7 +134,8 @@ destroy every puzzle, statistic and subscriber.
       To change it, change both at once; until they match, every visitor gets the 403.
     - **On unless switched off.** A production start without the secret refuses. A local production
       rehearsal sets `CloudflareLock__Enabled=false`.
-    - **Health checks** must be TCP checks or send the header.
+    - **Health checks:** fly.toml defines none. An HTTP check would get the lock's 403, and Fly
+      restarts the machine if the app exits.
     - **The airtight version** is a Cloudflare Tunnel, which gives the server no public address at
       all. That's a deploy-time choice, and the lock stays useful behind it.
 
@@ -172,6 +178,12 @@ destroy every puzzle, statistic and subscriber.
 
 On any platform host, **switch off sleeping when idle** ("scale to zero") — see Risks.
 
+**Chosen on 2026-09-25: Fly.io**, the cheapest host that meets every requirement above without
+running a server yourself. Measured for this app: 512 MB is plenty, and the bill is about $4.20 a
+month. The deploy files are `Dockerfile`, `fly.toml` and `deploy/start.sh`; the steps are in the
+README. Fly has no free tier: its trial allows 2 hours of machine time and stops machines after
+5 minutes, so it can't host the site.
+
 ## Acceptance criteria
 
 - [ ] Public HTTPS address serves the current challenge
@@ -186,7 +198,7 @@ On any platform host, **switch off sleeping when idle** ("scale to zero") — se
 - [ ] Day rollover correct on a UTC-clock server
 - [ ] A backup has been taken **and restored** once
 - [ ] Links in a real email open the public site
-- [ ] Deploy command documented in the README
+- [x] Deploy command documented in the README
 - [ ] The server's own `.fly.dev` address gets an empty 403, while stumpty.com loads
 
 ### The Cloudflare-only lock — `CloudflareLockTests`

@@ -59,8 +59,7 @@ dotnet run --project OneADay
 
 Then open the URL it prints (e.g. <http://localhost:5178>).
 
-Run the test suite (188 tests covering the answer-matching rules and the full
-teaser bank):
+Run the test suite:
 
 ```bash
 dotnet test OneADay.Tests
@@ -82,6 +81,51 @@ Open the **☰ menu → Add a teaser (admin)**, or go straight to `/admin`.
 | **Support image** | Optional PNG/JPG/GIF/WebP up to 3 MB, for puzzles that need a diagram. |
 | **Hint** | Unlocks for the solver after their first attempt. |
 | **Solution** | Shown once solved, or revealable the day after the challenge runs. |
+
+---
+
+## Deploying to Fly.io
+
+Stumpty runs on [Fly.io](https://fly.io) as one always-on machine with a disk for
+`App_Data`, behind Cloudflare. [`fly.toml`](fly.toml) holds the settings and
+[`Dockerfile`](Dockerfile) the build. Fly builds on its own servers, so Docker isn't needed
+locally. Why Fly, and every requirement: [PRD 11](docs/prd/11-deployment.md).
+
+First time:
+
+1. Install Fly's command-line tool and log in:
+   ```bash
+   brew install flyctl
+   fly auth login
+   ```
+2. Create the app and its disk. The names must match `fly.toml`; if `stumpty` is taken,
+   change `app` there.
+   ```bash
+   fly apps create stumpty
+   fly volumes create stumpty_data --size 1 --region dfw
+   ```
+3. Set the secrets. Make each key with `openssl rand -base64 32`; `CloudflareLock__Secret`
+   must match Cloudflare's header rule (PRD 11, requirement 14). Never put these in a file.
+   ```bash
+   fly secrets set Privacy__IpHashKey=... CloudflareLock__Secret=... Email__AppPassword=...
+   ```
+4. Deploy as one machine. Without `--ha=false`, Fly adds a spare, and the data files
+   assume a single writer.
+   ```bash
+   fly deploy --ha=false
+   ```
+5. Upload the question bank. On a new disk the machine waits for it before starting:
+   ```bash
+   fly ssh sftp put OneADay/App_Data/teasers.json /app/App_Data/teasers.json
+   ```
+6. Connect stumpty.com with
+   [Fly's Cloudflare guide](https://fly.io/docs/networking/understanding-cloudflare/):
+   run `fly certs add stumpty.com`, add the `_fly-ownership` record that
+   `fly certs setup stumpty.com` shows, point the domain at the app with Cloudflare's proxy
+   on, and set Cloudflare's SSL/TLS mode to Full (strict).
+
+After that, `fly deploy --ha=false` ships each update. Updating the question bank on the
+live site is the next piece to build (PRD 11, requirement 13).
 
 ---
 
@@ -160,9 +204,10 @@ original design, kept for reference — the app deliberately has no accounts tod
 Working today: everything in the feature list above, running locally.
 
 Before deploying publicly:
-- [ ] **Protect `/admin`** — it currently has no authentication, which is fine on
-      localhost but must be gated (a passphrase or host-level auth) before going live
-- [ ] Pick a host and deploy (`dotnet publish` runs on any cheap host)
+- [x] **Protect `/admin`** — it only exists on the author's machine; the live site answers
+      `/admin` with a "No entry" page (PRD 10)
+- [x] Pick a host: Fly.io, behind Cloudflare (PRD 11)
+- [ ] Deploy — see [Deploying to Fly.io](#deploying-to-flyio)
 
 Ideas after that:
 - [ ] Solve streaks and a share button ("Stumpty #12 — solved in 2 attempts 🧠")

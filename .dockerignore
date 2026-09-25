@@ -1,0 +1,20 @@
+# Everything not listed here is uploaded to Fly's builder when you deploy. The build only
+# needs OneADay/ and deploy/, so leave the rest behind.
+
+# Never upload: the live data. App_Data holds the question bank, subscriber addresses and
+# encryption keys; it reaches the server through its own step, never the image (PRD 10).
+OneADay/App_Data/
+
+# Not needed to build, and some of it is private.
+.git/
+.claude/
+.vs/
+.idea/
+**/bin/
+**/obj/
+**/*.user
+OneADay.Tests/
+docs/
+Picture Directory/
+*.md
+.DS_Store

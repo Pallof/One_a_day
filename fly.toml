@@ -1,0 +1,56 @@
+# How Fly.io runs Stumpty. See PRD 11 and the README's "Deploying to Fly.io".
+#
+# Secrets are never in this file. Privacy__IpHashKey, CloudflareLock__Secret and
+# Email__AppPassword are set with `fly secrets set`.
+
+# The name must be unused across all of Fly. If "stumpty" is taken, change it here.
+app = "stumpty"
+
+# Dallas. San Jose (sjc) and Chicago (ord) cost the same; the volume must be in the same region.
+primary_region = "dfw"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  ASPNETCORE_ENVIRONMENT = "Production"
+  Site__BaseUrl = "https://stumpty.com"
+
+  # Visitors arrive through two proxies, Cloudflare and then Fly. The Cloudflare lock turns away
+  # anything that didn't come through Cloudflare, so trusting the senders is safe here
+  # (PRD 11, requirement 3).
+  Proxy__Enabled = "true"
+  Proxy__TrustAllProxies = "true"
+  Proxy__ForwardLimit = "2"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+
+  # Never sleep. The 7am email and every visitor's live connection need the machine running,
+  # and a sleeping machine would miss a morning with no visitors entirely (PRD 15).
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  # No health checks: an HTTP check would get the Cloudflare lock's 403, and Fly already
+  # restarts the machine if the app exits.
+
+  # Turn new connections away before they can run the machine out of memory. Each visitor on
+  # the site uses about 0.6 MB, so 300 at once is roughly 290 MB of the 512.
+  [http_service.concurrency]
+    type = "connections"
+    soft_limit = 250
+    hard_limit = 300
+
+# The disk that survives restarts and redeploys: everything in App_Data lives here. Create it
+# once with `fly volumes create stumpty_data --size 1 --region dfw`.
+[[mounts]]
+  source = "stumpty_data"
+  destination = "/app/App_Data"
+
+# One machine, always. The data files assume a single writer (PRD 11, requirement 5), so
+# deploy with `fly deploy --ha=false` so Fly doesn't add a spare.
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
