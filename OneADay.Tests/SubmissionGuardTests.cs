@@ -56,6 +56,16 @@ public class SubmissionGuardTests
     }
 
     [Fact]
+    public void An_autofilled_sign_up_after_two_seconds_passes()
+    {
+        // The sign-up form's one field is often autofilled: click, pick the address, Enter —
+        // two seconds. Held to the five-second floor, those people would be silently dropped
+        // after being told "check your inbox" (PRD 15), so its floor must stay below two.
+        Assert.False(SubmissionGuard.LooksAutomated(null, TimeSpan.FromSeconds(2), SubmissionGuard.SingleFieldFloor));
+        Assert.True(SubmissionGuard.LooksAutomated(null, TimeSpan.FromSeconds(1), SubmissionGuard.SingleFieldFloor));
+    }
+
+    [Fact]
     public void A_visitor_who_takes_their_time_is_never_blocked()
     {
         foreach (var minutes in new[] { 1, 10, 60, 60 * 24 })

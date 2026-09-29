@@ -60,11 +60,20 @@ what a hostile script would aim at:
 | Limit | Behaviour |
 |---|---|
 | One per pending address per 24 hours | Signing up again sooner sends nothing |
-| 50 a day in total (`MaxConfirmationsPerDay`) | Past it, confirmations are **dropped, not delayed**; the sign-up stays pending and can be requested again after 24 hours |
+| Three sign-ups per visitor address per day (`MaxSignUpsPerAddressPerDay`) | Past it, the same "Check your inbox", and nothing stored or sent. An IPv6 household counts as one address |
+| 50 a day in total (`MaxConfirmationsPerDay`) | Past it, confirmations are **dropped, not delayed**; the sign-up stays pending and can be requested again at once |
+| At most 500 unconfirmed sign-ups | Past it, a new address is neither stored nor sent anything. No more than 350 could ever have been emailed in the 7 days one waits |
 | Unconfirmed sign-ups deleted after 7 days | There was never consent to keep them |
 
-A per-IP limit can't do this — addresses change, and on a live connection are often unknown — so a
-fixed daily total does.
+A per-address limit alone can't protect the account — addresses change, and on a live connection
+are sometimes unknown, so an unknown one is let through — which is why the fixed daily total stays
+the backstop. The per-address limit stops one script spending that total by itself and leaving
+every real sign-up that day with nothing. *(Both added after the security review, 2026-09-28.)*
+
+**A confirmation that never went out reopens its sign-up at once**: dropped over the daily total,
+pushed out of the full sending queue, or refused by the mail server. The sign-up is stamped when
+it's requested, so that repeating it can't queue a second email; left in place after a failure,
+that stamp locked a real person out for 24 hours over an email they never got.
 
 ## Confirming
 
@@ -163,6 +172,7 @@ button.
 | `Site:BaseUrl` | `http://localhost:5178` | **Must be the public address in production.** Every link in every email is built from it; a wrong value silently breaks every unsubscribe link ever sent |
 | `Subscriptions:SendHourPacific` | `7` | |
 | `Subscriptions:MaxConfirmationsPerDay` | `50` | |
+| `Subscriptions:MaxSignUpsPerAddressPerDay` | `3` | Per visitor address, counted in memory, so a restart resets it |
 | `Subscriptions:MaxDigestsPerDay` | `400` | |
 
 The Gmail account and password belong to [PRD 14](14-email-notifications.md); with no password set,
@@ -198,8 +208,8 @@ touch storage, scheduling or wording.
 - **A teaser dated today and published after 7am** takes over a day that has already settled
   ([PRD 08](08-recycling-rotation.md)), so the site switches while subscribers already have the old
   one. A PRD 08 issue the email makes visible; parked.
-- **A confirmation counts as sent when requested, not when delivered.** If Gmail fails all three
-  tries, that address can't get another for 24 hours.
+- ~~**A confirmation counts as sent when requested, not when delivered.**~~ **Fixed 2026-09-28**:
+  a confirmation that never went out reopens its sign-up at once (see Confirmation limits).
 - **A scanner running a full browser can unsubscribe someone** (see Unsubscribing).
 
 ## Non-goals
@@ -223,23 +233,50 @@ touch storage, scheduling or wording.
 - [x] An unusable address is the one message allowed to differ
 - [x] The confirmation carries a full link with the subscriber's own token, and the screen points to
       the spam folder
+- [x] Past an address's three sign-ups a day, the same screen, and nothing stored or queued; a
+      caught bot uses up none of them
+
+### Sign-up limits — `SignUpLimitTests`
+
+From the security review of 2026-09-28.
+
+- [x] Three a day per address and no more; other addresses unaffected; a new day starts afresh; an
+      unknown address is left to the global cap
+- [x] Past 10,000 addresses in a day, new ones wait for tomorrow while known ones keep their
+      allowance
+- [x] At 500 unconfirmed sign-ups a new address is neither stored nor sent anything; one under still
+      is; a waiting sign-up can still ask again
+- [x] Repeating a sign-up never rewrites the file
+- [x] A confirmation dropped over the daily total, refused by the mail server, or pushed out of the
+      full queue reopens its sign-up at once; one actually sent keeps its 24 hours; a confirmed
+      subscriber is never touched
 
 ### Addresses and lifecycle — `SubscriptionTests`
 
 - [x] Valid addresses normalised, unusable ones rejected; a line break is rejected **before** trimming
       could remove it (mutation-verified); masking hides the address but keeps it recognisable
+- [x] Every address check has a row only it catches — display name, a quoted space, a quoted second
+      `@`, a trailing dot, and `MailAddress` itself — where before most rows were caught twice and no
+      single check could fail them (test audit, 2026-09-28)
 - [x] Signing up twice sends one confirmation, and another after 24 hours; a confirmed address
       signing up again gets nothing
 - [x] A wrong or empty token confirms and unsubscribes nothing; confirming twice is harmless
 - [x] Unsubscribing **deletes** the record
-- [x] Tokens are 64 hex characters, unique, and unrelated to the address
+- [x] Tokens are 64 hex characters, unique, and unrelated to the address: the same address signing
+      up afresh elsewhere gets a different one
 - [x] Unconfirmed sign-ups expire after 7 days; confirmed ones never do
-- [x] Subscriptions survive a restart, and `.gitignore` keeps the file out of the repository
+- [x] Subscriptions survive a restart, and git itself confirms the file is ignored — so a later
+      `!` line in `.gitignore` can't quietly undo the rule
 
 ### The daily email — `DailyDigestTests`
 
 - [x] Nothing before 7am; after it, every confirmed subscriber gets one and an unconfirmed address
-      never does (mutation-verified)
+      never does (mutation-verified). **History:** that last check stopped working on 2026-09-17 —
+      its made-up sign-up date aged past the 7-day expiry, so the send pruned it before any filter
+      ran — until the test audit of 2026-09-28. The sign-up is now made by the real clock, and the
+      store's own due list is checked directly as well
+- [x] The email carries the challenge the rotation settled for that day, not yesterday's and not
+      just any question in the bank
 - [x] Running again the same day sends nothing (mutation-verified); a failed send retries on the next
       check; a new day sends again
 - [x] The daily cap stops the send, and the rest stay owed
@@ -250,8 +287,9 @@ touch storage, scheduling or wording.
 
 ### Content and format — `SubscriptionTests`, `SmtpMailerTests`
 
-- [x] Both versions carry the question and links, and neither an answer nor a hint; a teaser with a
-      picture says so in both
+- [x] Both versions carry the question and links, and neither an answer nor a hint; the *Solve
+      today's challenge* button itself links to the site (the header's wordmark does too, and used
+      to stand in for it); a teaser with a picture says so in both
 - [x] Teaser text is HTML-encoded (mutation-verified)
 - [x] The difficulty pill uses the site's colour for each level; the confirmation link appears as a
       button **and** as printed text

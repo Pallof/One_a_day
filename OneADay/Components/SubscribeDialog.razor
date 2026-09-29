@@ -1,5 +1,7 @@
 @inject SubscriberStore Subscribers
 @inject ConfirmationQueue Confirmations
+@inject SignUpLimit SignUps
+@inject IHttpContextAccessor HttpAccessor
 @inject IOptions<SiteOptions> Site
 @using Microsoft.Extensions.Options
 
@@ -7,8 +9,9 @@
 
    Two rules this component must keep:
    1. The visitor sees the SAME confirmation whatever happened — new, already pending,
-      already subscribed, or dropped as a bot. Anything else lets a stranger test whether
-      an address is on the list.
+      already subscribed, dropped as a bot, over the address's daily sign-ups, or turned
+      away by a full list. Anything else lets a stranger test whether an address is on
+      the list.
    2. Nothing is sent to an address until it clicks the confirmation link. *@
 
 <button class="sd-open" @onclick="Open">Get the daily challenge by email</button>
@@ -133,6 +136,17 @@
         // A short floor, not the default five seconds: an autofilled email field is
         // legitimately fast. See SubmissionGuard.SingleFieldFloor.
         if (SubmissionGuard.LooksAutomated(_honeypot, DateTime.UtcNow - _openedAt, SubmissionGuard.SingleFieldFloor))
+        {
+            _done = true;
+            return;
+        }
+
+        // Past this address's sign-ups for today: the same screen, and nothing stored or sent,
+        // so one script can't spend the day's confirmations for everyone. After the bot check,
+        // so a caught bot never uses up a household's allowance. The address is read the way
+        // Contact reads it (PRD 06, "Known limitations"); an unknown one is let through.
+        var visitor = VisitorAddress.Key(HttpAccessor.HttpContext?.Connection.RemoteIpAddress);
+        if (!SignUps.TryTake(visitor, AppTime.Today))
         {
             _done = true;
             return;

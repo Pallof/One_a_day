@@ -104,15 +104,12 @@ public static class TeaserRotation
             refilled = true;
         }
 
-        // Hold back the most recent outings when we can still afford to.
+        // Hold back the most recent outings. This never empties the candidates: the box
+        // refills while more than a fifth of the bank remains, and at most a fifth (rounded
+        // down) is held back. Raising CooldownFraction past RefillAtFraction would break
+        // that, which TeaserRotationTests checks at every bank size.
         var cooldown = recentlyShown.Take(CooldownSize(bank.Count)).ToHashSet();
         var candidates = working.Where(id => !cooldown.Contains(id)).ToList();
-        if (candidates.Count == 0)
-        {
-            // A small bank can make every remaining slip "recent"; showing something
-            // beats showing nothing.
-            candidates = working;
-        }
 
         var drawn = PickWeighted(candidates, showCounts, random);
         working.Remove(drawn);

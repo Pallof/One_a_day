@@ -1,5 +1,6 @@
 using System.Reflection;
 using Bunit;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using OneADay.Components;
@@ -33,6 +34,10 @@ public class SubscribeDialogTests : BunitContext
         Services.AddSingleton(_store);
         Services.AddSingleton(_queue);
         Services.AddSingleton(Options.Create(new SiteOptions { BaseUrl = "https://site" }));
+
+        // Every sign-up here comes from one address, so its daily allowance is reachable.
+        Services.AddSingleton(new SignUpLimit(Options.Create(new SubscriptionOptions())));
+        Services.AddSingleton<IHttpContextAccessor>(FixedHttpContextAccessor.From("203.0.113.7"));
     }
 
     /// <summary>How many confirmations are waiting to be sent.</summary>
@@ -149,6 +154,41 @@ public class SubscribeDialogTests : BunitContext
         Assert.Equal((0, 0), _store.Counts);
         Assert.DoesNotContain(Inbox, dialog.Markup);
         Assert.Contains("doesn't look like an email address", dialog.Markup);
+    }
+
+    [Fact]
+    public void Past_an_addresses_daily_sign_ups_the_screen_is_the_same_and_nothing_is_stored_or_queued()
+    {
+        // One script mustn't spend the day's confirmations for everyone (security review,
+        // 2026-09-28). And like every other refusal here, it must look like success.
+        var allowed = new SubscriptionOptions().MaxSignUpsPerAddressPerDay;
+        for (var i = 1; i <= allowed; i++)
+        {
+            SignUp(Open(), $"reader{i}@example.com");
+        }
+        Assert.Equal(allowed, Queued());   // the control: each allowed sign-up really sends
+
+        var over = Open();
+        SignUp(over, "one-more@example.com");
+
+        Assert.Equal(0, Queued());
+        Assert.Equal((0, allowed), _store.Counts);
+        Assert.Contains(Inbox, over.Markup);
+    }
+
+    [Fact]
+    public void A_caught_bot_never_uses_up_the_addresses_sign_ups()
+    {
+        // The bot check runs first, so a script on a shared address can't lock out the
+        // household it shares it with.
+        for (var i = 0; i < 5; i++)
+        {
+            SignUp(Open(), $"bot{i}@example.com", honeypot: "http://spam.example");
+        }
+
+        SignUp(Open(), "reader@example.com");
+
+        Assert.Equal(1, Queued());
     }
 
     [Fact]

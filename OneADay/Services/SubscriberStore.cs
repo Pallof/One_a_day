@@ -43,6 +43,12 @@ public enum SubscribeOutcome
 
     /// <summary>Already subscribed — send nothing.</summary>
     AlreadyConfirmed,
+
+    /// <summary>
+    /// New, but <see cref="SubscriberStore.MaxPending"/> sign-ups are already waiting — store
+    /// nothing, send nothing.
+    /// </summary>
+    ListFull,
 }
 
 public sealed record SubscribeResult(SubscribeOutcome Outcome, string? Token);
@@ -69,6 +75,19 @@ public class SubscriberStore
 
     /// <summary>Unconfirmed sign-ups older than this are deleted.</summary>
     public static readonly TimeSpan PendingExpiry = TimeSpan.FromDays(7);
+
+    /// <summary>
+    /// The most unconfirmed sign-ups kept at once. Past it, a new address is neither stored nor
+    /// sent anything.
+    /// </summary>
+    /// <remarks>
+    /// Each sign-up is stored before its confirmation is even tried, and every save rewrites the
+    /// whole file, so a script submitting addresses from many places would otherwise grow the
+    /// list without end. The ceiling costs nobody real: at 50 confirmations a day for the 7 days
+    /// a sign-up waits, no more than 350 could ever have been emailed. Security review,
+    /// 2026-09-28.
+    /// </remarks>
+    public const int MaxPending = 500;
 
     private readonly string _filePath;
     private readonly object _lock = new();
@@ -98,27 +117,41 @@ public class SubscriberStore
     {
         lock (_lock)
         {
-            PruneExpired(nowUtc);
+            var pruned = PruneExpired(nowUtc) > 0;
+
+            // An outcome that changes nothing saves only what the prune removed, so repeating a
+            // sign-up can't make the server rewrite the file each time.
+            SubscribeResult Unchanged(SubscribeOutcome outcome)
+            {
+                if (pruned)
+                {
+                    Persist();
+                }
+                return new SubscribeResult(outcome, null);
+            }
 
             var existing = _subscribers.FirstOrDefault(s => s.Email == normalisedEmail);
 
             if (existing is { IsConfirmed: true })
             {
-                Persist();   // the prune may have removed others
-                return new SubscribeResult(SubscribeOutcome.AlreadyConfirmed, null);
+                return Unchanged(SubscribeOutcome.AlreadyConfirmed);
             }
 
             if (existing is not null)
             {
                 if (existing.ConfirmationSentAt is { } sent && nowUtc - sent < ConfirmationResendAfter)
                 {
-                    Persist();
-                    return new SubscribeResult(SubscribeOutcome.AlreadyPending, null);
+                    return Unchanged(SubscribeOutcome.AlreadyPending);
                 }
 
                 existing.ConfirmationSentAt = nowUtc;
                 Persist();
                 return new SubscribeResult(SubscribeOutcome.SendConfirmation, existing.Token);
+            }
+
+            if (_subscribers.Count(s => !s.IsConfirmed) >= MaxPending)
+            {
+                return Unchanged(SubscribeOutcome.ListFull);
             }
 
             var subscriber = new Subscriber
@@ -131,6 +164,29 @@ public class SubscriberStore
             _subscribers.Add(subscriber);
             Persist();
             return new SubscribeResult(SubscribeOutcome.SendConfirmation, subscriber.Token);
+        }
+    }
+
+    /// <summary>
+    /// Lets a pending sign-up ask again at once, because its confirmation never went out:
+    /// dropped over the day's cap, pushed out of a full queue, or refused by the mail server.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Request"/> stamps the time before anything is sent, so that repeating a
+    /// sign-up can't queue a second email. Left in place after a failure, that stamp would lock
+    /// a real person out for 24 hours over an email they never got.
+    /// </remarks>
+    public void ConfirmationNotSent(string normalisedEmail)
+    {
+        lock (_lock)
+        {
+            var pending = _subscribers.FirstOrDefault(s => s.Email == normalisedEmail && !s.IsConfirmed);
+            if (pending?.ConfirmationSentAt is null)
+            {
+                return;
+            }
+            pending.ConfirmationSentAt = null;
+            Persist();
         }
     }
 

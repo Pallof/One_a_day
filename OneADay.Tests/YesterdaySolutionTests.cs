@@ -55,54 +55,10 @@ public class YesterdaySolutionTests : BunitContext
         return schedule;
     }
 
-    // ---- which teaser counts as "yesterday's" ---------------------------------
-
-    [Fact]
-    public void Previous_is_the_teaser_before_the_given_date()
-    {
-        var store = StoreWith(
-            TeaserFactory.On("2026-08-10", "ten"),
-            TeaserFactory.On("2026-08-11", "eleven"),
-            TeaserFactory.On("2026-08-12", "twelve"));
-
-        Assert.Equal("eleven", store.GetPreviousBefore(DateOnly.Parse("2026-08-12"))?.Question);
-    }
-
-    [Fact]
-    public void Previous_skips_gaps_in_the_schedule()
-    {
-        var store = StoreWith(
-            TeaserFactory.On("2026-08-01", "first"),
-            TeaserFactory.On("2026-08-09", "ninth"));
-
-        // Nothing on the 8th; the most recent earlier teaser is the 1st.
-        Assert.Equal("first", store.GetPreviousBefore(DateOnly.Parse("2026-08-09"))?.Question);
-    }
-
-    [Fact]
-    public void Previous_is_null_when_nothing_came_before()
-    {
-        var store = StoreWith(TeaserFactory.On("2026-08-01", "only"));
-        Assert.Null(store.GetPreviousBefore(DateOnly.Parse("2026-08-01")));
-    }
-
-    [Fact]
-    public void Previous_never_returns_the_live_challenge_when_the_queue_is_dry()
-    {
-        // Today is the 20th but the queue ran out on the 12th, so the daily page
-        // falls back to the 12th. "Yesterday's" must be the 11th — publishing the
-        // 12th would spoil the puzzle people are being asked to solve.
-        var store = StoreWith(
-            TeaserFactory.On("2026-08-11", "eleventh"),
-            TeaserFactory.On("2026-08-12", "twelfth"));
-
-        var live = store.GetCurrent(DateOnly.Parse("2026-08-20"));
-        Assert.Equal("twelfth", live!.Question);
-
-        var yesterday = store.GetPreviousBefore(live.Date);
-        Assert.Equal("eleventh", yesterday?.Question);
-        Assert.NotEqual(live.Question, yesterday?.Question);
-    }
+    // Which teaser counts as "yesterday's" is the rotation's answer (DailySchedule.ForDay the
+    // day before), pinned by the page tests below. Tests of the old date-based methods,
+    // TeaserStore.GetCurrent and GetPreviousBefore, went with those methods: nothing in the
+    // app called either (test audit, 2026-09-28).
 
     // ---- the button on the daily challenge ------------------------------------
 

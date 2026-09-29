@@ -157,7 +157,8 @@ public class TeaserBankTests
     [InlineData(Q10, "50")]
     [InlineData(Q11, "60")]
     [InlineData(Q13, "10")]
-    [InlineData(Q1, "")]       // blank is never accepted
+    [InlineData(Q1, "5+5+1+5")]   // the formula's digits in order, but it makes 16
+    [InlineData(Q1, "5515")]      // both accepted until the fix of 2026-09-28
     public void Rejects_wrong_answer(string storedAnswer, string submission) =>
         Assert.False(WithAnswer(storedAnswer).AcceptsAnswer(submission));
 }

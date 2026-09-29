@@ -9,20 +9,28 @@ namespace OneADay.Services;
 /// enqueues and returns at once; a mail failure must never cost a visitor their sign-up
 /// or stall the page.
 /// </summary>
-public sealed class ConfirmationQueue(IOptions<EmailOptions> options)
+public sealed class ConfirmationQueue
 {
     public const int Capacity = 100;
 
-    private readonly Channel<OutgoingMail> _queue = Channel.CreateBounded<OutgoingMail>(
-        new BoundedChannelOptions(Capacity)
-        {
-            // Newest kept: under a burst, the most recent sign-ups are the ones a real
-            // person is sitting waiting on.
-            FullMode = BoundedChannelFullMode.DropOldest,
-            SingleReader = true,
-        });
+    private readonly Channel<OutgoingMail> _queue;
+    private readonly EmailOptions _options;
 
-    private readonly EmailOptions _options = options.Value;
+    /// <param name="subscribers">Told about each confirmation pushed out of a full queue, so
+    /// that sign-up can ask again (<see cref="SubscriberStore.ConfirmationNotSent"/>).</param>
+    public ConfirmationQueue(IOptions<EmailOptions> options, SubscriberStore? subscribers = null)
+    {
+        _options = options.Value;
+        _queue = Channel.CreateBounded<OutgoingMail>(
+            new BoundedChannelOptions(Capacity)
+            {
+                // Newest kept: under a burst, the most recent sign-ups are the ones a real
+                // person is sitting waiting on.
+                FullMode = BoundedChannelFullMode.DropOldest,
+                SingleReader = true,
+            },
+            itemDropped: mail => subscribers?.ConfirmationNotSent(mail.To));
+    }
 
     public ChannelReader<OutgoingMail> Reader => _queue.Reader;
 
@@ -48,10 +56,12 @@ public sealed class ConfirmationQueue(IOptions<EmailOptions> options)
 /// the pattern that gets an account suspended, and the same account carries the author
 /// notifications and the daily digest. A fixed cap bounds the damage whatever the source,
 /// which a per-IP limit can't: IPs rotate, and on a circuit the IP is often unknown.
+/// (<see cref="SignUpLimit"/> adds one anyway, so a single script can't spend the whole cap.)
 /// </remarks>
 public sealed class ConfirmationSender(
     ConfirmationQueue queue,
     SmtpMailer mailer,
+    SubscriberStore subscribers,
     IOptions<SubscriptionOptions> options,
     ILogger<ConfirmationSender> log) : BackgroundService
 {
@@ -66,21 +76,32 @@ public sealed class ConfirmationSender(
 
         await foreach (var mail in queue.Reader.ReadAllAsync(stoppingToken))
         {
-            var today = AppTime.Today;
-            if (!_budget.HasRoom(today))
-            {
-                // Dropped, not deferred: the sign-up stays pending, and the visitor can ask
-                // again once SubscriberStore.ConfirmationResendAfter has passed.
-                log.LogWarning("Daily confirmation cap ({Cap}) reached; this confirmation " +
-                               "was dropped. The sign-up stays pending and can be requested " +
-                               "again after 24 hours.", _budget.MaxPerDay);
-                continue;
-            }
+            await SendOneAsync(mail, stoppingToken);
+        }
+    }
 
-            if (await mailer.SendAsync(mail, stoppingToken))
-            {
-                _budget.RecordSent(today);
-            }
+    /// <summary>Sends one confirmation, or drops it over the day's cap. Public for tests.</summary>
+    public async Task SendOneAsync(OutgoingMail mail, CancellationToken token)
+    {
+        var today = AppTime.Today;
+        if (!_budget.HasRoom(today))
+        {
+            // Dropped, not deferred — and the sign-up can ask again straight away, rather than
+            // wait 24 hours for an email that never went out.
+            log.LogWarning("Daily confirmation cap ({Cap}) reached; this confirmation " +
+                           "was dropped. The sign-up stays pending and can be requested " +
+                           "again at once.", _budget.MaxPerDay);
+            subscribers.ConfirmationNotSent(mail.To);
+            return;
+        }
+
+        if (await mailer.SendAsync(mail, token))
+        {
+            _budget.RecordSent(today);
+        }
+        else
+        {
+            subscribers.ConfirmationNotSent(mail.To);
         }
     }
 }

@@ -166,7 +166,12 @@ public class AdminRoutingTests : BunitContext
 
         var layout = Render<MainLayout>(p => p.Add(l => l.Body, (RenderFragment)(_ => { })));
 
-        Assert.Empty(layout.FindAll("a[href='admin']"));
+        // Any spelling of the link: "admin", "/admin", "./admin". Matching "admin" exactly let
+        // the other two through (test audit, 2026-09-28).
+        var toAdmin = layout.FindAll("a[href]")
+            .Select(a => a.GetAttribute("href")!.TrimStart('/', '.'))
+            .Where(href => href.StartsWith("admin", StringComparison.OrdinalIgnoreCase));
+        Assert.Empty(toAdmin);
     }
 
     protected override void Dispose(bool disposing)

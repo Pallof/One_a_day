@@ -59,6 +59,7 @@ builder.Services.AddHttpContextAccessor();
 // than a recoverable one. See ProxyOptions and IpHasher.
 builder.Services.Configure<ProxyOptions>(builder.Configuration.GetSection(ProxyOptions.Section));
 builder.Services.Configure<CloudflareLockOptions>(builder.Configuration.GetSection(CloudflareLockOptions.Section));
+builder.Services.Configure<LiveConnectionOptions>(builder.Configuration.GetSection(LiveConnectionOptions.Section));
 
 // Pages go out compressed: the host bills for what leaves the server. See PageCompression.
 builder.Services.AddPageCompression();
@@ -98,6 +99,7 @@ builder.Services.AddHostedService<TrafficAlertService>();
 builder.Services.Configure<SiteOptions>(builder.Configuration.GetSection(SiteOptions.Section));
 builder.Services.Configure<SubscriptionOptions>(builder.Configuration.GetSection(SubscriptionOptions.Section));
 builder.Services.AddSingleton<SubscriberStore>();
+builder.Services.AddSingleton<SignUpLimit>();
 builder.Services.AddSingleton<ConfirmationQueue>();
 builder.Services.AddHostedService<ConfirmationSender>();
 builder.Services.AddHostedService<DailyDigestService>();
@@ -123,6 +125,11 @@ app.UseTrafficCount();
 // both read the scheme, and below them the app would see the proxy's inward hop as plain
 // HTTP and redirect to HTTPS forever. See ProxyOptions and PRD 11.
 app.UseProxyHeaders();
+
+// One address may hold at most ten live connections, so one script can't take all of the
+// machine's 300 and lock real visitors out. After the proxy headers, or every visitor would
+// share Cloudflare's address and one cap. See LiveConnectionCap and PRD 11.
+app.UseLiveConnectionCap();
 
 // Compress pages on the way out — less than half the size, and the host bills for what
 // leaves. Before anything that writes a page, or that page goes out uncompressed. See

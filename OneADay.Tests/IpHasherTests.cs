@@ -106,6 +106,28 @@ public class IpHasherTests
     }
 
     [Fact]
+    public void The_configured_key_is_the_one_used()
+    {
+        // What the app builds at startup must hash with the key it was given: two starts
+        // with the same key hash alike. A random key instead would reset everyone's daily
+        // suggestion limit on every restart, with nothing failing to say so.
+        const string key = "a-configured-key-that-is-long-enough-00";
+        var first = IpHasher.Create(new Host("Production"), Config(key));
+        var second = IpHasher.Create(new Host("Production"), Config(key));
+
+        Assert.Equal(first.Hash("203.0.113.7"), second.Hash("203.0.113.7"));
+        Assert.Equal(IpHasher.WithKey(key).Hash("203.0.113.7"), first.Hash("203.0.113.7"));
+    }
+
+    [Fact]
+    public void A_key_of_only_spaces_refuses_however_long_it_is()
+    {
+        // Forty spaces would pass the length rule if nobody trimmed them, and every address
+        // would be hashed with a key anyone could guess (test audit, 2026-09-28).
+        Assert.NotNull(IpHasher.ReasonToRefuse(new Host("Production"), Config(new string(' ', 40))));
+    }
+
+    [Fact]
     public void A_real_key_starts()
     {
         // The control case. Without it, a check that refused everything would pass above.

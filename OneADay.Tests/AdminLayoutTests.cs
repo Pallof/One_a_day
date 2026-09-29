@@ -57,12 +57,20 @@ public class AdminLayoutTests : BunitContext
     public void A_collapsed_section_still_shows_what_needs_attention()
     {
         // The recycling box's count is the only warning that the queue is running dry, so
-        // it has to survive the section being collapsed.
+        // it has to survive the section being collapsed. The number, not just its label:
+        // "scheduled ahead" alone would still be there with the count dropped.
+        Services.GetRequiredService<TeaserStore>().Save(new BrainTeaser
+        {
+            Date = AppTime.Today.AddDays(3),
+            Difficulty = Difficulty.Easy,
+            Question = "a question for later",
+            Answer = "later",
+        });
         var page = Render<Admin>();
 
         var recycling = page.FindAll("details.oad-admin-section")[2];
 
-        Assert.Contains("scheduled ahead", recycling.QuerySelector("summary")!.TextContent);
+        Assert.Contains("1 scheduled ahead", recycling.QuerySelector("summary")!.TextContent);
     }
 
     protected override void Dispose(bool disposing)

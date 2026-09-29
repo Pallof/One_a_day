@@ -1,8 +1,12 @@
 using Bunit;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Microsoft.JSInterop;
+using OneADay.Components.Pages;
 using OneADay.Services;
 
 namespace OneADay.Tests;
@@ -51,12 +55,24 @@ public class ProtectedStorageTests : BunitContext
     }
 
     [Fact]
-    public async Task Nothing_stored_comes_back_as_no_value()
+    public void A_first_visit_is_given_an_id_and_it_is_kept()
     {
-        var storage = Storage();
+        // With nothing stored, reading gives no value: that's the framework's own guarantee,
+        // which no test of the helper can fail. What matters is what the page does next —
+        // mint an id and keep it, so the one-a-day limit knows this visitor tomorrow.
+        using var env = new TestEnvironment();
+        Services.AddSingleton(env.NewSuggestionStore());
+        Services.AddSingleton(new EmailNotifier(Options.Create(new EmailOptions()), NullLogger<EmailNotifier>.Instance));
+        Services.AddSingleton<IHttpContextAccessor>(FixedHttpContextAccessor.From("203.0.113.7"));
+        Services.AddSingleton(IpHasher.WithKey("protected-storage-tests-fixed-key-000"));
+        Services.AddScoped<ProtectedLocalStorage>();
+        Storage();
         JSInterop.Setup<string>("localStorage.getItem", _ => true).SetResult(null!);
 
-        Assert.Equal(Guid.Empty, await storage.ReadOrDefaultAsync<Guid>(Key));
+        Render<Contact>();
+
+        var saved = Assert.Single(JSInterop.Invocations["localStorage.setItem"]);
+        Assert.Equal(Key, saved.Arguments[0]);
     }
 
     [Fact]

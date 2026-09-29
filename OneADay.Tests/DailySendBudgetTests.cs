@@ -56,25 +56,8 @@ public class DailySendBudgetTests
         Assert.Equal(0, budget.SentOn(Monday));
     }
 
-    [Fact]
-    public void Failed_sends_cost_nothing()
-    {
-        // The point of counting deliveries rather than attempts: an SMTP outage must
-        // not burn the day's allowance on mail that never arrived, or the first
-        // messages to work once service returns would be the ones dropped.
-        var budget = new DailySendBudget(5);
-
-        for (var i = 0; i < 100; i++)
-        {
-            if (budget.HasRoom(Monday))
-            {
-                // pretend every send failed — RecordSent is never called
-            }
-        }
-
-        Assert.True(budget.HasRoom(Monday));
-        Assert.Equal(0, budget.SentOn(Monday));
-    }
+    // Failed sends costing nothing is the sender's policy — it records only deliveries —
+    // so it's pinned against the sender: EmailNotifierTests.A_failed_send_spends_none_of_the_days_cap.
 
     // ---- the day boundary ------------------------------------------------------
 
@@ -107,15 +90,16 @@ public class DailySendBudgetTests
     [Fact]
     public void The_clock_going_backwards_does_not_grant_extra_sends()
     {
-        // Not expected in production, but a DST or NTP correction shouldn't hand out a
-        // second allowance for a day already spent. Rolling on *any* change of day
-        // means the budget always reflects the day it was last asked about.
+        // Not expected in production, but an NTP correction around midnight shouldn't hand
+        // out a second allowance for a day already spent. Until the test audit of
+        // 2026-09-28 it did: Tuesday, back to Monday, forward to Tuesday gave Tuesday a
+        // fresh allowance, while this test's old assertions could never fail.
         var budget = new DailySendBudget(1);
         budget.RecordSent(Tuesday);
-        Assert.False(budget.HasRoom(Tuesday));
 
-        Assert.True(budget.HasRoom(Monday));      // treated as a different day
-        Assert.False(budget.HasRoom(Tuesday) && budget.SentOn(Tuesday) > 0);
+        Assert.False(budget.HasRoom(Monday));    // stepped back: still Tuesday's allowance
+        Assert.False(budget.HasRoom(Tuesday));   // forward again: not a fresh one
+        Assert.Equal(1, budget.SentOn(Tuesday));
     }
 
     // ---- degenerate configuration ----------------------------------------------

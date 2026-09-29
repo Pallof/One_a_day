@@ -98,6 +98,20 @@ public class AtomicFileTests : IDisposable
     }
 
     [Fact]
+    public void A_failed_swap_leaves_no_temporary_file_behind()
+    {
+        // This time the temporary file is written and the swap itself fails, because the
+        // target is a folder. The error must come out, and the temporary file must go.
+        // (Nothing checked the clean-up until the test audit of 2026-09-28.)
+        var path = Path_("target");
+        Directory.CreateDirectory(path);
+
+        Assert.ThrowsAny<Exception>(() => AtomicFile.WriteAllText(path, "{}"));
+
+        Assert.False(File.Exists(path + ".tmp"));
+    }
+
+    [Fact]
     public void A_stale_temp_file_from_an_earlier_crash_does_not_block_the_next_write()
     {
         // If the process died between writing the temp file and renaming it, a stale

@@ -131,7 +131,7 @@ deploy, not a visitor's page.
 - [x] On the live site, in-app navigation to `/admin` shows not-found and never builds the page — its
       services aren't registered in the test, so building it would fail (mutation-verified)
 - [x] In Development the page builds, answers included — the control case; the menu never links to
-      `/admin` in either mode
+      `/admin` in either mode, however the link is written (`admin`, `/admin`, `./admin`)
 
 ### The bank at startup — `TeaserStoreStartupTests`
 

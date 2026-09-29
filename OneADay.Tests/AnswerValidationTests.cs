@@ -76,6 +76,8 @@ public class AnswerValidationTests
     [InlineData(Formula3388, "8/(3-(8/3))")]
     [InlineData(Formula3388, "8/(3-8/3)")]
     [InlineData(Formula3388, "8 / (3 - 8 / 3)")]
+    // A formula stored with spaces is matched on its arithmetic, spaces or not
+    [InlineData("2 * (3 + 9)", "(9+3)*2")]
     // A plain-number answer accepts arithmetic that reaches it (showing work)
     [InlineData("5000", "500*10")]
     [InlineData("5000", "255*255-245*245")]
@@ -92,8 +94,9 @@ public class AnswerValidationTests
     [InlineData("0.333", "0.3333333333")]
     [InlineData("0.667", "2/3")]
     [InlineData("0.667", "0.6666")]
-    // Rounding is away-from-zero at the midpoint
-    [InlineData("0.334", "0.3335")]
+    // Rounding is away-from-zero at the midpoint: 0.3325 becomes 0.333, where
+    // round-half-to-even would make it 0.332
+    [InlineData("0.333", "0.3325")]
     [InlineData("-0.333", "-1/3")]
     // The nested puzzle still lands on 24 despite division residue
     [InlineData("24", "8/(3-8/3)")]
@@ -140,6 +143,13 @@ public class AnswerValidationTests
     // Fragments of the formula are not the formula
     [InlineData(Formula24, "5")]
     [InlineData(Formula3388, "8")]
+    // Nor are its digits in the same order: only the arithmetic counts. Both were
+    // accepted until the test audit of 2026-09-28 — "5+5+1+5" is 16.
+    [InlineData(Formula24, "5+5+1+5")]
+    [InlineData(Formula24, "5515")]
+    // A formula stored with spaces also slipped through as a number and a "unit"
+    [InlineData("2 * (3 + 9)", "2 + 3 + 9")]
+    [InlineData("2 * (3 + 9)", "2 3 9")]
     // Malformed expressions are rejected rather than crashing
     [InlineData(Formula24, "5*(5-")]
     [InlineData(Formula24, "((((")]
@@ -155,8 +165,9 @@ public class AnswerValidationTests
     [InlineData("48", "forty-nine")]
     [InlineData("5000", "five hundred")]
     [InlineData("901", "nine hundred")]
-    // Non-numeric words must not be coerced into numbers
-    [InlineData("80", "thousand")]
+    // Non-numeric words must not be coerced into numbers — and "thousand" on its
+    // own isn't a number, even where the answer is 1000
+    [InlineData("1000", "thousand")]
     [InlineData("80", "banana")]
     [InlineData("80 degrees", "eighty radians")]
     public void Rejects_wrong_number_words(string storedAnswer, string submission) =>
@@ -170,8 +181,9 @@ public class AnswerValidationTests
     [InlineData("3.14", "314")]
     [InlineData("1,000", "100")]
     [InlineData("12 (a dozen)", "a baker's dozen")]
-    [InlineData("an echo", "")]
-    [InlineData("an echo", "   ")]
+    // An answer with no letters or digits mustn't match everything else with none.
+    // (A blank submission never gets this far: AcceptsAnswer turns it away first.)
+    [InlineData("?!", "...")]
     public void Rejects(string storedAnswer, string submission) =>
         Assert.False(TeaserWithAnswer(storedAnswer).AcceptsAnswer(submission));
 }

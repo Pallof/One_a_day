@@ -23,6 +23,12 @@
                 <p>🧠 You've already sent us a suggestion today — one per day keeps the inbox fresh. Come back tomorrow with your next stumper!</p>
             </div>
         }
+        else if (_inboxFull)
+        {
+            <div class="oad-contact-thanks">
+                <p>Our suggestion box is full right now, so this one couldn't be saved. Please try again later.</p>
+            </div>
+        }
         else if (_submitted)
         {
             <div class="oad-contact-thanks">
@@ -42,14 +48,14 @@
 
             <div class="oad-contact-field">
                 <label for="teaser">The brain teaser *</label>
-                <textarea id="teaser" rows="3" maxlength="600"
+                <textarea id="teaser" rows="3" maxlength="@TeaserSuggestion.MaxFieldLength"
                           placeholder="Your riddle or puzzle..."
                           @bind="_question" @bind:event="oninput"></textarea>
             </div>
 
             <div class="oad-contact-field">
                 <label for="solution">Solution + hint *</label>
-                <textarea id="solution" rows="3" maxlength="600"
+                <textarea id="solution" rows="3" maxlength="@TeaserSuggestion.MaxFieldLength"
                           placeholder="The answer, and a hint we can offer to solvers who get stuck"
                           @bind="_solutionAndHint" @bind:event="oninput"></textarea>
             </div>
@@ -78,6 +84,10 @@
     private string _solutionAndHint = string.Empty;
     private bool _submitted;
     private bool _limitReached;
+
+    /// <summary>Not saved: <see cref="SuggestionStore.MaxStored"/> suggestions are waiting.</summary>
+    private bool _inboxFull;
+
     private Guid _visitorId;
 
     /// <summary>Decoy field — see the markup. Anything here means a script filled it.</summary>
@@ -137,17 +147,19 @@
             _visitorId = Guid.NewGuid();
         }
 
+        // Held to the length the page shows, as the difficulty is held to its three values: a
+        // client driving the live connection can bind far more, and it would all be stored.
         var suggestion = new TeaserSuggestion
         {
             SubmittedAt = AppTime.NowPacific,
             Difficulty = NormalisedDifficulty(),
-            Question = _question.Trim(),
-            SolutionAndHint = _solutionAndHint.Trim(),
+            Question = TextLimit.Clip(_question, TeaserSuggestion.MaxFieldLength),
+            SolutionAndHint = TextLimit.Clip(_solutionAndHint, TeaserSuggestion.MaxFieldLength),
         };
 
-        var accepted = Suggestions.TryAdd(suggestion, _visitorId, GetIpHash(), AppTime.Today);
+        var outcome = Suggestions.Add(suggestion, _visitorId, GetIpHash(), AppTime.Today);
 
-        if (accepted)
+        if (outcome == SuggestionOutcome.Added)
         {
             _submitted = true;
 
@@ -170,6 +182,10 @@
 
                  Review it in admin to promote it into the teaser form or delete it.
                  """);
+        }
+        else if (outcome == SuggestionOutcome.InboxFull)
+        {
+            _inboxFull = true;
         }
         else
         {

@@ -56,9 +56,14 @@ One line of text. **Alternative accepted answers are separated by `;`** — e.g.
    | `12+12`, `8*3`, `25-1` | ❌ | right value, **wrong numbers** |
    | `5 * (5 - 0.2)`, `5*4.8` | ❌ | turns `1/5` into a number that wasn't given |
    | `5*5-(5/5)` | ❌ | uses `5` four times; only three were given |
+   | `5+5+1+5`, `5515` | ❌ | the formula's digits in order, but they don't make 24 |
 
    - The same-numbers check is a **hard requirement**: reaching the total any other way doesn't
      solve the puzzle.
+   - **A formula is judged by this rule alone.** Rules 1 and 4 compare text with its symbols
+     stripped, so reaching them would pass any string of the formula's digits in order: until the
+     test audit of 2026-09-28, `5+5+1+5` (16) and a bare `5515` were accepted for the puzzle above,
+     and both make-24 teasers in the bank had the hole.
    - Rounding (rule 2) is what lets a formula still count when its division doesn't come out
      even — the same reason a stored `0.333` accepts `1/3`.
    - A **plain-number** answer skips the check, so someone showing their working (`500*10` for
