@@ -10,6 +10,13 @@ public static class IssueCategories
     public const string Other = "Other";
 
     public static readonly string[] All = [Wording, Evaluation, Other];
+
+    /// <summary>
+    /// The chosen category, forced back to one of the three. A <c>&lt;select&gt;</c> limits what
+    /// a browser sends, not what the server receives — see Contact's difficulty for the same fix.
+    /// </summary>
+    public static string Normalise(string? category) =>
+        All.FirstOrDefault(c => c == category) ?? Other;
 }
 
 /// <summary>Triage state of a reported issue.</summary>
@@ -56,6 +63,12 @@ public static class IssueStatusInfo
 
 public class IssueReport
 {
+    /// <summary>The longest description the form takes. The server holds to it too (TextLimit).</summary>
+    public const int MaxDetailsLength = 1000;
+
+    /// <summary>The site's own page addresses are short; a longer one was made up by a script.</summary>
+    public const int MaxPageUrlLength = 200;
+
     public Guid Id { get; set; } = Guid.NewGuid();
     public DateTime SubmittedAt { get; set; }
     public string Category { get; set; } = IssueCategories.Other;
@@ -96,13 +109,36 @@ internal sealed class IssueData
 /// several problems in one sitting, and a report that goes unfiled is a bug that stays
 /// broken. The only gate is <see cref="OneADay.Models.SubmissionGuard"/>, which screens
 /// out automation without capping how much a person may send.
+///
+/// <para>The one ceiling is <see cref="MaxOpenReports"/>, and it protects the server, not the
+/// inbox: see there.</para>
 /// </summary>
-public class IssueStore
+public class IssueStore : IDisposable
 {
+    /// <summary>
+    /// The most open reports (New or In progress) kept at once. Past it, a new report isn't
+    /// saved and its sender is told so.
+    /// </summary>
+    /// <remarks>
+    /// Every save rewrites the whole file, and the list lives in memory, so without a ceiling a
+    /// script filing reports nonstop would eventually run the server out of memory — and the
+    /// file would reload the same way after the crash. A thousand is years of real reports; a
+    /// flood reaches it in minutes and then stops costing anything. Closing or deleting reports
+    /// makes room again. Security review, 2026-09-28.
+    /// </remarks>
+    public const int MaxOpenReports = 1000;
+
     private readonly string _filePath;
     private readonly object _lock = new();
     private readonly IssueData _data;
+    private readonly ILogger<IssueStore>? _log;
     private List<IssueReport> _issues => _data.Issues;
+
+    /// <summary>A bot counted since the file was last written. See <see cref="RecordBlocked"/>.</summary>
+    private bool _blockedUnsaved;
+
+    /// <summary>Whether the full-inbox warning has been logged since the inbox last had room.</summary>
+    private bool _warnedFull;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -111,11 +147,12 @@ public class IssueStore
         Converters = { new JsonStringEnumConverter() },
     };
 
-    public IssueStore(IWebHostEnvironment env)
+    public IssueStore(IWebHostEnvironment env, ILogger<IssueStore>? log = null)
     {
         var dataDir = Path.Combine(env.ContentRootPath, "App_Data");
         Directory.CreateDirectory(dataDir);
         _filePath = Path.Combine(dataDir, "issues.json");
+        _log = log;
         _data = Load();
     }
 
@@ -136,12 +173,26 @@ public class IssueStore
         get { lock (_lock) { return _issues.Count(i => IssueStatusInfo.IsOpen(i.Status)); } }
     }
 
-    public void Add(IssueReport report)
+    /// <summary>Saves the report. False when <see cref="MaxOpenReports"/> are already open.</summary>
+    public bool Add(IssueReport report)
     {
         lock (_lock)
         {
+            if (_issues.Count(i => IssueStatusInfo.IsOpen(i.Status)) >= MaxOpenReports)
+            {
+                if (!_warnedFull)
+                {
+                    _warnedFull = true;
+                    _log?.LogWarning("{Max} reports are open, so new reports aren't being saved. " +
+                                     "Close or delete some to make room.", MaxOpenReports);
+                }
+                return false;
+            }
+
+            _warnedFull = false;
             _issues.Add(report);
             Persist();
+            return true;
         }
     }
 
@@ -173,12 +224,18 @@ public class IssueStore
     /// a count there is no way to tell "no bots" apart from "quietly eating real
     /// reports" — and an eaten report means a broken question nobody hears about.
     /// </summary>
+    /// <remarks>
+    /// Counted in memory, not written straight away: a script sending nothing but blocked
+    /// reports would otherwise make the server rewrite the whole file for each one. The count
+    /// goes out with the next save, or when the app shuts down (<see cref="Dispose"/>). Only a
+    /// crash loses it.
+    /// </remarks>
     public void RecordBlocked()
     {
         lock (_lock)
         {
             _data.BlockedCount++;
-            Persist();
+            _blockedUnsaved = true;
         }
     }
 
@@ -209,6 +266,33 @@ public class IssueStore
         return data;
     }
 
-    private void Persist() =>
+    /// <summary>
+    /// Saves a bot count no other save has carried yet. The host calls this when the app shuts
+    /// down normally, as it does for every redeploy.
+    /// </summary>
+    public void Dispose()
+    {
+        lock (_lock)
+        {
+            if (!_blockedUnsaved)
+            {
+                return;
+            }
+            try
+            {
+                Persist();
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // Best effort on the way out. The count is a diagnostic, and a failure here
+                // mustn't stop the other stores saving theirs.
+            }
+        }
+    }
+
+    private void Persist()
+    {
         AtomicFile.WriteAllText(_filePath, JsonSerializer.Serialize(_data, JsonOptions));
+        _blockedUnsaved = false;
+    }
 }

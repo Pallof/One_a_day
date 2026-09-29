@@ -9,6 +9,10 @@ obj/
 # Claude Code local settings
 .claude/settings.local.json
 
+# Claude Code agents' temporary working copies. Each holds its own .git link, so
+# `git add .` would stage it as an embedded repository.
+.claude/worktrees/
+
 # App data — never commit. Contains the question bank (questions, answers,
 # hints, solutions) plus visitor-submitted content. Back it up separately.
 OneADay/App_Data/

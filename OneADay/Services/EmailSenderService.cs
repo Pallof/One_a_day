@@ -36,21 +36,27 @@ public sealed class EmailSenderService(
 
         await foreach (var item in notifier.Reader.ReadAllAsync(stoppingToken))
         {
-            var today = AppTime.Today;
+            await SendOneAsync(item, stoppingToken);
+        }
+    }
 
-            if (!_budget.HasRoom(today))
-            {
-                log.LogWarning("Daily email cap ({Cap}) reached; further notifications " +
-                               "are skipped today. Items are still saved.", _budget.MaxPerDay);
-                continue;   // still on disk; just not mailed
-            }
+    /// <summary>Mails one notification, or skips it over the day's cap. Public for tests.</summary>
+    public async Task SendOneAsync(Notification item, CancellationToken token)
+    {
+        var today = AppTime.Today;
 
-            // The slot is spent only on success, so an outage can't burn the day's
-            // budget on mail that never arrived.
-            if (await mailer.SendAsync(new OutgoingMail(_options.To, item.Subject, item.Body), stoppingToken))
-            {
-                _budget.RecordSent(today);
-            }
+        if (!_budget.HasRoom(today))
+        {
+            log.LogWarning("Daily email cap ({Cap}) reached; further notifications " +
+                           "are skipped today. Items are still saved.", _budget.MaxPerDay);
+            return;   // still on disk; just not mailed
+        }
+
+        // The slot is spent only on success, so an outage can't burn the day's
+        // budget on mail that never arrived.
+        if (await mailer.SendAsync(new OutgoingMail(_options.To, item.Subject, item.Body), token))
+        {
+            _budget.RecordSent(today);
         }
     }
 }

@@ -15,6 +15,7 @@ public class TeaserRotationTests
     {
         Assert.Equal(4, TeaserRotation.RefillThreshold(20));   // the user's 20-question example
         Assert.Equal(5, TeaserRotation.RefillThreshold(25));
+        Assert.Equal(3, TeaserRotation.RefillThreshold(11));   // 2.2 rounds up, never down
         Assert.Equal(1, TeaserRotation.RefillThreshold(1));    // never zero, or the box could empty
         Assert.Equal(1, TeaserRotation.RefillThreshold(0));
     }
@@ -100,14 +101,22 @@ public class TeaserRotationTests
     }
 
     [Fact]
-    public void A_tiny_bank_still_produces_a_draw()
+    public void Holding_back_recent_teasers_never_leaves_nothing_to_draw()
     {
-        // With one teaser, every candidate is also "recent" — showing it again beats
-        // showing nothing at all.
-        var bank = Bank(1);
-        var result = TeaserRotation.Draw([], bank, bank, new Random(1));
-        Assert.NotNull(result);
-        Assert.Equal(bank[0], result.Drawn);
+        // Tested where it's tightest, at every bank size up to 100: a box just above its
+        // refill line, every slip in it shown recently. Fewer are ever held back than the box
+        // holds, so a draw always comes out — a one-teaser bank holds back nothing at all.
+        // (This replaced a test of a "nothing left, show one anyway" fallback that could
+        // never run; the fallback went too. Test audit, 2026-09-28.)
+        for (var n = 1; n <= 100; n++)
+        {
+            var bank = Bank(n);
+            var box = bank.Take(TeaserRotation.RefillThreshold(n) + 1).ToList();
+
+            var result = TeaserRotation.Draw(box, bank, box, new Random(n));
+
+            Assert.NotNull(result);
+        }
     }
 
     [Fact]
@@ -207,24 +216,34 @@ public class TeaserRotationTests
     public void Weighting_closes_the_gap_over_time_rather_than_starving_anyone()
     {
         // The scenario that motivated weighting: the box refills at 20% remaining, so
-        // some teasers sit out cycles. Over a long run nobody should be left behind.
-        var bank = Bank(20);
-        var box = new List<Guid>();
-        var counts = bank.ToDictionary(id => id, _ => 0);
-        var random = new Random(4242);
+        // some teasers sit out cycles. Over a long run nobody should be left behind — and
+        // weighting has to be what does it: drawing blind from the same seed must leave a
+        // wider gap. (The bounds alone held with the weights ignored. Test audit,
+        // 2026-09-28.)
+        var (fewest, most) = ShowCounts(weighted: true);
+        var (blindFewest, blindMost) = ShowCounts(weighted: false);
 
-        for (var day = 0; day < 2000; day++)
-        {
-            var result = TeaserRotation.Draw(box, bank, [], random, counts)!;
-            counts[result.Drawn]++;
-            box = result.Box;
-        }
-
-        var fewest = counts.Values.Min();
-        var most = counts.Values.Max();
         // 2000 days over 20 teasers averages 100 each; the spread should stay tight.
         Assert.InRange(fewest, 70, 100);
         Assert.True(most - fewest < 45, $"spread too wide: {fewest}..{most}");
+        Assert.True(most - fewest < blindMost - blindFewest,
+            $"weighted spread {most - fewest} is no narrower than blind {blindMost - blindFewest}");
+
+        static (int Fewest, int Most) ShowCounts(bool weighted)
+        {
+            var bank = Bank(20);
+            var box = new List<Guid>();
+            var counts = bank.ToDictionary(id => id, _ => 0);
+            var random = new Random(4242);
+
+            for (var day = 0; day < 2000; day++)
+            {
+                var result = TeaserRotation.Draw(box, bank, [], random, weighted ? counts : null)!;
+                counts[result.Drawn]++;
+                box = result.Box;
+            }
+            return (counts.Values.Min(), counts.Values.Max());
+        }
     }
 
     [Fact]

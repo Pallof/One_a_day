@@ -31,8 +31,11 @@ public class EmailNotifierTests
     [Fact]
     public void Unconfigured_by_default()
     {
-        // The default must be "off", so a fresh clone and CI never try to send.
+        // The default must be "off", so a fresh clone and CI never try to send. Switched off
+        // in its own right, too: a default of Enabled = true would leave one missing
+        // password between a fresh clone and real mail.
         Assert.False(new EmailOptions().IsConfigured);
+        Assert.False(new EmailOptions().Enabled);
     }
 
     [Theory]
@@ -188,12 +191,49 @@ public class EmailNotifierTests
 
     // ---- the daily cap ---------------------------------------------------------
 
-    [Fact]
-    public void The_daily_cap_has_a_sane_default()
+    private static EmailSenderService Sender(RecordingMailer mailer, int maxPerDay)
     {
-        // Enough for a real day's feedback, low enough that a burst can't bury the
-        // inbox. Whatever the number, it must not be zero or unlimited.
-        var cap = new EmailOptions().MaxPerDay;
-        Assert.InRange(cap, 1, 500);
+        var options = Configured();
+        options.MaxPerDay = maxPerDay;
+        return new EmailSenderService(Build(options), mailer, Options.Create(options),
+            NullLogger<EmailSenderService>.Instance);
+    }
+
+    private static Notification Ping(int i) => new($"subject {i}", "body");
+
+    [Fact]
+    public async Task The_sender_stops_at_the_daily_cap()
+    {
+        // A burst of reports can't bury the author's inbox: past the cap, the rest wait
+        // in admin. (Until the test audit of 2026-09-28, nothing here could fail if the
+        // sender ignored the cap entirely.)
+        var mailer = new RecordingMailer();
+        var sender = Sender(mailer, maxPerDay: 2);
+
+        for (var i = 0; i < 3; i++)
+        {
+            await sender.SendOneAsync(Ping(i), CancellationToken.None);
+        }
+
+        Assert.Equal(new[] { "subject 0", "subject 1" }, mailer.Sent.Select(m => m.Subject));
+    }
+
+    [Fact]
+    public async Task A_failed_send_spends_none_of_the_days_cap()
+    {
+        // Deliveries are counted, not attempts: an SMTP outage mustn't burn the day's
+        // allowance on mail that never arrived, or the first messages to work once the
+        // server is back would be the ones dropped.
+        var mailer = new RecordingMailer();
+        var sender = Sender(mailer, maxPerDay: 2);
+        mailer.FailFor.Add(Configured().To);
+
+        await sender.SendOneAsync(Ping(0), CancellationToken.None);   // the outage
+        await sender.SendOneAsync(Ping(1), CancellationToken.None);
+        mailer.FailFor.Clear();                                        // and it's over
+        await sender.SendOneAsync(Ping(2), CancellationToken.None);
+        await sender.SendOneAsync(Ping(3), CancellationToken.None);
+
+        Assert.Equal(new[] { "subject 2", "subject 3" }, mailer.Sent.Select(m => m.Subject));
     }
 }

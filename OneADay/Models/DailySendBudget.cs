@@ -40,9 +40,15 @@ public sealed class DailySendBudget(int maxPerDay)
         _sent++;
     }
 
+    /// <summary>
+    /// Forward only. A clock stepped back — an NTP correction around midnight — would
+    /// otherwise start a fresh day, and stepping forward again would start the later day
+    /// afresh too: a second allowance for a day already spent. A step back just keeps
+    /// counting against the latest day.
+    /// </summary>
     private void Roll(DateOnly today)
     {
-        if (_day != today)
+        if (today > _day)
         {
             _day = today;
             _sent = 0;

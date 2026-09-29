@@ -30,6 +30,10 @@ checks that run invisibly.
   why the line says "total", never "today".
 - **Hidden until that solver has solved it.** Beforehand, a low success rate discourages and gives
   away the difficulty; afterwards it reads as a reward.
+- **Answers after a solve don't count.** Once a puzzle is solved or its solution revealed, the answer
+  box is disabled, and the server ignores anything sent anyway. Until 2026-09-28 the disabling was
+  only in the browser, so a script could push "n out of n" to any number. Re-solving still works the
+  intended way: come back to the page.
 - The author always sees every teaser's statistics in admin. Deleting a teaser deletes them.
 
 *History: until 2026-09-22 the page also counted people — "🧠 466 minds have taken on this
@@ -47,7 +51,8 @@ rankings.
 
 - **No published email address** — a form instead, with three fields: **difficulty**, **the
   teaser**, and **solution + hint**. The last two are required (Submit stays disabled until both
-  are filled) and capped at 600 characters.
+  are filled) and capped at 600 characters, by the page and again by the server: the page's limit
+  only binds a browser, and a script on the live connection can send about 32,000 characters.
 - After sending: a thank-you, and nothing more offered that day. A visitor over the limit sees a
   friendly explanation instead of the form.
 - In admin, suggestions show difficulty, time and text, and can be **copied straight into the
@@ -97,10 +102,18 @@ from the inbox**, so deleting a spam suggestion doesn't give its sender a fresh 
 | Fills every field with a script | Blocked instantly (layer 1, decoy) |
 | Pastes and submits at machine speed | Blocked instantly (layer 1, timing) |
 | Scripts a real browser at human pace, from one address | Capped at 3 a day |
-| Keeps switching VPN addresses | **Unlimited** |
+| Keeps switching VPN addresses | Up to the 1,000-suggestion ceiling (below) |
+
+**At most 1,000 suggestions are kept.** Every save rewrites the whole file, which lives in memory,
+so a script that keeps changing address could otherwise grow it until the server runs out. Past the
+ceiling a suggestion isn't saved, and the visitor is told the box is full rather than thanked; it
+spends none of their daily allowance. Deleting reviewed suggestions makes room. *(Security review,
+2026-09-28.)*
 
 Admin shows a **running count of blocked submissions** — the only way to tell "no bots are trying"
-from "real suggestions are being quietly eaten".
+from "real suggestions are being quietly eaten". It's kept in memory and saved with the next real
+save or when the app shuts down, so a stream of blocked bots never rewrites the file; only a crash
+loses the latest part of the count.
 
 ### Known limitations
 
@@ -131,7 +144,8 @@ from "real suggestions are being quietly eaten".
   Twenty Four, About, Contact or admin.
 - A dialog with exactly three categories (*poorly worded* · *submission not accepted or solution
   incorrect* · *other*) and a required description of up to 1,000 characters, with a live counter.
-  Send stays disabled until there's text.
+  Send stays disabled until there's text. The server holds every field to what the dialog allows:
+  one of the three categories, 1,000 characters, and a page address of at most 200.
 - Each report records **which teaser was on screen** and the page address — an "answer not
   accepted" report is useless without the question.
 - Each also **emails the author** ([PRD 14](14-email-notifications.md)). Reports are deliberately
@@ -168,7 +182,14 @@ silently eaten report is a broken question nobody ever hears about.**
 
 - **Limiting reports.** A solver may genuinely hit several problems at once, and an unfiled report
   is a bug that stays broken. Reaffirmed 2026-08-26: screening out scripts must never become a
-  back-door limit on people; `IssueStore.Add` stays unlimited on purpose.
+  back-door limit on people; `IssueStore.Add` stays unlimited per person on purpose.
+
+  Its one ceiling, added 2026-09-28 after the security review, protects the server rather than
+  limiting anyone: **at most 1,000 open reports** (New or In progress). Every save rewrites the whole
+  file, so an endless stream of reports would eventually run the server out of memory, and the file
+  would crash it again on restart. A thousand is years of real reports. Past it a report isn't saved
+  and the sender is told the inbox is full, never thanked for something thrown away. Closing or
+  deleting reports makes room.
 - Replying to reporters — they're anonymous by design.
 
 ---
@@ -203,10 +224,31 @@ silently eaten report is a broken question nobody ever hears about.**
 
 ### Blocked counts — `BlockedCounterTests`
 
-- [x] Both counts start at zero, count every block, and survive a restart
+- [x] Both counts start at zero, count every block, and survive a normal shutdown; without one, the
+      next real save carries them
+- [x] **A block alone never rewrites the file**, and a shutdown with nothing new writes nothing
 - [x] Blocking never writes to the inbox or report list, **never uses up anyone's daily allowance**,
-      and never limits how many real reports a person can file
+      and never limits how many real reports a person can file. The allowance is pinned through
+      the form itself (`NotificationGatingTests`): three caught bots, then a real suggestion from
+      the same address, which is saved. The store-level version could never fail — the store
+      doesn't see blocked submissions — and was replaced in the test audit of 2026-09-28
 - [x] Both JSON files still load from their **old bare-list format**, keeping every record
+
+### The server's limits — `SubmissionLimitsTests`, `NotificationGatingTests`, `SolvedAnswerTests`
+
+From the security review of 2026-09-28.
+
+- [x] 40,000 characters sent past the page are stored and mailed as 600 (suggestion fields) or
+      1,000 (report description); a report's page address is held to 200
+- [x] A forged report category is stored as *Other*; a real one is kept — the control
+- [x] Each page's `maxlength` is the number the server keeps
+- [x] Text is trimmed, and a cut never splits an emoji in half
+- [x] At 1,000 open reports or 1,000 suggestions, a new one isn't saved or mailed, and the visitor
+      is told the inbox is full; one under the ceiling still saves
+- [x] Closing a report or deleting a suggestion makes room; closed reports don't count; a full
+      suggestion box spends nobody's daily allowance, and the daily limit still answers first
+- [x] Once solved or revealed, answers sent anyway count for nothing; before that every answer
+      counts, and a fresh page can solve it again
 
 ### The keyed IP hash — `IpHasherTests`
 
@@ -218,13 +260,22 @@ silently eaten report is a broken question nobody ever hears about.**
 - [x] Outside development a missing, blank or too-short key **stops the app starting**, in Staging
       as in Production (mutation-verified); a real key starts, and development starts with no key —
       the control cases; the refusal names the setting to fix
+- [x] Forty spaces are refused like a blank key, however long; and the hasher the app builds at
+      startup uses the configured key, so two starts hash alike and a restart doesn't reset
+      everyone's limit (both added in the test audit of 2026-09-28)
 
 ### Proxy headers — `ProxyHeadersTests`, real requests on the local machine
 
 - [x] Switched off, a forwarded address is ignored; a known proxy, a known network, and
-      trust-everyone each believe the header
+      trust-everyone each believe the header — the last two from a sender elsewhere than the local
+      machine, which the framework trusts anyway (until the test audit of 2026-09-28 they sent from
+      it, and passed whatever the settings did)
 - [x] A sender that isn't a known proxy is ignored — proving that naming proxies **replaces** the
-      default trust of the local machine rather than adding to it (mutation-verified)
+      default trust of the local machine rather than adding to it (mutation-verified); a sender
+      outside the known networks is ignored too
+- [x] The forwarded scheme is believed, so HTTPS redirection can't loop behind the proxies; and only
+      as many hops as `ForwardLimit` are walked back, so an address a client wrote at the front of
+      the header is never believed
 - [x] Announcing a proxy without trusting one **stops the app starting** (mutation-verified)
 
 ### Unreadable stored IDs — `ProtectedStorageTests`
@@ -233,7 +284,10 @@ A stored visitor ID the server can't decrypt used to crash the visitor's page �
 [PRD 11](11-deployment.md) requirement 4.
 
 - [x] An ID this server can't decrypt reads as *no ID*, so a new one is issued instead of the page
-      dying (mutation-verified); nothing stored also reads as no ID
+      dying (mutation-verified)
+- [x] A first visit, with nothing stored, is given an ID and it's saved. (This replaced a check that
+      nothing stored reads as no ID — the framework's own guarantee, which no test of the helper
+      could fail. Test audit, 2026-09-28.)
 - [x] **A readable ID still comes back** — the control case, and the one that matters: a helper that
       always returned nothing would pass the tests above while silently treating every returning
       visitor as new (mutation-verified)

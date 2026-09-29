@@ -157,19 +157,24 @@ separate.
 - [x] Emails queued never exceed items stored — nothing is mailed that wasn't saved
 - [x] A genuine submission on each form queues **exactly one** — the control case, without which
       everything above would pass on a notifier that was never connected
-- [x] `IsConfigured` is false if any of enabled/to/from/host/password is missing, and the daily cap
-      defaults to neither zero nor unlimited
+- [x] `IsConfigured` is false if any of enabled/to/from/host/password is missing, and email is
+      switched off by default in its own right
 - [x] Queuing 50 messages with nothing reading them returns in well under a second; a 5,000-message
       flood drops to the queue limit rather than growing
 - [x] Line breaks are stripped from subjects; the body is left intact
 
-### The daily budget — `DailySendBudgetTests`
+### The daily budget — `DailySendBudgetTests`, `EmailNotifierTests`
 
-- [x] Checking for room uses nothing; only a recorded send does — **failed sends cost nothing**
-      (100 failures leave the allowance untouched)
+- [x] Checking for room uses nothing; only a recorded send does
 - [x] A new day restores the full allowance, without carrying yesterday's total forward
+- [x] **A clock stepped back never grants a second allowance.** Until the test audit of 2026-09-28
+      the budget rolled on any change of day, so Tuesday → Monday → Tuesday gave Tuesday a fresh
+      allowance; it now only moves forward, and a step back keeps counting against the latest day
 - [x] A cap of zero fails closed rather than sending without limit
 - [x] Both mutation-verified: counting on the check fails 4 tests; removing the new-day reset fails 4
+- [x] The sender stops at the day's cap, and **failed sends cost nothing**: under a cap of two, two
+      sends fail and the next two still go out. (Before 2026-09-28 neither was tested against the
+      sender; the old "failed sends" test never sent anything.)
 
 ### Untrusted values — `NotificationGatingTests`
 
@@ -196,8 +201,8 @@ separate.
       the form arrived in the inbox
 - [ ] What happens when Gmail rejects or slows the sender — the retry path has never run against a
       real server that refuses
-- [ ] `EmailSenderService`'s sending loop. The cap and new-day reset are covered; the loop is now
-      testable (the send can be swapped out) but the test isn't written
+- [x] ~~`EmailSenderService`'s sending loop~~ — its per-message step (`SendOneAsync`) is tested
+      since 2026-09-28; only the loop that feeds it from the queue isn't
 - [ ] `SmtpMailer`'s retry and timeout — needs a mail server that refuses or stalls. The message it
       builds *is* tested (`SmtpMailerTests`)
 

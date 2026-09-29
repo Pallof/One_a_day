@@ -29,5 +29,15 @@ public sealed class SubscriptionOptions
 
     public int MaxConfirmationsPerDay { get; set; } = 50;
 
+    /// <summary>
+    /// Sign-ups one visitor address may make in a Pacific day (see <see cref="SignUpLimit"/>).
+    /// </summary>
+    /// <remarks>
+    /// Without it, one script could spend all of <see cref="MaxConfirmationsPerDay"/> by
+    /// lunchtime, and every real sign-up after it would get nothing that day. Three leaves room
+    /// for a household and a typo.
+    /// </remarks>
+    public int MaxSignUpsPerAddressPerDay { get; set; } = 3;
+
     public int MaxDigestsPerDay { get; set; } = 400;
 }

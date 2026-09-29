@@ -18,7 +18,14 @@
             <button class="ri-close" title="Close" @onclick="Close">✕</button>
         </div>
 
-        @if (_submitted)
+        @if (_submitted && _inboxFull)
+        {
+            <p class="ri-thanks">Our report inbox is full right now, so this report couldn't be saved. Please try again later.</p>
+            <div class="ri-actions">
+                <button class="oad-btn-green" @onclick="Close">Done</button>
+            </div>
+        }
+        else if (_submitted)
         {
             <p class="ri-thanks">✅ Thanks for letting us know — we'll take a look!</p>
             <div class="ri-actions">
@@ -44,10 +51,10 @@
 
             <div class="ri-field">
                 <label for="ri-details">Describe the issue *</label>
-                <textarea id="ri-details" rows="5" maxlength="1000"
+                <textarea id="ri-details" rows="5" maxlength="@IssueReport.MaxDetailsLength"
                           placeholder="Tell us what happened — e.g. what you typed, what you expected, or what looked wrong."
                           @bind="_details" @bind:event="oninput"></textarea>
-                <span class="ri-counter">@_details.Length / 1000</span>
+                <span class="ri-counter">@_details.Length / @IssueReport.MaxDetailsLength</span>
             </div>
 
             @* Decoy field — see Contact.razor for the full reasoning. Hidden from
@@ -70,6 +77,10 @@
 @code {
     private bool _open;
     private bool _submitted;
+
+    /// <summary>The report couldn't be saved: <see cref="IssueStore.MaxOpenReports"/> are open.</summary>
+    private bool _inboxFull;
+
     private string _category = IssueCategories.Wording;
     private string _details = string.Empty;
     private Guid? _teaserId;
@@ -97,6 +108,7 @@
         _honeypot = string.Empty;
         _dialogShownAt = DateTime.UtcNow;
         _submitted = false;
+        _inboxFull = false;
         _open = true;
     }
 
@@ -119,18 +131,29 @@
             return;
         }
 
+        // Every field a client can set is held to what the dialog allows: the dropdown's three
+        // categories, the textarea's length, and a page address of sensible size. A client
+        // driving the live connection can send far more, and it would all be stored.
         var report = new IssueReport
         {
             SubmittedAt = AppTime.NowPacific,
-            Category = _category,
-            Details = _details.Trim(),
-            PageUrl = Nav.ToBaseRelativePath(Nav.Uri) is var path && path.Length > 0 ? "/" + path : "/",
+            Category = IssueCategories.Normalise(_category),
+            Details = TextLimit.Clip(_details, IssueReport.MaxDetailsLength),
+            PageUrl = TextLimit.Clip(
+                Nav.ToBaseRelativePath(Nav.Uri) is var path && path.Length > 0 ? "/" + path : "/",
+                IssueReport.MaxPageUrlLength),
             TeaserId = _teaserId,
             TeaserQuestion = _teaserQuestion,
         };
 
-        Issues.Add(report);
         _submitted = true;
+        if (!Issues.Add(report))
+        {
+            // The inbox is at its ceiling. Say so: a report that silently vanishes is a broken
+            // question nobody hears about, and this sender may be real.
+            _inboxFull = true;
+            return;
+        }
 
         // Saved first, notified second — same contract as the suggestion form.
         // Reports are uncapped by design (PRD 06), so the notifier's own daily cap is

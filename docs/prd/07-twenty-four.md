@@ -116,12 +116,15 @@ Checked in this order, each failure naming what went wrong:
 
 - [x] Dealing does **not** screen for solvability — impossible hands still appear — and never
       invokes the solver (20k deals stay well under a second)
-- [x] Hands stay within 1–10 and duplicates occur
+- [x] Hands are four cards within 1–10, every value turns up (10 included), and duplicates occur —
+      checked against the rule itself rather than the code's own constants
 - [x] Illegal operators and decimal points are rejected by name; unbalanced brackets are rejected,
-      including right-count-wrong-order
-- [x] Expressions not using exactly the dealt numbers are rejected
+      including right-count-wrong-order; incomplete expressions are reported as malformed, exactly
+- [x] Expressions not using exactly the dealt numbers are rejected, counting each card: a number
+      used twice when dealt once fails even when every number used was dealt
+- [x] An answer at exactly the 120-character limit is judged; one character more is too long
 - [x] An answer that goes through a fraction and lands a hair off 24 is accepted; near-misses are
-      not
+      not — 24.1 included, about the closest four cards can come
 - [x] A wrong total reports the value actually reached
 - [x] Pass reveals nothing and moves straight to a new hand
 - [x] The solver is unreachable from the UI — no player action invokes it

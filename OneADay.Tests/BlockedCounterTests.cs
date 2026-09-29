@@ -41,42 +41,45 @@ public class BlockedCounterTests
         var first = env.NewSuggestionStore();
         first.RecordBlocked();
         first.RecordBlocked();
+        first.Dispose();   // what the host does on a normal shutdown, such as a redeploy
 
         // A fresh store over the same App_Data — as if the app had been redeployed.
         Assert.Equal(2, env.NewSuggestionStore().BlockedCount);
     }
 
     [Fact]
-    public void Blocking_does_not_consume_anyones_daily_quota()
+    public void A_blocked_suggestion_alone_never_rewrites_the_file()
     {
-        // The guard runs before the caps, so a bot being rejected must not spend the
-        // allowance of a real person sharing that IP.
+        // Each write rewrites the whole file, so a script sending nothing but blocked
+        // submissions must cost no writes at all (security review, 2026-09-28).
         using var env = new TestEnvironment();
+        env.WriteDataFile("suggestions.json", "[]");
         var store = env.NewSuggestionStore();
-        var visitor = Guid.NewGuid();
-        const string ip = "hash";
-        var today = new DateOnly(2026, 8, 26);
 
-        for (var i = 0; i < 10; i++)
+        for (var i = 0; i < 100; i++)
         {
             store.RecordBlocked();
         }
 
-        Assert.Equal(10, store.BlockedCount);
-        Assert.False(store.HasReachedDailyLimit(visitor, ip, today));
-        Assert.True(store.TryAdd(new TeaserSuggestion { Question = "q" }, visitor, ip, today));
+        Assert.Equal(100, store.BlockedCount);
+        Assert.Equal("[]", env.ReadDataFile("suggestions.json"));
     }
 
     [Fact]
-    public void Blocking_does_not_add_anything_to_the_inbox()
+    public void A_suggestion_count_goes_out_with_the_next_save()
     {
+        // Without a shutdown in between, as after a crash: the next real save carries it.
         using var env = new TestEnvironment();
-        var store = env.NewSuggestionStore();
+        var first = env.NewSuggestionStore();
+        first.RecordBlocked();
+        first.Add(new TeaserSuggestion { Question = "q" }, Guid.NewGuid(), "hash", new DateOnly(2026, 9, 28));
 
-        store.RecordBlocked();
-
-        Assert.Empty(store.GetAll());
+        Assert.Equal(1, env.NewSuggestionStore().BlockedCount);
     }
+
+    // Blocking never spending anyone's daily allowance, or adding to the inbox, is a
+    // property of the form's order — guard first, then the store — so it's pinned where
+    // that order lives: NotificationGatingTests.A_caught_bot_spends_none_of_its_addresses_allowance.
 
     // ---- issue reports ---------------------------------------------------------
 
@@ -98,9 +101,52 @@ public class BlockedCounterTests
     public void Issue_counter_survives_a_restart()
     {
         using var env = new TestEnvironment();
-        env.NewIssueStore().RecordBlocked();
+        using (var first = env.NewIssueStore())
+        {
+            first.RecordBlocked();
+        }   // disposed, as the host does on a normal shutdown
 
         Assert.Equal(1, env.NewIssueStore().BlockedCount);
+    }
+
+    [Fact]
+    public void A_blocked_report_alone_never_rewrites_the_file()
+    {
+        using var env = new TestEnvironment();
+        env.WriteDataFile("issues.json", "[]");
+        var store = env.NewIssueStore();
+
+        for (var i = 0; i < 100; i++)
+        {
+            store.RecordBlocked();
+        }
+
+        Assert.Equal(100, store.BlockedCount);
+        Assert.Equal("[]", env.ReadDataFile("issues.json"));
+    }
+
+    [Fact]
+    public void A_report_count_goes_out_with_the_next_save()
+    {
+        using var env = new TestEnvironment();
+        var first = env.NewIssueStore();
+        first.RecordBlocked();
+        first.RecordBlocked();
+        first.Add(new IssueReport { Details = "a real one" });
+
+        Assert.Equal(2, env.NewIssueStore().BlockedCount);
+    }
+
+    [Fact]
+    public void Shutting_down_with_nothing_new_writes_nothing()
+    {
+        // The control for the shutdown save: it's for an unsaved count, not a write on every exit.
+        using var env = new TestEnvironment();
+        env.WriteDataFile("issues.json", "[]");
+
+        env.NewIssueStore().Dispose();
+
+        Assert.Equal("[]", env.ReadDataFile("issues.json"));
     }
 
     [Fact]
@@ -158,7 +204,8 @@ public class BlockedCounterTests
             """);
 
         var first = env.NewIssueStore();
-        first.RecordBlocked();               // forces a write in the new shape
+        first.RecordBlocked();
+        first.Dispose();                     // the shutdown save writes the new shape
 
         var reloaded = env.NewIssueStore();
         Assert.Single(reloaded.GetAll());

@@ -363,7 +363,11 @@
 
     private async Task CheckAnswer()
     {
-        if (string.IsNullOrWhiteSpace(_submission))
+        // Once solved or revealed, the box and the button are disabled — but only in the
+        // browser. A client driving the live connection can still call this, and every call
+        // would count as another correct answer in everyone's statistics. Re-solving still
+        // works the intended way: come back to the page and start fresh.
+        if (_solved || _revealed || string.IsNullOrWhiteSpace(_submission))
         {
             return;
         }

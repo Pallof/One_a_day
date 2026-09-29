@@ -105,9 +105,12 @@ public class PageCompressionTests
     }
 
     [Fact]
-    public async Task A_client_that_doesnt_ask_gets_the_plain_page()
+    public async Task A_client_that_cant_take_gzip_gets_the_plain_page()
     {
-        var reply = await Send(acceptEncoding: null);
+        // Gzip alone was chosen — Brotli came out within 1% (PRD 11) — so a client asking only
+        // for Brotli gets the page as it is. Left to the framework's defaults, Brotli would be
+        // offered too, and this is where that would show.
+        var reply = await Send("br");
 
         Assert.Null(reply.Encoding);
         Assert.Equal(Page, Encoding.UTF8.GetString(reply.Body));

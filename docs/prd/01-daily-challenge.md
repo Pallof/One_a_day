@@ -75,7 +75,8 @@ It never shows the puzzle's own date: puzzles get recycled, and the date would g
 ([PRD 04](04-archive-and-discovery.md)), Home is its only user. `Services/AppTime.cs` is the
 clock; `wwwroot/js/confetti.js` the confetti.
 
-> **Dead code, kept on purpose.** `TeaserStore.GetCurrent` and `GetPreviousBefore` did the old
-> date-based selection. Nothing calls them now, but tests still cover them. They ignore the
-> rotation — using one is how the yesterday page regressed before
-> ([PRD 03](03-hints-and-solutions.md)) — so check PRD 08 before reaching for either.
+> **Removed 2026-09-28:** `TeaserStore.GetCurrent` and `GetPreviousBefore`, which did the old
+> date-based selection. Nothing called them, and their tests guarded nothing the site used. They
+> also ignored the rotation — using one is how the yesterday page regressed before
+> ([PRD 03](03-hints-and-solutions.md)) — so a day's teaser, or the day before's, comes only from
+> `DailySchedule.ForDay` (PRD 08).

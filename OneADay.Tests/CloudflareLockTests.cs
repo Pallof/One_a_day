@@ -7,6 +7,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OneADay.Services;
 using System.Net;
+using System.Net.Sockets;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -28,8 +30,8 @@ public class CloudflareLockTests
 
     private sealed record Reply(HttpStatusCode Status, string Body);
 
-    /// <summary>What a request gets back when it sends <paramref name="header"/>, or no header if null.</summary>
-    private static async Task<Reply> Send(string? header, Action<CloudflareLockOptions>? configure = null)
+    /// <summary>A server behind the lock, holding the test secret, on a loopback port.</summary>
+    private static async Task<(WebApplication App, Uri Address)> Start(Action<CloudflareLockOptions>? configure)
     {
         var builder = WebApplication.CreateBuilder(
             new WebApplicationOptions { EnvironmentName = "Production" });
@@ -42,14 +44,23 @@ public class CloudflareLockTests
             configure?.Invoke(o);
         });
 
-        await using var app = builder.Build();
+        var app = builder.Build();
         app.UseCloudflareLock();
         app.Run(context => context.Response.WriteAsync(Page));
         await app.StartAsync();
 
         var address = app.Services.GetRequiredService<IServer>()
             .Features.Get<IServerAddressesFeature>()!.Addresses.Single();
-        using var http = new HttpClient { BaseAddress = new Uri(address) };
+        return (app, new Uri(address));
+    }
+
+    /// <summary>What a request gets back when it sends <paramref name="header"/>, or no header if null.</summary>
+    private static async Task<Reply> Send(string? header, Action<CloudflareLockOptions>? configure = null)
+    {
+        var (app, address) = await Start(configure);
+        await using var _ = app;
+
+        using var http = new HttpClient { BaseAddress = address };
         if (header is not null)
         {
             http.DefaultRequestHeaders.TryAddWithoutValidation(CloudflareLock.HeaderName, header);
@@ -59,6 +70,29 @@ public class CloudflareLockTests
 
         await app.StopAsync();
         return reply;
+    }
+
+    /// <summary>
+    /// The status for a request carrying these header lines exactly as written. HttpClient folds
+    /// a repeated header into one line, so two separate copies take a raw request.
+    /// </summary>
+    private static async Task<HttpStatusCode> SendLines(params string[] headerLines)
+    {
+        var (app, address) = await Start(configure: null);
+        await using var _ = app;
+
+        using var tcp = new TcpClient();
+        await tcp.ConnectAsync(address.Host, address.Port);
+        var stream = tcp.GetStream();
+        var request = "GET / HTTP/1.1\r\nHost: localhost\r\n"
+                      + string.Concat(headerLines.Select(line => line + "\r\n"))
+                      + "Connection: close\r\n\r\n";
+        await stream.WriteAsync(Encoding.ASCII.GetBytes(request));
+        using var reader = new StreamReader(stream, Encoding.ASCII);
+        var statusLine = await reader.ReadLineAsync();   // "HTTP/1.1 403 Forbidden"
+
+        await app.StopAsync();
+        return (HttpStatusCode)int.Parse(statusLine!.Split(' ')[1]);
     }
 
     [Fact]
@@ -101,6 +135,20 @@ public class CloudflareLockTests
     }
 
     [Fact]
+    public async Task A_second_copy_of_the_header_is_turned_away()
+    {
+        // Two copies — the secret and anything else — mean something on the way added a
+        // header instead of replacing it, as a Cloudflare rule set to "add" rather than "set
+        // static" would. Refused rather than guessed at, even with the secret first.
+        // (The row above sends two values on one line; nothing sent two lines until the
+        // test audit of 2026-09-28.)
+        var header = CloudflareLock.HeaderName;
+
+        Assert.Equal(HttpStatusCode.Forbidden, await SendLines($"{header}: {Secret}", $"{header}: something-else"));
+        Assert.Equal(HttpStatusCode.OK, await SendLines($"{header}: {Secret}"));   // the control
+    }
+
+    [Fact]
     public async Task Switched_off_every_request_gets_the_page()
     {
         // The author's machine: no Cloudflare in front, so no header ever arrives.
@@ -134,6 +182,16 @@ public class CloudflareLockTests
 
         Assert.NotNull(reason);
         Assert.Contains(CloudflareLockOptions.EnvironmentVariable, reason);
+    }
+
+    [Fact]
+    public void A_secret_of_only_spaces_refuses_however_long_it_is()
+    {
+        // Forty spaces would pass the length rule if nobody trimmed them — and then the lock
+        // would check every request against forty spaces (test audit, 2026-09-28).
+        var reason = new CloudflareLockOptions { Secret = new string(' ', 40) }.ReasonToRefuse();
+
+        Assert.NotNull(reason);
     }
 
     [Fact]

@@ -76,6 +76,11 @@ makes this visible — see the known gap in [PRD 15](15-email-subscriptions.md).
 - The cooldown rounds down, so a bank of fewer than five holds nothing back. Accepted rather than
   fixed: at that size there's too little material to avoid repeats, and the only visible effect is
   `/yesterday` going blank. A real bank never gets that small; the guard is for a fresh install.
+- **The cooldown can never hold back everything left in the box.** The box refills while more than
+  a fifth of the bank remains, and at most a fifth, rounded down, is held back — so a slip is always
+  drawable. A "hold nothing back after all" fallback for that case could never run and was removed
+  in the test audit of 2026-09-28. Raising the cooldown fraction above the refill fraction would
+  break this; a test checks it at every bank size up to 100.
 - Admin shows the box at work — on the author's machine, from that machine's copy of the file
   ([PRD 05](05-authoring-and-admin.md)).
 
@@ -92,20 +97,22 @@ makes this visible — see the known gap in [PRD 15](15-email-subscriptions.md).
 
 ### The draw — `TeaserRotationTests`
 
-- [x] The refill threshold is a fifth of the bank, never zero, and the box refills while slips
-      remain, not on empty
+- [x] The refill threshold is a fifth of the bank rounded up (11 teasers give 3), never zero, and the
+      box refills while slips remain, not on empty
 - [x] The first draw fills the box from the whole bank and removes the slip taken; draws are without
       replacement — no repeat within a cycle
 - [x] The most recently shown teasers are held back by the cooldown
 - [x] Deleted teasers are never drawn, even while stale ids sit in the box; newly added teasers join
       at the next refill
-- [x] An empty bank draws nothing rather than throwing; a bank of one still produces a draw
+- [x] An empty bank draws nothing rather than throwing; at every bank size up to 100, a box at its
+      tightest — just above the refill line, every slip recently shown — still produces a draw
 - [x] Draws spread across the bank rather than sticking on one teaser
 
 ### The weighting — `TeaserRotationTests`
 
 - [x] A teaser's weight falls as it's shown more, a neglected one is favoured, and the gap closes
-      over time rather than starving anyone permanently
+      over time rather than starving anyone permanently — narrower than drawing blind leaves it,
+      from the same seed
 - [x] Equal show counts leave the draw uniform; draw frequencies match the declared weights over 40k
       draws
 - [x] Supplying counts measurably changes the outcome versus not supplying them

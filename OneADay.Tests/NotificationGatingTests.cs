@@ -1,7 +1,8 @@
 using System.Reflection;
 using Bunit;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
-using System.Net;
+using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -70,20 +71,6 @@ public class NotificationGatingTests : BunitContext
         f.SetValue(component, DateTime.UtcNow.AddMinutes(-2));
     }
 
-    /// <summary>
-    /// A fixed HttpContext, so the per-IP cap is reachable in tests.
-    /// </summary>
-    /// <remarks>
-    /// The real <see cref="HttpContextAccessor"/> is backed by an AsyncLocal that is
-    /// empty under bUnit, which makes <c>GetIpHash()</c> return null and silently
-    /// disables the per-IP gate. A test that can't reach the gate it claims to test is
-    /// worse than no test — it passes for the wrong reason.
-    /// </remarks>
-    private sealed class FixedHttpContextAccessor(HttpContext? context) : IHttpContextAccessor
-    {
-        public HttpContext? HttpContext { get => context; set { } }
-    }
-
     private EmailNotifier RegisterForContact()
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
@@ -91,9 +78,8 @@ public class NotificationGatingTests : BunitContext
         Services.AddSingleton(_env.NewSuggestionStore());
         Services.AddSingleton(notifier);
 
-        var context = new DefaultHttpContext();
-        context.Connection.RemoteIpAddress = IPAddress.Parse("203.0.113.7");
-        Services.AddSingleton<IHttpContextAccessor>(new FixedHttpContextAccessor(context));
+        // Without a fixed address the per-IP cap is unreachable here: see FixedHttpContextAccessor.
+        Services.AddSingleton<IHttpContextAccessor>(FixedHttpContextAccessor.From("203.0.113.7"));
 
         Services.AddDataProtection();
         Services.AddScoped<ProtectedLocalStorage>();
@@ -208,7 +194,7 @@ public class NotificationGatingTests : BunitContext
         // mail. Hiding the form must not be the only thing protecting the inbox.
         //
         // The fields must be populated by hand: there is no form to type into, and an
-        // empty _question returns at the blank-field guard long before TryAdd is
+        // empty _question returns at the blank-field guard long before Add is
         // reached. An earlier version of this test skipped that, so it exercised the
         // blank-field path and proved nothing about the cap — a mutation that moved
         // Enqueue outside `if (accepted)` passed the whole suite.
@@ -219,6 +205,36 @@ public class NotificationGatingTests : BunitContext
 
         Assert.Equal(0, Queued(notifier));
         Assert.Equal(SuggestionStore.MaxPerIpPerDay, store.GetAll().Count);
+    }
+
+    [Fact]
+    public void A_caught_bot_spends_none_of_its_addresses_allowance()
+    {
+        // The guard runs before the store, so a script sharing an address with a real
+        // person can't use up their three a day on its way to being rejected. Moved after
+        // the store, the three bot hits below would fill the address's allowance (and the
+        // inbox) and the real suggestion would be refused.
+        RegisterForContact();
+        var store = Services.GetRequiredService<SuggestionStore>();
+
+        for (var i = 0; i < SuggestionStore.MaxPerIpPerDay; i++)
+        {
+            var bot = Render<Contact>();
+            SatisfyComposeFloor(bot.Instance, "_formShownAt");
+            bot.Find("#teaser").Input($"spam {i}");
+            bot.Find("#solution").Input("spam");
+            bot.Find("#website").Input("http://spam.example");   // the decoy
+            bot.Find("button.oad-btn-green").Click();
+        }
+
+        var person = Render<Contact>();
+        SatisfyComposeFloor(person.Instance, "_formShownAt");
+        person.Find("#teaser").Input("a real riddle");
+        person.Find("#solution").Input("its answer");
+        person.Find("button.oad-btn-green").Click();
+
+        Assert.Equal("a real riddle", Assert.Single(store.GetAll()).Question);
+        Assert.Equal(SuggestionStore.MaxPerIpPerDay, store.BlockedCount);
     }
 
     /// <summary>Invokes a component's private Submit(), bypassing the UI entirely.</summary>
@@ -296,6 +312,137 @@ public class NotificationGatingTests : BunitContext
         cut.Find("button.oad-btn-green").Click();
 
         Assert.Equal(expected, store.GetAll().Single().Difficulty);
+    }
+
+    [Fact]
+    public void A_forged_overlong_suggestion_is_cut_to_the_forms_limit_before_it_is_stored_or_mailed()
+    {
+        // maxlength binds the browser only. bUnit's Input skips it just as a client driving
+        // the live connection does, so 40,000 characters arrive — and unchecked, all of them
+        // were stored, and every save rewrote them all (security review, 2026-09-28).
+        var notifier = RegisterForContact();
+        var store = Services.GetRequiredService<SuggestionStore>();
+        var cut = Render<Contact>();
+        SatisfyComposeFloor(cut.Instance, "_formShownAt");
+
+        cut.Find("#teaser").Input(new string('Q', 40_000));
+        cut.Find("#solution").Input(new string('S', 40_000));
+        cut.Find("button.oad-btn-green").Click();
+
+        var saved = store.GetAll().Single();
+        Assert.Equal(new string('Q', TeaserSuggestion.MaxFieldLength), saved.Question);
+        Assert.Equal(new string('S', TeaserSuggestion.MaxFieldLength), saved.SolutionAndHint);
+
+        Assert.True(notifier.Reader.TryRead(out var mail));
+        Assert.DoesNotContain(new string('Q', TeaserSuggestion.MaxFieldLength + 1), mail!.Body);
+    }
+
+    [Fact]
+    public void A_forged_overlong_report_is_cut_to_the_dialogs_limits_before_it_is_stored_or_mailed()
+    {
+        var notifier = RegisterForReportIssue();
+        var store = Services.GetRequiredService<IssueStore>();
+
+        // The page address comes from the client too, and can be as long as its message.
+        Services.GetRequiredService<NavigationManager>().NavigateTo("/" + new string('p', 40_000));
+
+        var cut = Render<ReportIssue>();
+        cut.Find("button.ri-fab").Click();
+        SatisfyComposeFloor(cut.Instance, "_dialogShownAt");
+
+        SetField(cut.Instance, "_category", new string('C', 40_000));   // a <select>, forged
+        cut.Find("#ri-details").Input(new string('D', 40_000));
+        cut.Find("div.ri-actions button.oad-btn-green").Click();
+
+        var saved = store.GetAll().Single();
+        Assert.Equal(new string('D', IssueReport.MaxDetailsLength), saved.Details);
+        Assert.Equal(IssueCategories.Other, saved.Category);
+        Assert.Equal(IssueReport.MaxPageUrlLength, saved.PageUrl!.Length);
+
+        Assert.True(notifier.Reader.TryRead(out var mail));
+        Assert.DoesNotContain("CCCC", mail!.Subject + mail.Body);
+        Assert.DoesNotContain(new string('D', IssueReport.MaxDetailsLength + 1), mail.Body);
+    }
+
+    [Fact]
+    public void Each_page_shows_the_same_limit_the_server_keeps()
+    {
+        // A page allowing more than the server keeps would cut real text without a word; one
+        // allowing less would hide the server's limit. Both read the one constant.
+        RegisterForContact();
+        RegisterForReportIssue();
+        var contact = Render<Contact>();
+        var report = Render<ReportIssue>();
+        report.Find("button.ri-fab").Click();
+
+        var limit = TeaserSuggestion.MaxFieldLength.ToString();
+        Assert.Equal(limit, contact.Find("#teaser").GetAttribute("maxlength"));
+        Assert.Equal(limit, contact.Find("#solution").GetAttribute("maxlength"));
+        Assert.Equal(IssueReport.MaxDetailsLength.ToString(),
+            report.Find("#ri-details").GetAttribute("maxlength"));
+    }
+
+    [Fact]
+    public void A_genuine_report_keeps_its_category()
+    {
+        // The control for the test above: normalising must not flatten real choices to Other.
+        var notifier = RegisterForReportIssue();
+        var store = Services.GetRequiredService<IssueStore>();
+        var cut = Render<ReportIssue>();
+        cut.Find("button.ri-fab").Click();
+        SatisfyComposeFloor(cut.Instance, "_dialogShownAt");
+
+        cut.Find("#ri-category").Change(IssueCategories.Evaluation);
+        cut.Find("#ri-details").Input("my answer was marked wrong");
+        cut.Find("div.ri-actions button.oad-btn-green").Click();
+
+        Assert.Equal(IssueCategories.Evaluation, store.GetAll().Single().Category);
+    }
+
+    // ---- a full inbox ------------------------------------------------------------
+
+    [Fact]
+    public void A_full_suggestion_box_saves_nothing_mails_nothing_and_says_so()
+    {
+        // The ceiling protects the server's memory. Whoever meets it may be a real person, so
+        // they're told rather than thanked for something that was thrown away.
+        _env.WriteDataFile("suggestions.json", JsonSerializer.Serialize(
+            Enumerable.Range(0, SuggestionStore.MaxStored)
+                .Select(i => new TeaserSuggestion { Question = $"waiting {i}" })));
+        var notifier = RegisterForContact();
+        var store = Services.GetRequiredService<SuggestionStore>();
+        var cut = Render<Contact>();
+        SatisfyComposeFloor(cut.Instance, "_formShownAt");
+
+        cut.Find("#teaser").Input("one too many");
+        cut.Find("#solution").Input("answer");
+        cut.Find("button.oad-btn-green").Click();
+
+        Assert.Equal(0, Queued(notifier));
+        Assert.Equal(SuggestionStore.MaxStored, store.GetAll().Count);
+        Assert.Contains("suggestion box is full", cut.Markup);
+        Assert.DoesNotContain("Thanks for your suggestion", cut.Markup);
+    }
+
+    [Fact]
+    public void A_full_report_inbox_saves_nothing_mails_nothing_and_says_so()
+    {
+        _env.WriteDataFile("issues.json", JsonSerializer.Serialize(
+            Enumerable.Range(0, IssueStore.MaxOpenReports)
+                .Select(i => new IssueReport { Details = $"open {i}" })));
+        var notifier = RegisterForReportIssue();
+        var store = Services.GetRequiredService<IssueStore>();
+        var cut = Render<ReportIssue>();
+        cut.Find("button.ri-fab").Click();
+        SatisfyComposeFloor(cut.Instance, "_dialogShownAt");
+
+        cut.Find("#ri-details").Input("one too many");
+        cut.Find("div.ri-actions button.oad-btn-green").Click();
+
+        Assert.Equal(0, Queued(notifier));
+        Assert.Equal(IssueStore.MaxOpenReports, store.GetAll().Count);
+        Assert.Contains("report inbox is full", cut.Markup);
+        Assert.DoesNotContain("Thanks for letting us know", cut.Markup);
     }
 
     // ---- issue reports ---------------------------------------------------------

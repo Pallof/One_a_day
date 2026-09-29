@@ -43,7 +43,15 @@ public class SubscriptionTests
     [InlineData("reader@localhost")]            // valid syntax, useless for a newsletter
     [InlineData("reader@.example.com")]
     [InlineData("with space@example.com")]
-    [InlineData("Bob <bob@example.com>")]       // display-name form MailAddress would accept
+    [InlineData("Bob <bob@example.com>")]
+    // The rows above are each caught twice, by a check of our own and again by MailAddress.
+    // The ones below each get past everything but one check, so every check has a row that
+    // fails without it (test audit, 2026-09-28).
+    [InlineData("Bob<bob@example.com>")]        // display-name form MailAddress accepts
+    [InlineData("\"with space\"@example.com")]  // a quoted space MailAddress accepts
+    [InlineData("\"a@b\"@example.com")]         // a quoted second @ MailAddress accepts
+    [InlineData("reader@example..com")]         // left to MailAddress alone
+    [InlineData("reader@example.com.")]         // left to the trailing-dot check alone
     public void Unusable_addresses_are_rejected(string? raw)
     {
         Assert.Null(EmailAddress.Normalise(raw));
@@ -202,7 +210,13 @@ public class SubscriptionTests
 
         Assert.All(tokens, t => Assert.Equal(64, t.Length));   // 256 bits, hex
         Assert.Equal(tokens.Count, tokens.Distinct().Count());
-        Assert.All(tokens, t => Assert.DoesNotContain("reader", t));
+
+        // Unrelated to the address: the same address signing up afresh elsewhere gets a
+        // different token. A token computed from the address (a hash of it, say) would pass
+        // everything above — hex never contains "reader" — and fail here.
+        using var elsewhere = new TestEnvironment();
+        var again = elsewhere.NewSubscriberStore().Request("reader0@example.com", T0).Token;
+        Assert.NotEqual(tokens[0], again);
     }
 
     [Fact]
@@ -235,12 +249,20 @@ public class SubscriptionTests
     public void The_subscriber_file_can_never_be_committed()
     {
         // The whole point of keeping addresses in App_Data/ is that it is gitignored.
-        // Proven against the real .gitignore rather than assumed, because this is the one
-        // file in the project that would put other people's data on the public repo.
-        var repoRoot = FindRepoRoot();
-        var ignore = File.ReadAllLines(Path.Combine(repoRoot, ".gitignore"));
+        // Proven by asking git itself rather than reading .gitignore: a later line such as
+        // "!OneADay/App_Data/" would undo the rule while the rule's own line still read the
+        // same, and this is the one file in the project that would put other people's data
+        // on the public repo.
+        using var git = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "git",
+            ArgumentList = { "check-ignore", "--quiet", "OneADay/App_Data/subscribers.json" },
+            WorkingDirectory = FindRepoRoot(),
+            UseShellExecute = false,
+        })!;
+        git.WaitForExit();
 
-        Assert.Contains(ignore, line => line.Trim() == "OneADay/App_Data/");
+        Assert.Equal(0, git.ExitCode);   // 0 = ignored; 1 = would be committed
     }
 
     private static string FindRepoRoot()
@@ -265,16 +287,17 @@ public class SubscriptionTests
     private static string Rendered(MailContent mail) => WebUtility.HtmlDecode(mail.Html);
 
     [Fact]
-    public void The_digest_carries_the_question_but_never_the_answer_or_hint()
+    public void The_digest_carries_the_question_in_both_versions_and_never_offers_a_hint()
     {
-        // The site's spoiler rules live on the site. An inbox is not somewhere a solution
-        // should ever arrive unprompted. Both versions — a reader may only ever see one.
+        // A reader may only ever see one version, so the question is in both, and neither
+        // promises a hint: the site's spoiler rules live on the site. Whether the answer can
+        // leak is a question for the whole send, not this template — Digest is never handed
+        // one — so it's pinned in The_digest_matches_the_challenge_on_the_site_and_leaks_nothing.
         var mail = Digest("What has keys but can't open locks?", difficulty: Difficulty.Hard);
 
         foreach (var version in new[] { mail.Body, Rendered(mail) })
         {
             Assert.Contains("What has keys but can't open locks?", version);
-            Assert.DoesNotContain("keyboard", version, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("hint", version, StringComparison.OrdinalIgnoreCase);
         }
     }
@@ -293,7 +316,9 @@ public class SubscriptionTests
     {
         var mail = Digest();
 
-        Assert.Contains("href=\"https://site/\"", mail.Html);
+        // The button itself: the header's wordmark links to the site too, so any link there
+        // would pass for it.
+        Assert.Matches(@"<a href=""https://site/""[^>]*>Solve today's challenge</a>", Rendered(mail));
         Assert.Contains("Solve today's challenge: https://site/", mail.Body);
     }
 
@@ -483,13 +508,24 @@ public class DailyDigestTests : IDisposable
     public async Task An_unconfirmed_address_is_never_mailed()
     {
         // Double opt-in: nothing is broadcast to anyone who didn't click the link.
+        //
+        // The pending sign-up is made "now", by the real clock, because the send prunes
+        // expired sign-ups by the real clock. Made on a fixed past date, as this test first
+        // was, it aged past the 7-day expiry on 2026-09-17 and was pruned before the check it
+        // exists for ever ran — so the test could no longer fail (test audit, 2026-09-28).
         var (service, store, mailer) = Build();
         Subscribe(store, "confirmed@example.com");
-        Subscribe(store, "pending@example.com", confirm: false);
+        Subscribe(store, "pending@example.com", confirm: false, confirmedAtUtc: DateTime.UtcNow);
 
         await service.RunOnceAsync(Morning, default);
 
-        Assert.DoesNotContain(mailer.Sent, m => m.To == "pending@example.com");
+        Assert.Equal(1, store.Counts.Pending);   // still there: the send saw it and skipped it
+        Assert.Equal(["confirmed@example.com"], mailer.Sent.Select(m => m.To));
+
+        // Two filters stand in the way, and the mail above only goes wrong if both do. The
+        // store's own list is the first: pinned on its own, here.
+        Assert.DoesNotContain(store.DueForDigest(DateOnly.FromDateTime(Morning)),
+            s => s.Email == "pending@example.com");
     }
 
     [Fact]
@@ -575,11 +611,16 @@ public class DailyDigestTests : IDisposable
         await service.RunOnceAsync(Morning, default);
         var mail = Assert.Single(mailer.Sent);
 
-        // Whatever the rotation drew for today, the email must carry that question...
+        // Whatever the rotation settled for today is what the site shows, and the email must
+        // carry that question — not yesterday's, and not just any question from the bank...
+        var today = _env.NewRotationStore().RunFor(DateOnly.FromDateTime(Morning));
+        Assert.NotNull(today);
+        var question = _env.NewTeaserStore().GetById(today!.TeaserId)!.Question;
+
         // ...and none of the answers or hints in the bank — in either version.
         foreach (var version in new[] { mail.Body, WebUtility.HtmlDecode(mail.Html!) })
         {
-            Assert.Matches(@"question \d", version);
+            Assert.Contains(question, version);
             Assert.DoesNotContain("answer ", version);
             Assert.DoesNotContain("hint ", version);
         }

@@ -76,7 +76,7 @@ destroy every puzzle, statistic and subscriber.
    the host (requirement 8).
 
 5. **One copy of the app.** File storage assumes a single writer; don't run several copies without
-   first moving to a real database.
+   first moving to a real database. On Fly, deploy with `fly deploy --ha=false`, or it adds a spare.
 6. **HTTPS**, with certificates renewed automatically.
 7. **Time zone.** Already handled — days are pinned to Pacific whatever the server's clock — but
    check on the host, since a server on UTC is exactly the case this guards against.
@@ -114,6 +114,11 @@ destroy every puzzle, statistic and subscriber.
     must be in place before the first start, because the live site won't start without one. The
     build itself already leaves `App_Data/` out (PRD 10).
 
+    **The first upload is built (2026-09-25).** On a new, empty disk, `deploy/start.sh` waits for
+    the bank instead of letting the site crash and restart in a loop, and
+    `fly ssh sftp put OneADay/App_Data/teasers.json /app/App_Data/teasers.json` delivers it. The
+    one command for later updates is still to build.
+
 14. **Only answer Cloudflare.** ✅ **Built 2026-09-24.** Cloudflare's rate limit and cache only cover
     traffic that goes through it, but every Fly app also answers at its own `.fly.dev` address. Fly
     bills $0.02 per GB sent, and a bot picks the biggest file it can find. Measured on the published
@@ -129,7 +134,8 @@ destroy every puzzle, statistic and subscriber.
       To change it, change both at once; until they match, every visitor gets the 403.
     - **On unless switched off.** A production start without the secret refuses. A local production
       rehearsal sets `CloudflareLock__Enabled=false`.
-    - **Health checks** must be TCP checks or send the header.
+    - **Health checks:** fly.toml defines none. An HTTP check would get the lock's 403, and Fly
+      restarts the machine if the app exits.
     - **The airtight version** is a Cloudflare Tunnel, which gives the server no public address at
       all. That's a deploy-time choice, and the lock stays useful behind it.
 
@@ -161,6 +167,24 @@ destroy every puzzle, statistic and subscriber.
     subscriber without displaying it. A future page that echoes its address next to anything
     secret must be left out of compression.
 
+16. **Ten live connections per address.** ✅ **Built 2026-09-28**, after the security review. Every
+    open page keeps a live connection, and fly.toml caps the machine at 300 at once so they can't
+    run it out of memory. Cloudflare's rate limit only slows how fast connections are opened, not
+    how many stay open, so one script could hold all 300 in about five minutes and lock every real
+    visitor out. Now one address may hold ten (`Services/LiveConnectionCap.cs`); an eleventh gets an
+    empty 429, while pages keep loading. Filling the machine takes thirty addresses.
+
+    - **An IPv6 household counts as one address.** A home gets a whole /64 block and its devices
+      pick addresses from it at will, so the cap counts the block.
+    - **After the proxy headers**, or every visitor would share Cloudflare's address, and one cap.
+    - **Ten is ten tabs across a household.** A school or office behind one address could need more;
+      raise `LiveConnections__MaxPerAddress` if one ever does. Zero switches the cap off.
+
+    The same review also put server-side limits on what visitors can store — field lengths, and
+    ceilings on reports, suggestions and unconfirmed sign-ups ([PRD 06](06-community-feedback.md),
+    [PRD 15](15-email-subscriptions.md)) — so that nothing sent over a live connection can grow a
+    file, or the memory holding it, without end.
+
 ## Candidate hosts
 
 | Host | Fit | Cost |
@@ -171,6 +195,17 @@ destroy every puzzle, statistic and subscriber.
 | **Raspberry Pi at home** | Cheapest; needs a tunnel, and home uptime caveats | hardware |
 
 On any platform host, **switch off sleeping when idle** ("scale to zero") — see Risks.
+
+**Chosen on 2026-09-25: Fly.io**, the cheapest host that meets every requirement above without
+running a server yourself. Measured for this app: 512 MB is plenty, and the bill is about $4.20 a
+month. The deploy files are `Dockerfile`, `fly.toml` and `deploy/start.sh`; the steps are in the
+README. Fly has no free tier: its trial allows 2 hours of machine time and stops machines after
+5 minutes, so it can't host the site.
+
+`.dockerignore` decides what `fly deploy` uploads to Fly's builder: everything not listed goes.
+It leaves out `App_Data/` and `OneADay/BrainTeaserQuestions.txt`, the early question draft with its
+answers. The draft was missed at first and caught by the security review of 2026-09-28;
+`DeployFilesTests` now checks both.
 
 ## Acceptance criteria
 
@@ -186,7 +221,7 @@ On any platform host, **switch off sleeping when idle** ("scale to zero") — se
 - [ ] Day rollover correct on a UTC-clock server
 - [ ] A backup has been taken **and restored** once
 - [ ] Links in a real email open the public site
-- [ ] Deploy command documented in the README
+- [x] Deploy command documented in the README
 - [ ] The server's own `.fly.dev` address gets an empty 403, while stumpty.com loads
 
 ### The Cloudflare-only lock — `CloudflareLockTests`
@@ -194,17 +229,30 @@ On any platform host, **switch off sleeping when idle** ("scale to zero") — se
 - [x] Without the header, or with anything but the exact secret (a prefix, extra characters, other
       letter case, a second value alongside it), a request gets an empty 403; the exact secret gets
       the page
-- [x] With no settings at all the lock is on and refuses to start; a missing or short secret refuses
+- [x] A second copy of the header on its own line is refused, even with the secret first — the sign
+      of a rule that adds instead of setting
+- [x] With no settings at all the lock is on and refuses to start; a missing or short secret refuses,
+      and so do forty spaces
 - [x] Proven against the real files: the lock is the first thing in Program.cs's pipeline, and
       appsettings.json switches it on while holding no secret
 - [x] Mutation-verified: six breaks, each caught — letting a missing header through, accepting any
       value, moving the lock below the static files, defaulting it off, accepting a short secret, and
       switching it off in the production settings
 
+### The connection cap — `LiveConnectionCapTests`, over real requests on the local machine
+
+- [x] One address holds its cap and the next connection gets a 429; another address is unaffected;
+      closing a connection makes room again
+- [x] An IPv6 household shares one cap, and an IPv4 visitor written as IPv6 is the same visitor
+- [x] Pages are never counted or turned away, including a path that merely starts with `/_blazor`
+- [x] Switched off, nothing is turned away
+- [x] Proven against the real files: the cap comes after the proxy headers and before the pages,
+      and appsettings.json sets ten
+
 ### Page compression — `PageCompressionTests`
 
 - [x] A page goes out gzip-compressed to anyone who accepts it and arrives identical; a client that
-      doesn't ask gets the plain page
+      can't take gzip — one asking only for Brotli, which isn't offered — gets the plain page
 - [x] Pages are compressed over HTTPS, as every request is behind Cloudflare
 - [x] gzip runs at its best setting, which the measured savings assume
 - [x] Proven against the real Program.cs: compression is registered, and comes before everything

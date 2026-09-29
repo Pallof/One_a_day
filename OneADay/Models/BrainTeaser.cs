@@ -83,7 +83,8 @@ public class BrainTeaser
         // Formula answers are evaluated, so any arithmetically equivalent way of
         // writing the same expression counts: "5*(5-1/5)" and "(5-1/5)*5" are
         // the same answer.
-        if (Arithmetic.TryEvaluate(accepted, out var acceptedResult) &&
+        var acceptedEvaluates = Arithmetic.TryEvaluate(accepted, out var acceptedResult);
+        if (acceptedEvaluates &&
             Arithmetic.TryEvaluate(submission, out var submittedResult) &&
             Arithmetic.ValuesClose(acceptedResult, submittedResult))
         {
@@ -103,6 +104,15 @@ public class BrainTeaser
             {
                 return true;
             }
+        }
+
+        // A formula answer is judged by the arithmetic above and nothing else. The checks
+        // below compare text with its symbols stripped, so they would pass "5+5+1+5" (16)
+        // or a bare "5515" for a stored "5*(5-(1/5))" on its digits alone. Found by the
+        // test audit of 2026-09-28.
+        if (acceptedEvaluates && !TryParseNumber(accepted, out _))
+        {
+            return false;
         }
 
         // Same, but for a number followed by a unit ("80 degrees" vs "eighty degrees").

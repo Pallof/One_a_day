@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
@@ -22,8 +23,17 @@ public class ProxyHeadersTests
 {
     private const string Forwarded = "198.51.100.42";
 
-    /// <summary>The address the app ends up seeing, for a request carrying X-Forwarded-For.</summary>
-    private static async Task<string> AddressSeen(Action<ProxyOptions> configure)
+    /// <summary>
+    /// The address and scheme the app ends up seeing, for one request carrying forwarded
+    /// headers.
+    /// </summary>
+    /// <param name="sender">Where the request appears to come from. The test's own requests
+    /// come from loopback, which the framework trusts by default — so a test that never moves
+    /// the sender elsewhere can't tell "trusted by our settings" from "trusted anyway"
+    /// (test audit, 2026-09-28).</param>
+    private static async Task<(string Address, string Scheme)> Seen(
+        Action<ProxyOptions> configure, string? sender = null,
+        string forwardedFor = Forwarded, string? forwardedProto = null)
     {
         var builder = WebApplication.CreateBuilder(
             new WebApplicationOptions { EnvironmentName = "Production" });
@@ -32,20 +42,36 @@ public class ProxyHeadersTests
         builder.Services.Configure(configure);
 
         await using var app = builder.Build();
+        if (sender is not null)
+        {
+            app.Use((context, next) =>
+            {
+                context.Connection.RemoteIpAddress = IPAddress.Parse(sender);   // a proxy there
+                return next(context);
+            });
+        }
         app.UseProxyHeaders();
         app.Run(context => context.Response.WriteAsync(
-            context.Connection.RemoteIpAddress?.ToString() ?? "none"));
+            $"{context.Connection.RemoteIpAddress?.ToString() ?? "none"} {context.Request.Scheme}"));
         await app.StartAsync();
 
         var address = app.Services.GetRequiredService<IServer>()
             .Features.Get<IServerAddressesFeature>()!.Addresses.Single();
         using var http = new HttpClient { BaseAddress = new Uri(address) };
-        http.DefaultRequestHeaders.Add("X-Forwarded-For", Forwarded);
-        var seen = await http.GetStringAsync("/");
+        http.DefaultRequestHeaders.Add("X-Forwarded-For", forwardedFor);
+        if (forwardedProto is not null)
+        {
+            http.DefaultRequestHeaders.Add("X-Forwarded-Proto", forwardedProto);
+        }
+        var seen = (await http.GetStringAsync("/")).Split(' ');
 
         await app.StopAsync();
-        return seen;
+        return (seen[0], seen[1]);
     }
+
+    /// <summary>The address the app ends up seeing, for a request carrying X-Forwarded-For.</summary>
+    private static async Task<string> AddressSeen(Action<ProxyOptions> configure, string? sender = null) =>
+        (await Seen(configure, sender)).Address;
 
     [Fact]
     public async Task Switched_off_a_forwarded_address_is_ignored()
@@ -88,12 +114,13 @@ public class ProxyHeadersTests
     [Fact]
     public async Task Trusting_every_proxy_believes_the_header()
     {
-        // For hosts that don't document a fixed proxy address.
+        // For hosts that don't document a fixed proxy address — so from any sender, not
+        // just the loopback the framework trusts anyway.
         var seen = await AddressSeen(o =>
         {
             o.Enabled = true;
             o.TrustAllProxies = true;
-        });
+        }, sender: "203.0.113.9");
 
         Assert.Equal(Forwarded, seen);
     }
@@ -104,10 +131,55 @@ public class ProxyHeadersTests
         var seen = await AddressSeen(o =>
         {
             o.Enabled = true;
-            o.KnownNetworks = ["127.0.0.0/8"];
-        });
+            o.KnownNetworks = ["10.0.0.0/8"];
+        }, sender: "10.1.2.3");
 
         Assert.Equal(Forwarded, seen);
+    }
+
+    [Fact]
+    public async Task A_sender_outside_the_known_networks_is_ignored()
+    {
+        // The other half of the test above. Naming a network must trust only that network:
+        // dropped entirely, the lists would be empty, which this middleware reads as
+        // "trust everyone".
+        var seen = await AddressSeen(o =>
+        {
+            o.Enabled = true;
+            o.KnownNetworks = ["10.0.0.0/8"];
+        });
+
+        Assert.NotEqual(Forwarded, seen);
+    }
+
+    [Fact]
+    public async Task The_forwarded_scheme_is_believed_too()
+    {
+        // Cloudflare and Fly end HTTPS and pass the request on as plain HTTP. Without the
+        // forwarded scheme the app would redirect every request to HTTPS, forever.
+        var (_, scheme) = await Seen(o =>
+        {
+            o.Enabled = true;
+            o.TrustAllProxies = true;
+        }, sender: "203.0.113.9", forwardedProto: "https");
+
+        Assert.Equal("https", scheme);
+    }
+
+    [Fact]
+    public async Task Only_as_many_hops_as_the_limit_are_walked_back()
+    {
+        // A client can put anything at the front of X-Forwarded-For; each real proxy adds the
+        // address it saw at the end. With one proxy, one hop back is the truth, and walking
+        // further would hand the client the address it wrote itself.
+        var forged = await Seen(o =>
+        {
+            o.Enabled = true;
+            o.TrustAllProxies = true;
+            o.ForwardLimit = 1;
+        }, sender: "203.0.113.9", forwardedFor: $"192.0.2.66, {Forwarded}");
+
+        Assert.Equal(Forwarded, forged.Address);
     }
 
     // ---- the startup refusal ---------------------------------------------------

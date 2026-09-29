@@ -82,9 +82,9 @@ public class TwentyFourGameTests
     [InlineData("()")]
     public void Rejects_malformed_expressions(string expression)
     {
-        var result = TwentyFourGame.Check(expression, Hand3588).Result;
-        Assert.True(result is TwentyFourResult.Malformed or TwentyFourResult.WrongNumbers,
-            $"expected malformed/wrong-numbers but got {result}");
+        // Malformed, exactly. Allowing WrongNumbers too meant a looser parser that turned
+        // "()" into an expression with no numbers passed here (test audit, 2026-09-28).
+        Assert.Equal(TwentyFourResult.Malformed, TwentyFourGame.Check(expression, Hand3588).Result);
     }
 
     [Fact]
@@ -101,10 +101,12 @@ public class TwentyFourGameTests
     [Fact]
     public void Accepts_submissions_at_the_length_limit()
     {
-        // A legitimate answer is nowhere near the cap; make sure the cap isn't tight
-        // enough to reject real play.
-        Assert.True(TwentyFourGame.Check("(3 + 5) * (8 - 5)", [3, 5, 8, 5]).IsCorrect);
-        Assert.True("(3 + 5) * (8 - 5)".Length < TwentyFourGame.MaxExpressionLength);
+        // Exactly at the cap is allowed; one character over is not. Padded with spaces,
+        // which count: the cap is on what arrives, not on what it means.
+        var atLimit = "(3 + 5) * (8 - 5)".PadRight(TwentyFourGame.MaxExpressionLength);
+
+        Assert.True(TwentyFourGame.Check(atLimit, [3, 5, 8, 5]).IsCorrect);
+        Assert.Equal(TwentyFourResult.TooLong, TwentyFourGame.Check(atLimit + " ", [3, 5, 8, 5]).Result);
     }
 
     [Fact]
@@ -134,8 +136,10 @@ public class TwentyFourGameTests
     [Fact]
     public void Reusing_a_number_more_often_than_dealt_is_rejected()
     {
-        // 8 appears twice in the hand; using it three times is not allowed.
-        var check = TwentyFourGame.Check("8 + 8 + 8 - 3 + 5 - 2", Hand3588);
+        // 5 is dealt once and used twice, while one of the two 8s goes unused. Every number
+        // used was dealt, so only a count of each card catches it — comparing which numbers
+        // appear, or checking they're a subset of the hand, lets it through.
+        var check = TwentyFourGame.Check("3 * 8 + 5 - 5", Hand3588);
         Assert.Equal(TwentyFourResult.WrongNumbers, check.Result);
     }
 
@@ -153,8 +157,9 @@ public class TwentyFourGameTests
     [Fact]
     public void Near_misses_from_fractions_are_still_wrong()
     {
-        // 8 / (3 - 8/3) is 24; nudging it must not sneak through the rounding.
-        var check = TwentyFourGame.Check("8 / (3 - 3/8)", Hand3388);
+        // 24.1 — about the closest four cards can come without making 24 — must not
+        // sneak through the rounding. Comparing at whole numbers would let it.
+        var check = TwentyFourGame.Check("3 * 8 + 1/10", [1, 3, 8, 10]);
         Assert.Equal(TwentyFourResult.WrongValue, check.Result);
     }
 
@@ -163,13 +168,19 @@ public class TwentyFourGameTests
     [Fact]
     public void Deals_four_cards_between_one_and_ten()
     {
+        // Checked against the rule itself, not the code's own constants: HandSize = 3 or
+        // HighestCard = 13 would pass a test that asked the code what it meant to do.
         var random = new Random(12345);
+        var seen = new HashSet<int>();
         for (var i = 0; i < 200; i++)
         {
             var hand = TwentyFourGame.Deal(random);
-            Assert.Equal(TwentyFourGame.HandSize, hand.Length);
-            Assert.All(hand, n => Assert.InRange(n, TwentyFourGame.LowestCard, TwentyFourGame.HighestCard));
+            Assert.Equal(4, hand.Length);
+            Assert.All(hand, n => Assert.InRange(n, 1, 10));
+            seen.UnionWith(hand);
         }
+
+        Assert.Equal(Enumerable.Range(1, 10), seen.Order());   // every card turns up, 10 included
     }
 
     [Fact]
