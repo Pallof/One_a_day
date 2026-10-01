@@ -6,8 +6,10 @@
 # The name must be unused across all of Fly. If "stumpty" is taken, change it here.
 app = "stumpty"
 
-# Dallas. San Jose (sjc) and Chicago (ord) cost the same; the volume must be in the same region.
-primary_region = "dfw"
+# Chicago, central so neither US coast waits much longer than the other on the live connection.
+# Dallas (dfw) and San Jose (sjc) cost the same. The volume must be in this region, and can't
+# be moved once made.
+primary_region = "ord"
 
 [build]
   dockerfile = "Dockerfile"
@@ -45,7 +47,7 @@ primary_region = "dfw"
     hard_limit = 300
 
 # The disk that survives restarts and redeploys: everything in App_Data lives here. Create it
-# once with `fly volumes create stumpty_data --size 1 --region dfw`.
+# once with `fly volumes create stumpty_data --size 1 --region ord`.
 [[mounts]]
   source = "stumpty_data"
   destination = "/app/App_Data"

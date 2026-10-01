@@ -102,7 +102,7 @@ First time:
    change `app` there.
    ```bash
    fly apps create stumpty
-   fly volumes create stumpty_data --size 1 --region dfw
+   fly volumes create stumpty_data --size 1 --region ord
    ```
 3. Set the secrets. Make each key with `openssl rand -base64 32`; `CloudflareLock__Secret`
    must match Cloudflare's header rule (PRD 11, requirement 14). Never put these in a file.
