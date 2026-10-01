@@ -207,6 +207,12 @@ It leaves out `App_Data/` and `OneADay/BrainTeaserQuestions.txt`, the early ques
 answers. The draft was missed at first and caught by the security review of 2026-09-28;
 `DeployFilesTests` now checks both.
 
+> **History — the first deploy had dead buttons** (2026-09-30). The `Dockerfile` restored packages
+> from the `.csproj` alone, a common Docker habit. The SDK only fetches Blazor's own script when it
+> can see `.razor` files at restore time, so the build left out `blazor.web.js`: pages showed, but
+> nothing on them responded. The build now copies the whole project first, and `DeployFilesTests`
+> fails if any `dotnet` step runs before that copy.
+
 ## Acceptance criteria
 
 - [ ] Public HTTPS address serves the current challenge

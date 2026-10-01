@@ -20,6 +20,24 @@ public class DeployFilesTests
         Assert.Contains(path, excluded);
     }
 
+    [Fact]
+    public void The_build_restores_only_once_the_razor_files_are_in()
+    {
+        // The SDK decides whether to fetch Blazor's own script by looking for .razor files at
+        // restore time. The first deploy restored from the .csproj alone, so the live site had
+        // no blazor.web.js and none of its buttons worked.
+        var lines = File.ReadAllLines(Path.Combine(FindRepoRoot(), "Dockerfile"))
+            .Select(line => line.Trim())
+            .ToList();
+
+        var sourceCopied = lines.IndexOf("COPY OneADay/ OneADay/");
+        var firstDotnet = lines.FindIndex(line => line.StartsWith("RUN dotnet "));
+
+        Assert.True(sourceCopied >= 0, "The Dockerfile no longer copies the OneADay folder.");
+        Assert.True(firstDotnet > sourceCopied,
+            $"Line {firstDotnet + 1} runs dotnet before the source is copied in on line {sourceCopied + 1}.");
+    }
+
     private static string FindRepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
