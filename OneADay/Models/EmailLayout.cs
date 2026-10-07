@@ -22,24 +22,25 @@ namespace OneADay.Models;
 /// </remarks>
 public static class EmailLayout
 {
-    // app.css tokens, as literals.
-    private const string Paper = "#FCFBF6";
-    private const string CardBg = "#FFFFFF";
-    private const string Line = "#E4E1D6";
-    private const string Ink = "#22334D";
-    private const string InkSoft = "#54627A";
-    private const string BlueDeep = "#1E5E9C";
-    private const string Gold = "#F0A500";
-    private const string GoldTint = "#FDF3DA";
-    private const string Amber = "#9A6700";
-    private const string Green = "#2F855A";
-    private const string GreenDeep = "#256B49";
-    private const string GreenTint = "#E7F3EC";
-    private const string Red = "#B03A2E";
-    private const string RedTint = "#F9E9E7";
+    // app.css tokens, as literals. Internal so the author's weekly summary draws from the
+    // same palette rather than a copy of it.
+    internal const string Paper = "#FCFBF6";
+    internal const string CardBg = "#FFFFFF";
+    internal const string Line = "#E4E1D6";
+    internal const string Ink = "#22334D";
+    internal const string InkSoft = "#54627A";
+    internal const string BlueDeep = "#1E5E9C";
+    internal const string Gold = "#F0A500";
+    internal const string GoldTint = "#FDF3DA";
+    internal const string Amber = "#9A6700";
+    internal const string Green = "#2F855A";
+    internal const string GreenDeep = "#256B49";
+    internal const string GreenTint = "#E7F3EC";
+    internal const string Red = "#B03A2E";
+    internal const string RedTint = "#F9E9E7";
 
-    private const string Serif = "Georgia,'Times New Roman',serif";
-    private const string Sans = "'Segoe UI',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif";
+    internal const string Serif = "Georgia,'Times New Roman',serif";
+    internal const string Sans = "'Segoe UI',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif";
 
     /// <summary>
     /// Invisible padding after the preview text. Without it, an inbox fills the rest of

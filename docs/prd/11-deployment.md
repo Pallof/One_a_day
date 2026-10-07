@@ -34,7 +34,8 @@ destroy every puzzle, statistic and subscriber.
 2. **Storage that survives.** `App_Data/` must be on a disk that survives restarts and redeploys; a
    host that wipes it would silently throw everything away — **the biggest deployment risk.** That
    includes `rotation.json`, easy to mistake for a cache but in fact the record of which teaser ran
-   on which day ([PRD 08](08-recycling-rotation.md)).
+   on which day ([PRD 08](08-recycling-rotation.md)), and `weekly-summary.json`, without which a
+   redeploy could send the author's Monday email twice ([PRD 16](16-site-metrics.md)).
 
 3. **Behind a proxy, read its forwarded headers.** ✅ **Built 2026-09-16.** A proxy sits in front of
    the app, handles the secure connection, and passes each visitor through with a note (a

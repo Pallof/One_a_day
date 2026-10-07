@@ -111,6 +111,10 @@ builder.Services.AddScoped<IBrowserNoteStorage, ProtectedBrowserNoteStorage>();
 builder.Services.AddScoped<MetricsCounter>();
 builder.Services.AddHostedService<MetricsFlusher>();
 
+// Every Monday from 7am Pacific the live site emails the author last week's numbers, so they
+// needn't download anything to see them. Totals and puzzle questions only. Off in Development.
+builder.Services.AddHostedService<WeeklySummaryService>();
+
 var app = builder.Build();
 
 // Load the question bank now, not on the first visitor's request. A missing or broken

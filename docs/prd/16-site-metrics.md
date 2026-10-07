@@ -1,6 +1,6 @@
 # PRD 16 — Site metrics
 
-**Status:** Proposed · **Priority: P2 — post-launch** · **Data:** `App_Data/metrics.json` (new)
+**Status:** Proposed · **Priority: P2 — post-launch** · **Data:** `App_Data/metrics.json` and `App_Data/weekly-summary.json` (new)
 
 ## In plain terms
 
@@ -20,6 +20,9 @@ This adds a **Metrics** section to admin, built on one rule:
 That keeps the no-accounts promise ([PRD 00](00-product-overview.md)), and it filters most bots for
 free: the note is only written once a page goes live in a real browser, which page-fetching bots
 never do.
+
+Every Monday the live site also **emails the author last week's headline numbers**, so the basics
+reach them without downloading anything.
 
 ### How this squares with the 2026-09-22 decision
 
@@ -51,7 +54,8 @@ attempts, time-to-solve) are about what solvers are shown. Everything here is fo
 - Email open tracking (tracking pixels)
 - Adding third-party analytics scripts
 - Live or real-time numbers, or a dashboard on the live site — admin stays on the author's machine
-  ([PRD 10](10-admin-authentication.md))
+  ([PRD 10](10-admin-authentication.md)). The Monday email is a weekly snapshot sent to the author,
+  not a page anyone can open.
 - **Where visitors come from, their countries and devices.** Cloudflare's Web Analytics already
   measures these for the proxied site, without cookies; read them in the Cloudflare dashboard.
 
@@ -60,7 +64,7 @@ attempts, time-to-solve) are about what solvers are shown. Everything here is fo
 The live site writes the totals on Fly; admin reads files on the author's Mac, and nothing syncs
 between them ([PRD 10](10-admin-authentication.md), *Who writes what*). So this feature includes a
 **download command** that copies the live counting files down, and the Metrics section says how old
-its data is.
+its data is. For the headline numbers, the Monday email (requirements 22–29) needs no download.
 
 - The command copies an **allowlist** of files — `metrics.json`, `stats.json` and `rotation.json` —
   never a whole folder. An allowlist means a private file added later is left behind by default.
@@ -164,6 +168,48 @@ The existing per-puzzle stats (every answer submitted, and how many were right) 
     files, so adding one is a deliberate edit to both; the script itself also refuses
     `subscribers.json`, anything in `keys/`, and any path.
 
+### The Monday summary email
+
+22. **Every Monday from 7am Pacific** the live site emails the author the Monday-to-Sunday week
+    just ended: the same figures admin's "last 7 days" would show on that Sunday, so Monday's
+    unfinished numbers are left out. If the server was down at 7am, it goes out when the server is
+    back, any day up to Sunday — last week's numbers don't go stale the way a puzzle does. After
+    Sunday that week is skipped.
+23. **At most once a week, across restarts and redeploys.** The last week sent is saved in
+    `App_Data/weekly-summary.json`, on the volume that survives a deploy
+    ([PRD 11](11-deployment.md)). It's remembered in memory first, so a file that can't be written
+    can't turn into a resend every minute. An unreadable file counts as not sent: at worst one
+    repeat, rather than no summary ever again.
+24. **A failed send is tried again an hour later**, not every minute, and nothing is recorded until
+    one gets through.
+25. **Mail never affects the site.** With no email set up, nothing is sent or recorded. Anything
+    that goes wrong in a check is logged, and the next minute's check runs as normal. It's sent
+    directly, not through the notification queue ([PRD 14](14-email-notifications.md)).
+26. **Off on the author's Mac**, like counting itself. In Development, admin already shows these
+    numbers, and the Mac holds the real Gmail password — left on, it would mail a second copy built
+    from the Mac's data.
+27. **What it says**, headline numbers first: visitors (added up, and day by day), back the next
+    day, had visited in the week before, recycled days, the list's size with the week's
+    confirmations and unsubscribes, Twenty Four players and hands. Then one block per puzzle that
+    ran or was opened: when it ran and its share of viewers, saw → tried → solved, solve rate, and
+    attempts to solve with the average. A puzzle that ran with nobody opening it is still listed,
+    and a week with nothing counted still sends and says so — silence would look like the summary
+    breaking.
+    - Requirement 17 applies: every percentage shows its count, and below 20 browsers it's marked
+      too few to judge. The average attempts is marked too, judged by how many solved.
+    - Recycled days is a count of days, not a share of browsers, so it reads "3 of 7" with no
+      percentage.
+28. **Styled like the subscriber email, with a plain-text twin** *(author's decision, 2026-10-07:
+    as plain text alone it read as a wall of words)*. Three headline tiles, a bar per day of
+    visitors, a row of smaller facts, then a card per puzzle with saw → tried → solved as bars and
+    attempts as five small columns. Small figures get a gold "too few to judge" tag rather than
+    words in the sentence. Every bar prints its number too, so nothing is lost where bars don't
+    draw. A heavy week stays well under the ~102 KB at which Gmail hides the rest of an email.
+29. **Totals and puzzle questions only.** It's built from the same report as admin
+    (`MetricsReport`), which holds no answers, hints, solutions or addresses and nothing about any
+    one visitor. Questions are cut at 160 characters in the styled version, and to one line of 70
+    in the plain text, like admin's tables. Both are HTML-encoded where they need to be.
+
 ## Not in this version
 
 Worth adding once the basics have run for a few weeks:
@@ -173,8 +219,6 @@ Worth adding once the basics have run for a few weeks:
   anyone reports them. Stores visitor text, so only the top few, shortened.
 - **Median time to solve.**
 - **Visits from the daily email**, by tagging the email's button link.
-- **A Monday summary email** with the week's headline numbers, so the author needn't download
-  anything to see them ([PRD 14](14-email-notifications.md) already sends the author mail).
 
 **Hint use is left out** *(author's decision, 2026-10-06)*. [PRD 03](03-hints-and-solutions.md)
 says using a hint "isn't recorded", and that stays true.
@@ -237,12 +281,49 @@ says using a hint "isn't recorded", and that stays true.
 - [x] It refuses while the site runs on the Mac, before asking Fly for anything (mutation-verified;
       also by hand: with the local site running, the real script found it and stopped)
 
+### The Monday summary — `WeeklySummaryTests`
+
+All mutation-verified: 43 deliberate breaks on 2026-10-07, each failing the test written for it.
+
+- [x] Nothing before 7am Monday; at 7 it goes to the author, with the week in the subject
+- [x] Once a week however often it checks, and the next Monday sends the next week
+- [x] A restart or redeploy doesn't send the week again. An unreadable record counts as not sent
+      and is replaced. A record that can't be saved still stops a resend, both when the week is
+      remembered only after a good save and when the save error escapes
+- [x] A Monday the server missed goes out later that week
+- [x] A failed send waits an hour, and isn't recorded as sent
+- [x] Without email set up nothing is sent or recorded. In Development, and without email, the
+      service stops at startup; on the live site it sends and keeps watching
+- [x] An exception in a check is logged and the service keeps running
+- [x] `Program.cs` starts it — every other test passes on a service nothing starts
+- [x] The week is the Monday to Sunday just ended: the Sunday before and Monday morning are left out
+- [x] Headlines first, then each puzzle, with how it ran and how it played. A puzzle nobody opened
+      is still listed, and an empty week still sends
+- [x] Every percentage shows its count — checked across the whole body, and caught when only one
+      share loses it. Under 20 browsers is too few to judge, 20 is enough, and the average is
+      judged by how many solved
+- [x] No answer, hint or solution, whether one replaces the question or sits beside it, from the
+      puzzle rows or the rotation rows
+- [x] The list goes in as totals. No address does, even with real subscribers in the same
+      `App_Data` and the service built by the container, as the site builds it
+- [x] Styled: it goes with the plain text beside it, and the wordmark links to the site
+- [x] Styled: a question's `<`, `>` and `&` are encoded, never sent as markup
+- [x] Styled: every percentage a reader sees is followed by its count — tiles, viewers and solve
+      rate each caught when its count goes missing
+- [x] Styled: "too few to judge" tags below 20 browsers and not at 20, the average judged by how
+      many solved
+- [x] Styled: no answer and no address in the HTML, each caught when only the HTML leaks it
+- [x] Styled: a nine-puzzle week stays under 92,000 bytes, clear of Gmail's clipping (84 KB on
+      2026-10-07)
+
 ### By hand, after the next deploy
 
 - [ ] The live site writes `metrics.json` within a minute of a visit
 - [ ] `sh deploy/pull-live-data.sh` brings the live numbers into admin
 - [x] Using the site on the Mac — the challenge and a 24 answer, then a shutdown — leaves
       `metrics.json` untouched (same checksum and timestamp)
+- [ ] The first Monday summary arrives. Deployed after 7am on a Monday, or later in the week, it
+      goes straight away, since last week's is already due; after that, Mondays at 7
 
 ## Risks
 
@@ -277,3 +358,10 @@ says using a hint "isn't recorded", and that stays true.
   rotation history; **`Components/MetricsPanel.razor`** draws it.
 - **`deploy/pull-live-data.sh`** — `fly ssh sftp get` per allowlisted file into a temporary
   folder, then swapped in.
+- **`Services/WeeklySummaryService.cs`** — the Monday email. Checks once a minute like the daily
+  digest ([PRD 15](15-email-subscriptions.md)), builds `MetricsReport` for the week with that
+  week's Sunday as "today", sends through `SmtpMailer` directly, and records the week's Monday in
+  `weekly-summary.json`. **`Models/WeeklySummaryMail.cs`** words the plain text, from the report
+  alone, and **`Models/WeeklySummaryMail.Html.cs`** draws the styled version with `EmailLayout`,
+  whose palette constants are now internal so both emails share them.
+  `weekly-summary.json` isn't in the download allowlist: it means nothing on the Mac.
