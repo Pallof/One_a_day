@@ -378,8 +378,10 @@ public class SubscriptionTests
 }
 
 /// <summary>A mailer that records instead of sending, and can be told to fail.</summary>
-internal sealed class RecordingMailer() : SmtpMailer(
-    Options.Create(new EmailOptions
+/// <param name="options">Its settings; configured unless given others, such as
+/// <c>new EmailOptions()</c> to stand in for a server with no email set up.</param>
+internal sealed class RecordingMailer(EmailOptions? options = null) : SmtpMailer(
+    Options.Create(options ?? new EmailOptions
     {
         Enabled = true, To = "a@x.com", From = "a@x.com", Host = "h", AppPassword = "p",
     }),
