@@ -269,6 +269,17 @@
 
     <details class="oad-admin-section">
         <summary class="oad-banner">
+            <span>Site metrics</span>
+            <span class="oad-chevron" aria-hidden="true"></span>
+        </summary>
+
+        <div class="oad-box">
+            <MetricsPanel />
+        </div>
+    </details>
+
+    <details class="oad-admin-section">
+        <summary class="oad-banner">
             <span>Reported issues</span>
             @if (Issues.OpenCount > 0)
             {

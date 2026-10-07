@@ -95,8 +95,12 @@ public class SubscriberStore
 
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
-    public SubscriberStore(IWebHostEnvironment env)
+    private readonly MetricsStore? _metrics;
+
+    /// <param name="metrics">Told about each confirmation and unsubscribe, as totals (PRD 16).</param>
+    public SubscriberStore(IWebHostEnvironment env, MetricsStore? metrics = null)
     {
+        _metrics = metrics;
         var dataDir = Path.Combine(env.ContentRootPath, "App_Data");
         Directory.CreateDirectory(dataDir);
         _filePath = Path.Combine(dataDir, "subscribers.json");
@@ -200,8 +204,13 @@ public class SubscriberStore
             {
                 return false;
             }
+            var firstConfirmation = subscriber.ConfirmedAt is null;
             subscriber.ConfirmedAt ??= nowUtc;   // idempotent: a second click is harmless
             Persist();
+            if (firstConfirmation)
+            {
+                _metrics?.RecordConfirmation(DateOnly.FromDateTime(AppTime.ToPacific(nowUtc)));
+            }
             return true;
         }
     }
@@ -218,6 +227,7 @@ public class SubscriberStore
             }
             _subscribers.Remove(subscriber);
             Persist();
+            _metrics?.RecordUnsubscribe(AppTime.Today);
             return true;
         }
     }

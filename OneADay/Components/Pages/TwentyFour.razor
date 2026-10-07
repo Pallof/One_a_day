@@ -3,6 +3,7 @@
 @page "/twentyfour"
 @page "/questions"
 @inject IJSRuntime JS
+@inject MetricsCounter Metrics
 @implements IAsyncDisposable
 
 <PageTitle>Stumpty — 24</PageTitle>
@@ -200,6 +201,14 @@
 
     private async Task Submit()
     {
+        // The buttons are disabled once a hand is solved, but only in the browser. A client
+        // driving the live connection could otherwise keep "solving" the same hand, inflating
+        // the visit tally and the site metrics (PRD 16).
+        if (_state is RoundState.Solved)
+        {
+            return;
+        }
+
         var check = TwentyFourGame.Check(_expression, _hand);
         _message = check.Message;
 
@@ -207,18 +216,36 @@
         {
             _state = RoundState.Solved;
             _solvedCount++;
-            await JS.InvokeVoidAsync("oadCelebrate");
         }
         else
         {
             _state = RoundState.Wrong;
+        }
+
+        // Submitting is what makes a Twenty Four visitor count; opening the page isn't.
+        if (!string.IsNullOrWhiteSpace(_expression))
+        {
+            await Metrics.TwentyFourAnswerAsync(check.IsCorrect);
+        }
+
+        if (check.IsCorrect)
+        {
+            await JS.InvokeVoidAsync("oadCelebrate");
         }
     }
 
     // Passing deals again and says nothing else. Showing the solution would hand
     // over the answer to a puzzle the player is still capable of cracking, and the
     // whole point is that they work it out themselves.
-    private void Pass() => NewHand("Passed — here's a fresh hand.");
+    private async Task Pass()
+    {
+        if (_state is RoundState.Solved)
+        {
+            return;   // disabled in the browser; see Submit
+        }
+        NewHand("Passed — here's a fresh hand.");
+        await Metrics.TwentyFourPassAsync();
+    }
 
     private async Task OnKeyDown(KeyboardEventArgs e)
     {

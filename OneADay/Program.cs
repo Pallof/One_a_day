@@ -104,6 +104,13 @@ builder.Services.AddSingleton<ConfirmationQueue>();
 builder.Services.AddHostedService<ConfirmationSender>();
 builder.Services.AddHostedService<DailyDigestService>();
 
+// Site metrics for admin (PRD 16): each browser keeps its own note, and the server only adds
+// to daily totals in metrics.json — no visitor ids, addresses or answers.
+builder.Services.AddSingleton<MetricsStore>();
+builder.Services.AddScoped<IBrowserNoteStorage, ProtectedBrowserNoteStorage>();
+builder.Services.AddScoped<MetricsCounter>();
+builder.Services.AddHostedService<MetricsFlusher>();
+
 var app = builder.Build();
 
 // Load the question bank now, not on the first visitor's request. A missing or broken

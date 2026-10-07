@@ -82,7 +82,7 @@ The design stays simple because **every file has exactly one writer**:
 | Written by | Files |
 |---|---|
 | The author's Mac, through `/admin` | `teasers.json`, `teaser-images/` |
-| The live site, through visitors | `stats.json`, `rotation.json`, `suggestions.json`, `issues.json`, `subscribers.json` |
+| The live site, through visitors | `stats.json`, `rotation.json`, `suggestions.json`, `issues.json`, `subscribers.json`, `metrics.json` |
 
 Nothing on the live site changes a teaser, so publishing is copying, never merging. **To publish:**
 add teasers in `/admin`, copy **only** `teasers.json` and any new images into the server's
@@ -109,8 +109,12 @@ deploy, not a visitor's page.
   setting a status, resetting the rotation box. Suggestions and reports still arrive by email
   ([PRD 14](14-email-notifications.md)).
 - **The rotation panel and statistics show the Mac's data** unless the live files are copied down.
-  Copy everything **except `subscribers.json`**: the Mac holds the real Gmail password, so a copy of
-  the real list could send the daily email to real subscribers.
+  `sh deploy/pull-live-data.sh` copies the counting files — `metrics.json`, `stats.json`,
+  `rotation.json` — and nothing else ([PRD 16](16-site-metrics.md)). Stop the site here first:
+  it holds stats and rotation in memory and would save its old copies over the download; the
+  script refuses while it runs. The Mac itself never counts visitors. Never copy
+  **`subscribers.json`**: the Mac holds the real Gmail password, so a copy of the real list could
+  send the daily email to real subscribers.
 
 ## Non-goals
 
@@ -162,7 +166,9 @@ deploy, not a visitor's page.
 ### Not covered
 
 - [ ] The publish command — waits on the choice of host ([PRD 11](11-deployment.md))
-- [ ] Copying live data down to the Mac — not scripted
+- [x] Copying the counting files down to the Mac — `deploy/pull-live-data.sh`, its allowlist
+      pinned by `DeployFilesTests` ([PRD 16](16-site-metrics.md)). Suggestions and reports still
+      arrive by email instead.
 
 ## Implementation notes
 

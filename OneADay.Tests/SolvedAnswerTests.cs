@@ -30,6 +30,7 @@ public class SolvedAnswerTests : BunitContext
         Services.AddScoped<CurrentTeaserContext>();
         Services.AddDataProtection();
         Services.AddScoped<ProtectedLocalStorage>();
+        Services.AddMetrics(_env);
     }
 
     private IRenderedComponent<ChallengeView> RenderPuzzle(bool canReveal = false) =>

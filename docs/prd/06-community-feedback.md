@@ -42,6 +42,10 @@ pruned and every answer rewrote the whole file, so saving an answer got slower f
 site ran (roughly 9 MB of IDs a year at 500 visitors a day). Replaced by two numbers that grow only
 with the number of teasers.*
 
+*Counts of browsers — visitors, solvers, attempts to solve — came back on 2026-10-06 for the
+author's eyes only, in admin, without storing an ID on the server: see [PRD 16](16-site-metrics.md).
+What solvers see here is unchanged.*
+
 **Non-goals:** personal history, profiles, scores, median attempts, time-to-solve, percentile
 rankings.
 

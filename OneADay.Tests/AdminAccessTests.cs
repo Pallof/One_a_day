@@ -143,6 +143,7 @@ public class AdminRoutingTests : BunitContext
         Services.AddSingleton(new ImageStore(_env));
         Services.AddSingleton(_env.NewIssueStore());
         Services.AddSingleton(_env.NewRotationStore());
+        Services.AddSingleton(_env.NewMetricsStore());
 
         var page = NavigateInApp("admin");
 

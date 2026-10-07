@@ -127,6 +127,16 @@ First time:
 After that, `fly deploy --ha=false` ships each update. Updating the question bank on the
 live site is the next piece to build (PRD 11, requirement 13).
 
+**Seeing the live numbers in admin.** Only the live site counts visitors; this machine never
+does, so your own testing stays out of the numbers. To bring the live counts down, stop the
+site here, then from the repo folder:
+
+```bash
+sh deploy/pull-live-data.sh
+```
+
+Start the site again and open `/admin` → **Site metrics** ([PRD 16](docs/prd/16-site-metrics.md)).
+
 ---
 
 ## How it's built
