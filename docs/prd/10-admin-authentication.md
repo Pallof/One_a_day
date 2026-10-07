@@ -83,6 +83,7 @@ The design stays simple because **every file has exactly one writer**:
 |---|---|
 | The author's Mac, through `/admin` | `teasers.json`, `teaser-images/` |
 | The live site, through visitors | `stats.json`, `rotation.json`, `suggestions.json`, `issues.json`, `subscribers.json`, `metrics.json` |
+| The live site, on its own | `weekly-summary.json` — which week's summary went out ([PRD 16](16-site-metrics.md)) |
 
 Nothing on the live site changes a teaser, so publishing is copying, never merging. **To publish:**
 add teasers in `/admin`, copy **only** `teasers.json` and any new images into the server's

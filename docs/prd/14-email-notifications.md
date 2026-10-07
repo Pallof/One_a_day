@@ -46,9 +46,13 @@ So:
 | New suggestion | `Stumpty — new teaser suggestion (Hard)` | difficulty, time, the teaser, the solution + hint |
 | Issue report | `Stumpty — issue reported (answer not accepted)` | category, page, time, the teaser on screen, the details |
 | A day passes the traffic alert line | `Stumpty — unusual traffic: 50,000 requests today` | requests served and turned away, yesterday's total, what to do |
+| Monday, from 7am Pacific | `Stumpty — the week in numbers, 28 Sep – 4 Oct` | last week's visitors and return rates, recycled days, list totals, Twenty Four; then each puzzle's question with saw → tried → solved ([PRD 16](16-site-metrics.md)) |
 
 - **Plain text only** — nothing to escape, displays everywhere. Subscriber emails are styled like the
   site ([PRD 15](15-email-subscriptions.md)); these have one reader, who wants to scan them.
+  **The Monday summary is the exception:** it's a page of numbers, and as plain text it read as a
+  wall of words, so it's styled like the subscriber email, with plain text as its twin *(author's
+  decision, 2026-10-07)*.
 - **Subjects carry no visitor text** — only difficulty or category, and categories are shortened: the
   real ones are long sentences, and forty identical characters at the start of every subject can't
   be scanned.
@@ -96,6 +100,24 @@ The host bills for data sent and has no billing alerts or spending caps of its o
   serving the scripts and styles, a page view reaches the server about four times, so a
   1,000-visitor day is roughly 10,000 requests. Raise it as the site grows.
 
+## Weekly summary
+
+Every Monday from 7am Pacific, the live site emails the author last week's numbers. What it says
+is [PRD 16](16-site-metrics.md)'s (requirements 22–29); how it's sent follows the rules here.
+
+- **Sent directly, not through the queue**, like the traffic alert and for the same reason.
+- **Once a week at most, across restarts and redeploys.** Unlike the traffic alert, the week sent
+  is saved, in `App_Data/weekly-summary.json`: a once-a-week email repeated by every deploy would
+  be noise.
+- **A failed send is retried an hour later**, not every minute. Retrying every minute against an
+  account Gmail is refusing would only dig the hole deeper.
+- **No email set up, or the author's Mac:** it doesn't run. The Mac holds the real password and
+  would mail a second copy built from its own data.
+- **Styled, unlike the rest** (above): headline tiles, a bar per day and a card per puzzle, drawn
+  with the subscriber email's `EmailLayout`. Every bar also prints its number, so a mail app that
+  won't draw bars loses nothing.
+- **Totals and questions only** — no answers, no addresses, nothing about any one visitor.
+
 ## Values the visitor controls
 
 The browser limits what a form sends, but the server can't rely on that: nothing checks that a
@@ -119,7 +141,8 @@ The app password is the project's first real secret, and the repository has leak
 
 ## Non-goals
 
-- HTML or branding for these notifications
+- HTML or branding for the per-event notifications (the Monday summary is styled; see *What gets
+  sent*)
 - Emailing anyone but the author — subscriber email is [PRD 15](15-email-subscriptions.md)
 - Email as a *reply* channel — reporters are anonymous by design
 
@@ -140,7 +163,8 @@ separate.
 > from visitors ([PRD 08](08-recycling-rotation.md)), and nothing warns the author — the count of
 > teasers scheduled ahead sits in admin, seen only when they look. [PRD 13](13-content-pipeline.md)
 > proposes the warning; a summary would deliver it. Immediate mail came first because volume is
-> about one suggestion every two months.
+> about one suggestion every two months. *(2026-10-07: the Monday summary is a first step — weekly,
+> and site numbers only. The dry-queue warning could join it there.)*
 
 ## Acceptance criteria
 
@@ -225,3 +249,8 @@ prevents.
 The traffic alert is separate. `Services/TrafficMonitor.cs` counts requests and decides when a day
 passes the line; `Services/TrafficAlertService.cs` checks once a minute, logs, and sends through
 `SmtpMailer` directly.
+
+So is the weekly summary: `Services/WeeklySummaryService.cs` checks once a minute and sends through
+`SmtpMailer` directly; `Models/WeeklySummaryMail.cs` words the plain text and
+`Models/WeeklySummaryMail.Html.cs` draws the styled version. Its tests, `WeeklySummaryTests`, are
+listed under [PRD 16](16-site-metrics.md)'s acceptance criteria.
