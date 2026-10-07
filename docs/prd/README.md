@@ -26,6 +26,7 @@ The number is only the order the docs were written in.
 | [13 — Content pipeline](13-content-pipeline.md) | Proposed |
 | [14 — Email notifications](14-email-notifications.md) | Spec of record |
 | [15 — Email subscriptions](15-email-subscriptions.md) | Spec of record |
+| [16 — Site metrics](16-site-metrics.md) | Proposed |
 
 ## Conventions
 

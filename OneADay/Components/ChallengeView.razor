@@ -4,6 +4,7 @@
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @inject CurrentTeaserContext TeaserContext
+@inject MetricsCounter Metrics
 @implements IDisposable
 
 <div class="cv">
@@ -207,6 +208,10 @@
     [Parameter] public bool IsDaily { get; set; }
 
     private Guid _renderedTeaserId;
+
+    /// <summary>The puzzle last counted as seen, so a new one (at midnight) counts too.</summary>
+    private Guid _countedSeenId;
+
     private string _submission = string.Empty;
     private string? _feedback;
     private bool _solved;
@@ -269,6 +274,14 @@
             {
                 // Circuit went away mid-celebration; nothing to focus.
             }
+        }
+
+        // Only ever runs in a live browser, never in the plain HTML render — which is what
+        // keeps page-fetching bots out of the counts (PRD 16).
+        if (IsDaily && _countedSeenId != Teaser.Id)
+        {
+            _countedSeenId = Teaser.Id;
+            await Metrics.PuzzleSeenAsync(Teaser.Id);
         }
 
         if (!firstRender)
@@ -411,6 +424,10 @@
 
         Stats.RecordSubmission(Teaser.Id, _solved);
         _stats = Stats.Get(Teaser.Id);
+        if (IsDaily)
+        {
+            await Metrics.AnswerAsync(Teaser.Id, correct: _solved);
+        }
 
         if (_solved)
         {

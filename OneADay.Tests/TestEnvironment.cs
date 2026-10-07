@@ -52,6 +52,8 @@ public sealed class TestEnvironment : IWebHostEnvironment, IDisposable
 
     public SubscriberStore NewSubscriberStore() => new(this);
 
+    public MetricsStore NewMetricsStore() => new(this);
+
     public string ContentRootPath { get; set; }
     public string WebRootPath { get; set; } = string.Empty;
     public string ApplicationName { get; set; } = "OneADay.Tests";

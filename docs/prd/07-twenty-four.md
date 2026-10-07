@@ -59,7 +59,9 @@ there is. It shows what to type and reveals no method. Before adding or changing
    defeats the game, and saying a hand was impossible is its own spoiler: it tells them their time
    was wasted. Passing counts as played, not solved.
 6. After a **solve** the round locks and a **Deal a new hand** button appears. Pass needs no such
-   step — it has already moved on.
+   step — it has already moved on. The lock holds **on the server too**: a Submit or Pass sent
+   over the live connection after a solve is ignored, so it can't inflate the tally or the site
+   metrics ([PRD 16](16-site-metrics.md); until 2026-10-06 only the browser's buttons enforced it).
 7. A correct answer fires the daily challenge's confetti.
 8. A tally for the visit ("Solved 3 of 5 hands this visit") sits at the foot of the page,
    deliberately **not saved** — a diversion, not a second streak to keep up.

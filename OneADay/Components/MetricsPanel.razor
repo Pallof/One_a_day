@@ -1,0 +1,270 @@
+@* Admin's Metrics section (PRD 16). Reads metrics.json and rotation.json from this machine:
+   the live site's numbers only appear here after deploy/pull-live-data.sh copies them down.
+   This machine never counts or saves metrics itself, so the save time shown is the live site's. *@
+@inject MetricsStore Metrics
+@inject RotationStore Rotation
+@inject TeaserStore Teasers
+
+<div class="mx">
+    <div class="mx-top">
+        <p class="mx-fresh">
+            @if (_report.SavedAtUtc is { } saved)
+            {
+                <span>The live site saved these <strong>@AppTime.ToPacific(saved).ToString("ddd d MMM, h:mm tt") PT</strong>.</span>
+            }
+            else
+            {
+                <span>No counts saved yet.</span>
+            }
+            For newer numbers, stop the site, run <code>sh deploy/pull-live-data.sh</code> from the
+            repo folder, and start it again.
+        </p>
+
+        <div class="mx-range" role="group" aria-label="Date range">
+            @foreach (var (range, label) in Ranges)
+            {
+                <button type="button" class="mx-range-btn @(range == _range ? "mx-range-on" : "")"
+                        aria-pressed="@(range == _range ? "true" : "false")"
+                        @onclick="() => Show(range)">@label</button>
+            }
+        </div>
+    </div>
+
+    @if (_report.IsEmpty)
+    {
+        <p class="mx-empty">Nothing counted in this range yet.</p>
+    }
+    else
+    {
+        <p class="mx-note">
+            Visitors are counted once per browser per day, so a phone and a laptop are two.
+            Percentages from fewer than @Share.TooFewBelow browsers are marked
+            <span class="mx-few">too few to judge</span>.
+        </p>
+
+        <section class="mx-section" aria-labelledby="mx-visitors">
+            <h3 id="mx-visitors">Visitors</h3>
+            <div class="mx-tiles">
+                <div class="mx-tile">
+                    <span class="mx-tile-label">Daily visitors, added up</span>
+                    <span class="mx-tile-value">@_report.VisitorDays.ToString("N0")</span>
+                </div>
+                <div class="mx-tile">
+                    <span class="mx-tile-label">Back the next day</span>
+                    <span class="mx-tile-value">@ShareOf(_report.NextDayReturn)</span>
+                </div>
+                <div class="mx-tile">
+                    <span class="mx-tile-label">Had visited in the week before</span>
+                    <span class="mx-tile-value">@ShareOf(_report.WithinWeek)</span>
+                </div>
+            </div>
+
+            <div class="mx-scroll">
+                <table class="mx-table">
+                    <thead>
+                        <tr>
+                            <th>Day</th><th class="mx-num">Visitors</th><th class="mx-num">New</th>
+                            <th class="mx-num">Back from yesterday</th><th class="mx-num">Back within a week</th>
+                            <th class="mx-num">Back after longer</th><th>Back the next day</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var day in _report.Habit)
+                        {
+                            <tr>
+                                <td class="mx-date">@day.Day.ToString("ddd d MMM")</td>
+                                <td class="mx-num"><strong>@day.Visitors.Total</strong></td>
+                                <td class="mx-num">@day.Visitors.New</td>
+                                <td class="mx-num">@day.Visitors.BackFromYesterday</td>
+                                <td class="mx-num">@day.Visitors.BackWithinWeek</td>
+                                <td class="mx-num">@day.Visitors.BackAfterLonger</td>
+                                <td>@(day.NextDayReturn is { } next ? ShareOf(next) : Muted("not yet"))</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="mx-section" aria-labelledby="mx-rotation">
+            <h3 id="mx-rotation">Rotation fairness</h3>
+            <p class="mx-lead">
+                <strong>Days that were recycled:</strong> @ShareOf(_report.RecycledDays)
+            </p>
+            <p class="mx-lead">
+                Longest unseen first. A puzzle that has never run shows "never" and comes top.
+            </p>
+            <div class="mx-scroll">
+                <table class="mx-table">
+                    <thead>
+                        <tr>
+                            <th>Puzzle</th><th class="mx-num">Days shown</th><th>Share of days</th>
+                            <th>Share of viewers</th><th>Last shown</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in _report.Fairness)
+                        {
+                            <tr>
+                                <td class="mx-question">@Truncate(row.Question)</td>
+                                <td class="mx-num">
+                                    @row.DaysShown
+                                    @if (row.RecycledDays > 0)
+                                    {
+                                        <span class="mx-sub">(@row.RecycledDays recycled)</span>
+                                    }
+                                </td>
+                                <td>@Bar(row.OfDays)</td>
+                                <td>@Bar(row.OfViewers)</td>
+                                <td class="mx-date">
+                                    @if (row.LastShown is { } last)
+                                    {
+                                        @last.ToString("d MMM")<span class="mx-sub"> · @row.DaysSince @Wording.Plural(row.DaysSince ?? 0, "day") ago</span>
+                                    }
+                                    else
+                                    {
+                                        @Muted("never")
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="mx-section" aria-labelledby="mx-funnel">
+            <h3 id="mx-funnel">How each puzzle played</h3>
+            @if (_report.Funnel.Count == 0)
+            {
+                <p class="mx-empty">No puzzle was opened in this range.</p>
+            }
+            else
+            {
+                <div class="mx-scroll">
+                    <table class="mx-table">
+                        <thead>
+                            <tr>
+                                <th>Puzzle</th><th class="mx-num">Saw</th><th class="mx-num">Tried</th>
+                                <th class="mx-num">Solved</th><th>Solve rate</th>
+                                <th>Solved in 1 · 2 · 3 · 4 · 5+ attempts</th><th class="mx-num">Average</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in _report.Funnel)
+                            {
+                                <tr>
+                                    <td class="mx-question">@Truncate(row.Question)</td>
+                                    <td class="mx-num">@row.Saw</td>
+                                    <td class="mx-num">@row.Tried</td>
+                                    <td class="mx-num">@row.Solved</td>
+                                    <td>@ShareOf(row.SolveRate)</td>
+                                    <td>@Spread(row.SolvedIn)</td>
+                                    <td class="mx-num">@(row.AverageAttempts is { } avg ? avg.ToString("0.0") : "—")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+
+        <div class="mx-pair">
+            <section class="mx-section" aria-labelledby="mx-email">
+                <h3 id="mx-email">Daily email</h3>
+                <dl class="mx-facts">
+                    @if (_report.Subscribers is { } list)
+                    {
+                        <dt>Confirmed</dt><dd>@list.Confirmed</dd>
+                        <dt>Waiting to confirm</dt><dd>@list.Pending</dd>
+                        <dt class="mx-sub">as of</dt><dd class="mx-sub">@list.Day.ToString("d MMM")</dd>
+                    }
+                    <dt>Confirmed in this range</dt><dd>@_report.Confirmations</dd>
+                    <dt>Unsubscribed in this range</dt><dd>@_report.Unsubscribes</dd>
+                </dl>
+            </section>
+
+            <section class="mx-section" aria-labelledby="mx-24">
+                <h3 id="mx-24">Twenty Four</h3>
+                <dl class="mx-facts">
+                    <dt>Players, per day, added up</dt><dd>@_report.TwentyFourPlayers</dd>
+                    <dt>Hands solved</dt><dd>@_report.HandsSolved</dd>
+                    <dt>Hands passed</dt><dd>@_report.HandsPassed</dd>
+                </dl>
+                <p class="mx-sub">A player is a browser that submitted at least one answer that day.</p>
+            </section>
+        </div>
+    }
+</div>
+
+@code {
+    private static readonly (MetricsRange Range, string Label)[] Ranges =
+    [
+        (MetricsRange.LastWeek, "Last 7 days"),
+        (MetricsRange.LastMonth, "Last 30 days"),
+        (MetricsRange.AllTime, "All time"),
+    ];
+
+    private MetricsRange _range = MetricsRange.LastMonth;
+    private MetricsReport _report = default!;
+
+    protected override void OnInitialized() => Show(_range);
+
+    private void Show(MetricsRange range)
+    {
+        _range = range;
+        _report = MetricsReport.Build(
+            Metrics.Read(),
+            Rotation.Snapshot(take: int.MaxValue).Recent,
+            Teasers.GetAll(),
+            AppTime.Today,
+            range);
+    }
+
+    /// <summary>"58% · 7 of 12", marked when the count is too small to mean much.</summary>
+    private static RenderFragment ShareOf(Share share) =>
+        @<span class="mx-share">
+            @if (share.Percent is { } percent)
+            {
+                <strong>@percent.ToString("0")%</strong>
+                <span class="mx-count"> · @share.Part of @share.Whole</span>
+                @if (share.TooFew)
+                {
+                    <span class="mx-few">too few to judge</span>
+                }
+            }
+            else
+            {
+                <span class="mx-muted">—</span>
+            }
+        </span>;
+
+    /// <summary>A share drawn as a bar, with its numbers beside it.</summary>
+    private static RenderFragment Bar(Share share) =>
+        @<span class="mx-bar-row">
+            <span class="mx-bar" aria-hidden="true">
+                <span class="mx-bar-fill" style="width: @((share.Percent ?? 0).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></span>
+            </span>
+            @ShareOf(share)
+        </span>;
+
+    /// <summary>Solves by attempt count, as five small bars scaled to the largest.</summary>
+    private static RenderFragment Spread(IReadOnlyList<int> solvedIn)
+    {
+        var most = Math.Max(1, solvedIn.Max());
+        return @<span class="mx-spread" title="@string.Join(" · ", solvedIn)">
+            @for (var i = 0; i < solvedIn.Count; i++)
+            {
+                var count = solvedIn[i];
+                <span class="mx-spread-col">
+                    <span class="mx-spread-bar" style="height: @(Math.Round(100.0 * count / most))%"></span>
+                    <span class="mx-spread-n">@count</span>
+                </span>
+            }
+        </span>;
+    }
+
+    private static RenderFragment Muted(string text) => @<span class="mx-muted">@text</span>;
+
+    private static string Truncate(string text) => text.Length <= 70 ? text : text[..70] + "…";
+}
