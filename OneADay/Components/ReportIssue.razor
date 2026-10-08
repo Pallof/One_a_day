@@ -2,17 +2,27 @@
 @inject EmailNotifier Notifier
 @inject CurrentTeaserContext TeaserContext
 @inject NavigationManager Nav
+@implements IDisposable
 
-<button class="ri-fab" title="Report an issue" @onclick="Open">
-    <span class="ri-fab-icon">⚠️</span>
-    <span class="ri-fab-label">Report an issue</span>
-</button>
+@* The layout carries this dialog on every page and opens it from its menu; it also says
+   where the floating button shows (PRD 06). *@
+@if (FloatingButton is not FloatingButtonShown.Never)
+{
+    <button class="ri-fab @(FloatingButton is FloatingButtonShown.WideScreensOnly ? "ri-fab-wide-only" : "")"
+            title="Report an issue" @onclick="Open">
+        <span class="ri-fab-icon">⚠️</span>
+        <span class="ri-fab-label">Report an issue</span>
+    </button>
+}
 
 @if (_open)
 {
     <div class="ri-backdrop" @onclick="Close"></div>
 
-    <div class="ri-modal" role="dialog" aria-modal="true" aria-labelledby="ri-title">
+    @* Focus moves here on opening. Opened from the menu, that also closes the menu, which
+       stays open for as long as it holds the focus. *@
+    <div class="ri-modal" role="dialog" aria-modal="true" aria-labelledby="ri-title"
+         tabindex="-1" @ref="_dialog">
         <div class="ri-head">
             <h2 id="ri-title">Report an issue</h2>
             <button class="ri-close" title="Close" @onclick="Close">✕</button>
@@ -38,16 +48,26 @@
             {
                 <p class="ri-context">About: <em>@Truncate(_teaserQuestion, 90)</em></p>
             }
+            else if (_hand is not null)
+            {
+                <p class="ri-context">About: the Twenty Four hand <strong>@HandText(_hand)</strong></p>
+            }
 
-            <div class="ri-field">
-                <label for="ri-category">What was the issue?</label>
-                <select id="ri-category" @bind="_category">
-                    @foreach (var category in IssueCategories.All)
-                    {
-                        <option value="@category">@category</option>
-                    }
-                </select>
-            </div>
+            @* A list to tap, not a dropdown. A closed dropdown can't wrap, and the longest
+               category is wider than any phone, so it showed cut off mid-word. A list also
+               shows all three at once — one tap, not two. *@
+            <fieldset class="ri-categories">
+                <legend>What was the issue?</legend>
+                @for (var i = 0; i < IssueCategories.All.Length; i++)
+                {
+                    var category = IssueCategories.All[i];
+                    <label class="ri-choice">
+                        <input type="radio" id="ri-category-@i" name="ri-category" value="@category"
+                               checked="@(_category == category)" @onchange="() => _category = category" />
+                        <span>@category</span>
+                    </label>
+                }
+            </fieldset>
 
             <div class="ri-field">
                 <label for="ri-details">Describe the issue *</label>
@@ -75,8 +95,27 @@
 }
 
 @code {
+    /// <summary>Where the floating button, bottom right, shows.</summary>
+    public enum FloatingButtonShown
+    {
+        /// <summary>At every width.</summary>
+        Always,
+
+        /// <summary>
+        /// Only where the menu is a row of sections, with no room for the report entry. The
+        /// stylesheet's breakpoint is the layout's: they must move together.
+        /// </summary>
+        WideScreensOnly,
+
+        Never,
+    }
+
+    [Parameter] public FloatingButtonShown FloatingButton { get; set; } = FloatingButtonShown.Always;
+
     private bool _open;
     private bool _submitted;
+    private ElementReference _dialog;
+    private bool _focusDialog;
 
     /// <summary>The report couldn't be saved: <see cref="IssueStore.MaxOpenReports"/> are open.</summary>
     private bool _inboxFull;
@@ -85,6 +124,9 @@
     private string _details = string.Empty;
     private Guid? _teaserId;
     private string? _teaserQuestion;
+
+    /// <summary>The Twenty Four hand on screen when the dialog opened, if any.</summary>
+    private int[]? _hand;
 
     /// <summary>Decoy field — see the markup. Anything here means a script filled it.</summary>
     private string _honeypot = string.Empty;
@@ -96,12 +138,21 @@
     /// </summary>
     private DateTime _dialogShownAt;
 
-    private void Open()
+    protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
+
+    /// <summary>
+    /// Opens the dialog — from the floating button, or from the layout's menu. The menu's
+    /// click belongs to the layout, which doesn't re-render this component on its own, hence
+    /// the explicit render.
+    /// </summary>
+    public void Open()
     {
-        // Snapshot the question being viewed, so the report is actionable.
+        // Snapshot the puzzle being viewed, so the report is actionable — a copy of the hand,
+        // since Pass deals the page a new one.
         var teaser = TeaserContext.Current;
         _teaserId = teaser?.Id;
         _teaserQuestion = teaser?.Question;
+        _hand = TeaserContext.Hand?.ToArray();
 
         _category = IssueCategories.Wording;
         _details = string.Empty;
@@ -110,9 +161,36 @@
         _submitted = false;
         _inboxFull = false;
         _open = true;
+        _focusDialog = true;
+        StateHasChanged();
     }
 
     private void Close() => _open = false;
+
+    /// <summary>
+    /// The dialog belongs to the page it was opened on — its question, its address. It lives
+    /// in the layout now, so leaving the page (the phone's back swipe, say) would otherwise
+    /// carry it, open, onto the next one.
+    /// </summary>
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        if (_open)
+        {
+            _open = false;
+            _ = InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusDialog && _open)
+        {
+            _focusDialog = false;
+            await _dialog.FocusAsync();
+        }
+    }
 
     private void Submit()
     {
@@ -131,7 +209,7 @@
             return;
         }
 
-        // Every field a client can set is held to what the dialog allows: the dropdown's three
+        // Every field a client can set is held to what the dialog allows: the dialog's three
         // categories, the textarea's length, and a page address of sensible size. A client
         // driving the live connection can send far more, and it would all be stored.
         var report = new IssueReport
@@ -144,6 +222,7 @@
                 IssueReport.MaxPageUrlLength),
             TeaserId = _teaserId,
             TeaserQuestion = _teaserQuestion,
+            TwentyFourHand = _hand,
         };
 
         _submitted = true;
@@ -167,7 +246,7 @@
              Category  : {report.Category}
              Page      : {report.PageUrl}
              Submitted : {report.SubmittedAt:dddd d MMMM yyyy, h:mm tt} Pacific
-             Teaser    : {report.TeaserQuestion ?? "(not a challenge page)"}
+             {OnScreen(report)}
 
              WHAT THEY SAID
              {report.Details}
@@ -186,6 +265,14 @@
         IssueCategories.Evaluation => "answer not accepted",
         _ => "other",
     };
+
+    /// <summary>The email's line for what was on screen: a question, a hand, or neither.</summary>
+    private static string OnScreen(IssueReport report) =>
+        report.TeaserQuestion is { } question ? $"Teaser    : {question}"
+        : report.TwentyFourHand is { } hand ? $"24 hand   : {HandText(hand)}"
+        : "Teaser    : (not a challenge page)";
+
+    private static string HandText(IEnumerable<int> hand) => string.Join(" ", hand);
 
     private static string Truncate(string text, int max) =>
         text.Length <= max ? text : text[..max] + "…";

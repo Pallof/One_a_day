@@ -12,7 +12,7 @@ public static class IssueCategories
     public static readonly string[] All = [Wording, Evaluation, Other];
 
     /// <summary>
-    /// The chosen category, forced back to one of the three. A <c>&lt;select&gt;</c> limits what
+    /// The chosen category, forced back to one of the three. The dialog's choices limit what
     /// a browser sends, not what the server receives — see Contact's difficulty for the same fix.
     /// </summary>
     public static string Normalise(string? category) =>
@@ -80,6 +80,12 @@ public class IssueReport
     /// <summary>The teaser being viewed, when the report came from a challenge page.</summary>
     public Guid? TeaserId { get; set; }
     public string? TeaserQuestion { get; set; }
+
+    /// <summary>
+    /// The Twenty Four hand on screen, when the report came from the game — without it, "my
+    /// answer wasn't accepted" can't be checked. Dealt by the server, never sent by the client.
+    /// </summary>
+    public int[]? TwentyFourHand { get; set; }
 
     /// <summary>Triage tag: New, InProgress, Solved, WontSolve, or Duplicate.</summary>
     public IssueStatus Status { get; set; } = IssueStatus.New;

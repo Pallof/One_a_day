@@ -332,6 +332,10 @@
                                             @onclick="() => EditById(issue.TeaserId.Value)">Edit that teaser</button>
                                 }
                             }
+                            else if (issue.TwentyFourHand is { } hand)
+                            {
+                                <span>Twenty Four hand: <strong>@string.Join(" ", hand)</strong></span>
+                            }
                             else
                             {
                                 <span>Filed from @(issue.PageUrl ?? "unknown page")</span>

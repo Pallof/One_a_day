@@ -1,0 +1,39 @@
+@* The scratch pad (PRD 01): paper for working a puzzle out, for anyone without pen and paper
+   to hand. Pen, eraser, undo and clear — nothing more, on purpose.
+
+   No Blazor event handlers here, deliberately: wwwroot/js/scratchpad.js does all of it in the
+   browser, so a stroke never travels to the server and nothing is saved. *@
+<div class="sp">
+    <div class="sp-panel" id="sp-panel" role="group" aria-label="Scratch pad">
+        <div class="sp-tools">
+            <button type="button" class="sp-tool" data-sp="pen" aria-pressed="true">Pen</button>
+            <button type="button" class="sp-tool" data-sp="eraser" aria-pressed="false">Eraser</button>
+            <button type="button" class="sp-tool" data-sp="undo">Undo</button>
+            <button type="button" class="sp-tool" data-sp="clear">Clear</button>
+            <button type="button" class="sp-close" data-sp="toggle" title="Close"
+                    aria-label="Close the scratch pad">✕</button>
+        </div>
+        <div class="sp-sheet">
+            <canvas class="sp-canvas" aria-label="Drawing area"></canvas>
+            @* The eraser's reach, drawn as a ring: the script sizes it from the eraser's own
+               width, so the two can't disagree. *@
+            <div class="sp-ring" aria-hidden="true"></div>
+        </div>
+    </div>
+
+    <button type="button" class="sp-launcher" data-sp="toggle" title="Scratch pad" aria-label="Scratch pad"
+            aria-controls="sp-panel" aria-expanded="false">
+        @* A little whiteboard with a pencil writing on it. *@
+        <svg class="sp-icon" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
+            <rect x="2" y="3" width="17" height="12.5" rx="1.5" fill="#fff" stroke="currentColor" stroke-width="1.4" />
+            <path d="M6.5 15.5 5 20.5M14.5 15.5 16 20.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+            <path d="M4.5 6.5h5M4.5 9.5h3" fill="none" stroke="var(--blue)" stroke-width="1.4" stroke-linecap="round" />
+            <g transform="rotate(-45 14 9)">
+                <rect x="8" y="7.6" width="8.4" height="2.8" fill="var(--gold)" />
+                <rect x="16.4" y="7.6" width="1.8" height="2.8" fill="var(--red)" />
+                <path d="M8 7.6 5.4 9 8 10.4Z" fill="var(--gold-tint)" />
+                <path d="M6.3 8.5 5.4 9 6.3 9.5Z" fill="currentColor" />
+            </g>
+        </svg>
+    </button>
+</div>

@@ -48,6 +48,10 @@ there is. It shows what to type and reveals no method. Before adding or changing
 2. **Hands are never screened for solvability.** Some can't make 24 (`1 1 1 1` never can), and
    that's the point — not knowing whether a hand can be cracked is part of the challenge. Screening
    would also mean solving every hand just to throw some away.
+   **The rules say so up front:** *"Not every hand can make 24. If you're stuck, Pass deals a fresh
+   one."* Players took every hand to be possible and got frustrated *(player feedback,
+   2026-10-07)*. It's a fact about the deck, never about the hand on the table, so it gives
+   nothing away. Never say which hands, or how many, or anything about how the hard ones go.
 3. **The built-in solver is never used by anything the player does** — not dealing, not passing — so
    nothing reveals whether a hand was possible.
 
@@ -65,6 +69,8 @@ there is. It shows what to type and reveals no method. Before adding or changing
 7. A correct answer fires the daily challenge's confetti.
 8. A tally for the visit ("Solved 3 of 5 hands this visit") sits at the foot of the page,
    deliberately **not saved** — a diversion, not a second streak to keep up.
+   *Report an issue* (the ☰ menu, or the floating button on a wide screen) records the hand on
+   screen, so an "answer not accepted" report can be checked ([PRD 06](06-community-feedback.md)).
 
 ### Showing the hand
 
@@ -86,6 +92,38 @@ Which cards are used is **worked out afresh from the typed text every time**, ne
 can't fall out of step. It reads the text exactly as the answer check does, so the cards never
 disagree with what the game accepts — `1` and `10` are told apart, and a number not in the hand
 dims nothing.
+
+### The keypad, on touch screens
+
+Typing `(10 − 4) × 2` on a phone means swapping between the letter, number and symbol keyboards
+for nearly every key *(visitor feedback, 2026-10-07)*. So under the answer box there are buttons:
+
+```
+[ 10 ][  4 ][  2 ][  2 ]     the hand, in the order dealt
+[  + ][  − ][  × ][  ÷ ]
+[  ( ][  ) ][    ⌫     ]
+```
+
+12. **Touch screens only.** It's hidden where the device reports a mouse, and so has a keyboard;
+    a device that reports neither gets the keypad. The *"or press the space bar"* line under
+    **Deal a new hand** follows the same rule the other way round — a phone has no space bar.
+13. **A tap adds to the end of the answer, spaced as it would be written**: no space after `(`
+    or before `)`, one everywhere else. Two numbers tapped in a row stay apart — `3 8`, not
+    `38` — so the check names the real mistake (a missing symbol) rather than a number the
+    player never tapped. The symbols are the rules' own `− × ÷`, which the check reads as
+    `- * /`. Nothing is added past the 120-character limit.
+14. **⌫ takes back one tap**: the last number or symbol, so a `10` goes in one press.
+15. **A number button goes out with its card**: it's disabled while its card is dimmed and comes
+    back with it, from the same reading of the text — so it follows typing too. That makes
+    duplicates spend left to right here as well: tapping the second 3 can fade the first 3's
+    button. Harmless, as the two are the same number; for that reason the buttons are plain ink,
+    not the cards' suit colours, which would make the swap look like a mistake.
+16. **It only types.** Every answer goes through the same check, and the keypad knows nothing
+    about which symbols could help — the same line as the cards: bookkeeping, not insight. Once a
+    hand is solved every button is disabled, and a tap or ⌫ sent over the live connection anyway
+    changes nothing.
+17. **Tapping a button never focuses the answer box**, which would raise the phone's keyboard over
+    the keypad. The box still takes typing for anyone who wants it.
 
 ### Judging an answer
 
@@ -138,6 +176,24 @@ Checked in this order, each failure naming what went wrong:
 - [x] Correct answers fire confetti and lock the round
 - [x] Nothing in the UI or the error messages reveals that fractions are viable
 - [x] The one on-page example is an easy base case, and uses no hand from the teaser bank
+- [x] The rules say not every hand can make 24, and never mention fractions —
+      `TwentyFourPageTests`, both halves mutation-verified
+
+### The keypad — `TwentyFourPageTests`, each mutation-verified
+
+- [x] The number buttons are the hand in the order dealt, then the six symbols and ⌫
+- [x] Tapped answers read as written — `(10 − 4) × 2 × 2`, `8 × 3 ÷ 2 × 2` — and are judged
+      correct like typed ones
+- [x] Two numbers tapped in a row stay apart, and the check calls it incomplete
+- [x] ⌫ takes back one tap — `10` in one press — and is disabled on an empty box
+- [x] A number button goes out with its card and comes back on ⌫; duplicates spend left to right;
+      typed text disables them too
+- [x] After a solve every button is disabled, and a forced tap or ⌫ leaves the answer alone
+- [x] A tap that would pass 120 characters adds nothing; the one that reaches exactly 120 is kept
+
+**By hand, in a phone-sized browser with touch:** the keypad shows and the space-bar line doesn't;
+with a mouse it's the other way round; tapping keys never brings up the keyboard; quick double
+taps don't zoom the page.
 
 ## Implementation notes
 
