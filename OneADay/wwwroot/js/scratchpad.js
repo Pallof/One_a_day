@@ -1,5 +1,5 @@
 // The challenge page's scratch pad (PRD 01): paper for working a puzzle out, for anyone
-// without pen and paper to hand. Pen, eraser and undo.
+// without pen and paper to hand. Pen, eraser, undo and clear.
 //
 // All of it happens here in the browser. Nothing goes over the live connection — every
 // stroke would be a round trip, laggy on a phone and work for the server — and nothing is
@@ -44,12 +44,21 @@
         redraw(canvas);
     }
 
+    // Repaints from the last Clear on: a Clear is kept in the list like a stroke, which is
+    // what lets Undo bring the board back.
     function redraw(canvas) {
-        const pad = padOf(canvas);
+        const strokes = padOf(canvas).strokes;
         const ctx = canvas.getContext('2d');
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        for (const stroke of pad.strokes) {
+        let from = 0;
+        for (let i = strokes.length - 1; i >= 0; i--) {
+            if (strokes[i].clear) {
+                from = i + 1;
+                break;
+            }
+        }
+        for (const stroke of strokes.slice(from)) {
             paint(canvas, stroke, 0);
         }
     }
@@ -181,6 +190,16 @@
                 pad.strokes.pop();
                 redraw(canvas);
                 break;
+            case 'clear': {
+                // The whole board in one go, for anyone who'd rather not rub it all out. Undo
+                // brings it back, so a slip costs nothing and needs no "are you sure?".
+                const last = pad.strokes[pad.strokes.length - 1];
+                if (last && !last.clear) {
+                    pad.strokes.push({ clear: true });
+                    redraw(canvas);
+                }
+                break;
+            }
         }
     });
 

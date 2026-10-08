@@ -51,16 +51,18 @@
     display: block;
 }
 
+/* Four tools sharing the row equally, then ✕: on a 320px phone each is still a thumb wide. */
 .sp-tools {
-    display: flex;
-    gap: 0.4rem;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) 44px;
+    gap: 0.3rem;
     align-items: center;
     margin-bottom: 0.5rem;
 }
 
 .sp-tool {
     min-height: 44px;
-    padding: 0 0.85rem;
+    padding: 0 0.3rem;
     background: #fff;
     border: 1.5px solid var(--line);
     border-radius: 8px;
@@ -79,8 +81,14 @@
     color: var(--blue-deep);
 }
 
+/* The smallest phones: "Eraser" still fits its quarter of the row. */
+@media (max-width: 360px) {
+    .sp-tool {
+        font-size: 0.84rem;
+    }
+}
+
 .sp-close {
-    margin-left: auto;
     min-width: 44px;
     min-height: 44px;
     background: none;

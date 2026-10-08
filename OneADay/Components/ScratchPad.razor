@@ -1,5 +1,5 @@
 @* The scratch pad (PRD 01): paper for working a puzzle out, for anyone without pen and paper
-   to hand. Pen, eraser and undo — nothing more, on purpose.
+   to hand. Pen, eraser, undo and clear — nothing more, on purpose.
 
    No Blazor event handlers here, deliberately: wwwroot/js/scratchpad.js does all of it in the
    browser, so a stroke never travels to the server and nothing is saved. *@
@@ -9,6 +9,7 @@
             <button type="button" class="sp-tool" data-sp="pen" aria-pressed="true">Pen</button>
             <button type="button" class="sp-tool" data-sp="eraser" aria-pressed="false">Eraser</button>
             <button type="button" class="sp-tool" data-sp="undo">Undo</button>
+            <button type="button" class="sp-tool" data-sp="clear">Clear</button>
             <button type="button" class="sp-close" data-sp="toggle" title="Close"
                     aria-label="Close the scratch pad">✕</button>
         </div>

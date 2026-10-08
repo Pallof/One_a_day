@@ -63,9 +63,14 @@ Paper for working a puzzle out, for anyone without pen and paper to hand *(autho
   pencil on it. Bottom left mirrors *Report an issue* at bottom right and stays clear of the
   Twenty Four nudge, which comes in from the right ([PRD 09](09-visual-design.md)).
 - It opens above its button, **with no backdrop**, so the question stays in view.
-- **Pen, Eraser, Undo — and nothing else.** No clear-all, colours, shapes or fill: *"keep it
+- **Pen, Eraser, Undo, Clear — and nothing else.** No colours, shapes or fill: *"keep it
   simple."* The eraser removes ink rather than painting white; Undo takes back the last stroke,
   eraser strokes included.
+- **Clear wipes the whole board at once** *(added 2026-10-08: rubbing out every bit is
+  tedious)*. **No "are you sure?"** *(author's call)* — instead, Undo straight after a Clear
+  brings the board back, so a slip costs nothing. A Clear on an empty board, or a second Clear
+  in a row, does nothing, so one Undo always undoes it. The four tools share the toolbar row
+  equally, so it fits a 320px phone.
 - **The eraser shows its reach as a ring** exactly as wide as what it wipes — one number in the
   script sizes both. Picking the eraser puts the ring mid-pad straight away. With a mouse it is
   the cursor; on a phone, where a finger hides whatever is under it, it stays where the finger
@@ -95,11 +100,14 @@ Paper for working a puzzle out, for anyone without pen and paper to hand *(autho
 - [x] Confetti fires on a correct answer and is suppressed under reduced-motion
 - [x] Submission length enforced on both client and server
 - [x] **Scratch pad** — `ScratchPadTests`, each mutation-verified: on the challenge page, and not
-      in the layout or on Twenty Four; Pen, Eraser, Undo and nothing else, with a drawing area;
+      in the layout or on Twenty Four; Pen, Eraser, Undo, Clear and nothing else, with a drawing area;
       starts closed with the pen picked; nothing on it has a server-side handler
 - [x] Scratch pad, by hand in a 375px phone view: strokes draw and the page doesn't scroll; the
       eraser cuts a line; Undo brings it back, then removes the stroke before; closing and
       reopening keeps the drawing; idle, it stays open; at 320px it fits with no sideways scroll
+- [x] Clear, by hand at 375px: two strokes, then Clear empties the board; a second Clear does
+      nothing; one Undo brings both strokes back, a second takes one away. At 320px the four
+      tools are 49px each and nothing is cut off
 - [x] Eraser ring, by hand: picking the eraser shows a 20px ring mid-pad; one tap on a line cuts
       a 19.5px gap (the rest is edge smoothing) with the ring centred on it. The ring's place
       beside the drawing area is pinned by `ScratchPadTests` (mutation-verified)

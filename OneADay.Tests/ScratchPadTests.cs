@@ -11,7 +11,7 @@ namespace OneADay.Tests;
 
 /// <summary>
 /// The scratch pad (PRD 01): on the challenge page only, behind a floating whiteboard button,
-/// with a pen, an eraser and undo. The drawing itself is wwwroot/js/scratchpad.js, checked by
+/// with a pen, an eraser, undo and clear. The drawing itself is wwwroot/js/scratchpad.js, checked by
 /// hand — what's pinned here is where the pad is, what's on it, and that none of it reaches
 /// the server.
 /// </summary>
@@ -25,11 +25,11 @@ public class ScratchPadTests : BunitContext
     }
 
     [Fact]
-    public void The_pad_has_a_pen_an_eraser_and_undo_and_nothing_else()
+    public void The_pad_has_a_pen_an_eraser_undo_and_clear_and_nothing_else()
     {
         var pad = Render<ScratchPad>();
 
-        Assert.Equal(["Pen", "Eraser", "Undo"],
+        Assert.Equal(["Pen", "Eraser", "Undo", "Clear"],
             pad.FindAll(".sp-tools .sp-tool").Select(b => b.TextContent.Trim()));
         Assert.Single(pad.FindAll(".sp-panel canvas"));
     }
