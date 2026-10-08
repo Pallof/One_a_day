@@ -144,12 +144,34 @@ loses the latest part of the count.
 
 ## Issue reporting
 
-- A floating **"Report an issue"** button, bottom right, on the **challenge of the day only** — not
-  Twenty Four, About, Contact or admin.
+- **"Report an issue" is in the phone menu (☰) on every page** *(author's decision, 2026-10-07:
+  "an issue could arise anywhere")*. It started on the challenge of the day only. The menu came
+  first because on a phone the floating button sits where the thumb rests while typing an
+  answer, and people missed it *(visitor feedback, same day)*. So the dialog lives in the layout,
+  not on a page. Opening it moves the focus into it, which also closes the menu; leaving the page
+  closes it, since it holds that page's question and address.
+- A floating **"Report an issue"** button, bottom right *(author's decisions, 2026-10-07)*:
+
+  | Page | Floating button | Why |
+  |---|---|---|
+  | Challenge of the day | At every width | Where it has always been |
+  | About | Nowhere | The author's call |
+  | Every other page | **Wide screens only** (over 900px) | There the menu is a row of sections with no room for the entry; at 900px and below the ☰ menu has it, and on Twenty Four a floating button would sit over the keypad |
+
+  So About, on a wide screen, offers no report. The 900px is the menu's own breakpoint, set in
+  two stylesheets that must move together.
 - A dialog with exactly three categories (*poorly worded* · *submission not accepted or solution
   incorrect* · *other*) and a required description of up to 1,000 characters, with a live counter.
   Send stays disabled until there's text. The server holds every field to what the dialog allows:
   one of the three categories, 1,000 characters, and a page address of at most 200.
+- **The categories are a list of three choices to tap, not a dropdown** *(2026-10-07)*. The
+  dropdown showed the chosen category cut off on a phone — a closed dropdown can't wrap, and the
+  longest category is 80 characters. A list wraps, and shows all three at once.
+- **A report from Twenty Four records the hand on screen** when the dialog opened — the one after
+  any Pass, not the first dealt — because "my answer wasn't accepted" can't be checked without it.
+  The dialog shows it (*About: the Twenty Four hand 2 5 7 9*), and so do the email (*24 hand*) and
+  admin. The server dealt it, so a client can't forge it. Leaving the game stops naming it. Any
+  other page without a question records only its address.
 - Each report records **which teaser was on screen** and the page address — an "answer not
   accepted" report is useless without the question.
 - Each also **emails the author** ([PRD 14](14-email-notifications.md)). Reports are deliberately
@@ -203,7 +225,20 @@ silently eaten report is a broken question nobody ever hears about.**
 - [x] Stats hidden before solve, shown after; admin always sees them
 - [x] Suggestion form replaces the published email address
 - [x] Second suggestion same day refused server-side; IPs stored hashed
-- [x] Issue button present on `/` and absent on all other routes (verified per route)
+- [x] **In the menu on every page** — `ReportIssueMenuTests`, each mutation-verified: the entry is
+      in the menu panel on the challenge, yesterday, Twenty Four, About and Contact, and opens the
+      dialog; opening moves the focus into it; leaving the page closes it; a report filed from
+      Twenty Four is saved with that page's address. By hand at 375px: the menu closes as the
+      dialog opens
+- [x] The floating button by page — every width on `/`, wide screens only on yesterday, Twenty
+      Four and Contact, none on About (each mutation-verified). By hand: on Twenty Four it shows
+      at 1280px and not at 375px
+- [x] **A Twenty Four report names the hand on screen** — after a Pass, the new one — in the
+      dialog, the saved report, the email and admin, and the hand survives a reload of the file;
+      leaving the game stops naming it, and a page that clears up late leaves the next page's
+      hand alone (each mutation-verified)
+- [x] The three categories are choices that each show their whole text, the first picked; a
+      chosen one is kept (both mutation-verified). By hand at 320px and 375px: nothing is cut off
 - [x] Reports capture the on-screen teaser
 - [x] All five statuses round-trip to JSON; viewing admin leaves status untouched
 
@@ -308,8 +343,10 @@ A stored visitor ID the server can't decrypt used to crash the visitor's page �
 ## Implementation notes
 
 `StatsStore`, `SuggestionStore` and `IssueStore` each own one JSON file. The report dialog is
-`Components/ReportIssue.razor`; `CurrentTeaserContext` tells it which question is on screen, cleared
-on navigating away so a report is never pinned to the wrong question.
+`Components/ReportIssue.razor`, placed once in `Components/Layout/MainLayout.razor`, whose menu
+opens it and which decides where its floating button shows; `CurrentTeaserContext` tells it which
+question or Twenty Four hand is on screen, cleared on navigating away so a report is never pinned
+to the wrong one.
 
 The bot checks are split on purpose: `SubmissionGuard` decides, as one pure function of (decoy,
 time taken) with no clock or files, so the 5-second edge is testable without waiting;

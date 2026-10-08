@@ -168,7 +168,8 @@
 
 .oad-menu-panel li + li { border-top: 1px solid var(--line); }
 
-.oad-menu-panel ::deep a {
+.oad-menu-panel ::deep a,
+.oad-menu-action {
     display: block;
     padding: 0.75rem 0.85rem;
     color: var(--ink);
@@ -178,7 +179,19 @@
     min-height: 44px;
 }
 
-.oad-menu-panel ::deep a:hover {
+/* An action, not a place: a button, in the soft ink of the floating one. */
+.oad-menu-action {
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    font-family: inherit;
+    color: var(--ink-soft);
+    cursor: pointer;
+}
+
+.oad-menu-panel ::deep a:hover,
+.oad-menu-action:hover {
     background: var(--blue-tint);
     color: var(--blue-deep);
 }
@@ -188,7 +201,8 @@
     color: var(--blue-deep);
 }
 
-/* Swap inline nav for the hamburger once the links stop fitting comfortably. */
+/* Swap inline nav for the hamburger once the links stop fitting comfortably. The floating
+   report button's wide-screens-only rule (ReportIssue.razor.css) uses the same width. */
 @media (max-width: 900px) {
     .oad-nav { display: none; }
     .oad-menu-wrap { display: block; }

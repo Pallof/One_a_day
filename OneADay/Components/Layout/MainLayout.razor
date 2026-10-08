@@ -39,6 +39,11 @@
                        and /admin isn't part of it; a link that appears only sometimes is one
                        more thing to get wrong. The author reaches it by bookmark, on the one
                        machine where the page exists at all (PRD 10). *@
+
+                    @* On every page: an issue can turn up anywhere, and on a phone this menu
+                       is the one place a thumb doesn't cover (PRD 06). An action, not a
+                       place, so a button rather than a link. *@
+                    <li><button class="oad-menu-action" @onclick="OpenReport">⚠️ Report an issue</button></li>
                 </ul>
             </nav>
         </div>
@@ -70,6 +75,9 @@
     </div>
 </footer>
 
+@* The report dialog, on every page so the menu can open it anywhere. *@
+<ReportIssue @ref="_report" FloatingButton="FloatingReport" />
+
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
@@ -78,6 +86,21 @@
 
 @code {
     private sealed record NavItem(string Href, string Label);
+
+    private ReportIssue? _report;
+
+    private void OpenReport() => _report?.Open();
+
+    /// <summary>
+    /// Where the floating report button shows (PRD 06). On the challenge, at every width, as it
+    /// always has. On About, nowhere (author's decision, 2026-10-07). Everywhere else, wide
+    /// screens only: there the menu is a row of sections with no room for the entry, while
+    /// on a phone the menu has it.
+    /// </summary>
+    private ReportIssue.FloatingButtonShown FloatingReport =>
+        IsHomePage ? ReportIssue.FloatingButtonShown.Always
+        : IsCurrent("about") ? ReportIssue.FloatingButtonShown.Never
+        : ReportIssue.FloatingButtonShown.WideScreensOnly;
 
     private static readonly NavItem[] NavItems =
     [

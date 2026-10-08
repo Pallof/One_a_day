@@ -41,6 +41,9 @@ public sealed class OneClickUnsubscribeTests : IAsyncLifetime
         builder.Logging.ClearProviders();
         builder.Services.AddRazorComponents().AddInteractiveServerComponents();
         builder.Services.AddSingleton<SubscriberStore>();
+        // Every page's layout carries the report dialog. Its notifier is switched off and
+        // nothing here sends what it queues.
+        builder.Services.AddReportDialog(_env);
 
         _app = builder.Build();
         _app.UseAntiforgery();

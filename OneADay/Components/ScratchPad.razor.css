@@ -1,0 +1,137 @@
+/* The scratch pad, bottom left: the mirror of "Report an issue", bottom right, and clear of
+   the Twenty Four nudge, which comes in from the right (PRD 09). The pad opens above its
+   button, with no backdrop — the question has to stay in view while you work on it. */
+
+.sp-launcher {
+    position: fixed;
+    left: 1.25rem;
+    bottom: 1.25rem;
+    z-index: 850;
+    width: 52px;
+    height: 52px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    box-shadow: 0 4px 16px rgba(34, 51, 77, .14);
+    cursor: pointer;
+    transition: border-color .15s ease, background-color .15s ease;
+}
+
+.sp-launcher:hover,
+.sp[data-open] .sp-launcher {
+    border-color: var(--blue);
+}
+
+.sp[data-open] .sp-launcher {
+    background: var(--blue-tint);
+}
+
+/* Shown by the script, which sets data-open; Blazor never touches that attribute. */
+.sp-panel {
+    display: none;
+    position: fixed;
+    left: 1.25rem;
+    bottom: calc(1.25rem + 52px + 0.6rem);
+    z-index: 850;
+    width: min(360px, calc(100vw - 2.5rem));
+    padding: 0.6rem;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: 0 16px 44px rgba(34, 51, 77, .22);
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.sp[data-open] .sp-panel {
+    display: block;
+}
+
+.sp-tools {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.sp-tool {
+    min-height: 44px;
+    padding: 0 0.85rem;
+    background: #fff;
+    border: 1.5px solid var(--line);
+    border-radius: 8px;
+    color: var(--ink-soft);
+    font-family: inherit;
+    font-size: 0.92rem;
+    font-weight: 700;
+    cursor: pointer;
+    /* Quick taps on Undo would otherwise zoom the page. */
+    touch-action: manipulation;
+}
+
+.sp-tool[aria-pressed="true"] {
+    background: var(--blue-tint);
+    border-color: var(--blue);
+    color: var(--blue-deep);
+}
+
+.sp-close {
+    margin-left: auto;
+    min-width: 44px;
+    min-height: 44px;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    color: var(--ink-soft);
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.sp-close:hover {
+    background: var(--blue-tint);
+    color: var(--blue-deep);
+}
+
+.sp-sheet {
+    position: relative;
+}
+
+/* The eraser's reach, while the eraser is picked. Its edge is the edge of what it wipes:
+   the border is inside the size, and the white inner line keeps it visible over ink. */
+.sp-ring {
+    display: none;
+    position: absolute;
+    box-sizing: border-box;
+    border: 1.5px solid var(--ink-soft);
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .9);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.sp[data-tool="eraser"] .sp-ring {
+    display: block;
+}
+
+/* With a mouse, the ring is the cursor. */
+.sp[data-tool="eraser"] .sp-canvas {
+    cursor: none;
+}
+
+/* A finger on the pad draws instead of scrolling the page. Short enough to leave room to
+   scroll past it, a phone held sideways included. */
+.sp-canvas {
+    display: block;
+    width: 100%;
+    height: min(240px, 40vh);
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    touch-action: none;
+    cursor: crosshair;
+}

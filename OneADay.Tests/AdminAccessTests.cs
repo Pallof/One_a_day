@@ -98,6 +98,9 @@ public class AdminRoutingTests : BunitContext
         // The not-found page asks for the current request to tell an admin knock from a
         // mistyped address. There's none behind a bUnit render, so it falls back to the URL.
         Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+        // The layout carries the report dialog on every page. Admin needs the same issue
+        // store, but five more services besides, so on the live site it still can't be built.
+        Services.AddReportDialog(_env);
         JSInterop.Mode = JSRuntimeMode.Loose;
     }
 
@@ -141,7 +144,6 @@ public class AdminRoutingTests : BunitContext
         Services.AddSingleton(_env.NewStatsStore());
         Services.AddSingleton(_env.NewSuggestionStore());
         Services.AddSingleton(new ImageStore(_env));
-        Services.AddSingleton(_env.NewIssueStore());
         Services.AddSingleton(_env.NewRotationStore());
         Services.AddSingleton(_env.NewMetricsStore());
 

@@ -87,6 +87,10 @@ page about 40px over.
   below:** a hamburger menu.
 - Both menus come from **one list** in `MainLayout`, so they can't drift apart.
 - The menu opens on hover *and* on focus, which is what makes it work on touch screens.
+- **Below the sections, the phone menu ends with *Report an issue*** on every page — an action, not
+  a place, so a button in the soft ink colour rather than a link ([PRD 06](06-community-feedback.md)).
+  The wide menu has no room for it, so there the floating button stands in, on every page but
+  About. The two share the 900px breakpoint.
 
 ## Components
 
@@ -97,6 +101,10 @@ page about 40px over.
 - **Hint bar** — gold while locked or on offer, **blue once revealed**, so it reads as information
   rather than a standing offer ([PRD 03](03-hints-and-solutions.md)).
 - **Playing cards** — Twenty Four's hand ([PRD 07](07-twenty-four.md)).
+- **Floating buttons** — round or pill-shaped, white, hairline border, soft shadow, 1.25rem from
+  the bottom corners: *Report an issue* bottom right ([PRD 06](06-community-feedback.md)), the
+  **scratch pad** bottom left on the challenge page ([PRD 01](01-daily-challenge.md)). The
+  Twenty Four nudge comes in from the right, above the report button. Nothing else floats.
 - **Reconnect message**, shown when the page's live connection drops. It never appears in normal
   development, so it's easy to forget — but it shows on every deploy, network blip and laptop wake,
   making it the second thing some visitors see. It uses the named colours like everything else.

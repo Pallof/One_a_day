@@ -14,7 +14,8 @@
 
 /* Deliberately quiet — it shows the *format*, not a technique, so it shouldn't
    compete with the rules above it. See the comment in the markup. */
-.tf-example {
+.tf-example,
+.tf-impossible {
     margin-top: 0.5rem;
 }
 
@@ -132,6 +133,69 @@
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+/* --- keypad ------------------------------------------------------------- */
+
+/* Numbers on top, symbols below, ⌫ across the last two columns: four columns
+   fit a 320px phone with every key at least 44px wide. */
+.tf-keypad {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    margin-top: 0.85rem;
+}
+
+.tf-key {
+    min-height: 48px;
+    background: #fff;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 1.25rem;
+    font-weight: 700;
+    cursor: pointer;
+    /* Two quick taps on the same key would otherwise zoom the page. */
+    touch-action: manipulation;
+    transition: background-color .1s ease, border-color .1s ease, opacity .18s ease;
+}
+
+/* In the cards' face, so the numbers read as the hand rather than a calculator.
+   Plain ink, not the cards' suit colours: duplicates are spent left to right, so
+   tapping a red 3 can fade the black one — harmless, but not if the colours
+   make the swap look like a mistake. */
+.tf-key-number {
+    font-family: 'Lora', Georgia, serif;
+    font-size: 1.4rem;
+}
+
+.tf-key-symbol,
+.tf-key-delete {
+    background: var(--paper);
+    color: var(--ink-soft);
+}
+
+.tf-key-delete {
+    grid-column: span 2;
+}
+
+.tf-key:active:not(:disabled) {
+    background: var(--blue-tint);
+    border-color: var(--blue);
+    color: var(--blue-deep);
+}
+
+/* A spent number fades like its card. */
+.tf-key:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* Where there's a mouse there's a keyboard, and the keypad would only be clutter.
+   Asked this way round so a device that answers neither still gets the keypad. */
+@media (hover: hover) and (pointer: fine) {
+    .tf-keypad { display: none; }
+}
+
 .tf-buttons {
     display: flex;
     gap: 0.75rem;
@@ -224,6 +288,11 @@
     font-size: 0.82rem;
     color: var(--ink-soft);
     margin: 0.5rem 0 0 0;
+}
+
+/* Where the keypad shows: no mouse, so no keyboard and no space bar. */
+@media (hover: none), (pointer: coarse) {
+    .tf-next-hint { display: none; }
 }
 
 .tf-score {

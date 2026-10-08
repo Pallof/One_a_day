@@ -8,7 +8,7 @@ namespace OneADay.Tests;
 
 /// <summary>
 /// The admin page's shape: the form always in view, every section under it collapsible,
-/// and all of them collapsed until the author opens one.
+/// and all of them collapsed until the author opens one. And what a report shows there.
 /// </summary>
 public class AdminLayoutTests : BunitContext
 {
@@ -72,6 +72,23 @@ public class AdminLayoutTests : BunitContext
         var recycling = page.FindAll("details.oad-admin-section")[2];
 
         Assert.Contains("1 scheduled ahead", recycling.QuerySelector("summary")!.TextContent);
+    }
+
+    [Fact]
+    public void A_twenty_four_report_shows_its_hand_and_keeps_it_on_disk()
+    {
+        Services.GetRequiredService<IssueStore>().Add(new IssueReport
+        {
+            Category = IssueCategories.Evaluation,
+            Details = "my answer was marked wrong",
+            PageUrl = "/twentyfour",
+            TwentyFourHand = [2, 5, 7, 9],
+        });
+
+        var page = Render<Admin>();
+
+        Assert.Contains("Twenty Four hand: 2 5 7 9", page.Find(".oad-issue-context").TextContent);
+        Assert.Equal([2, 5, 7, 9], _env.NewIssueStore().GetAll().Single().TwentyFourHand);
     }
 
     protected override void Dispose(bool disposing)

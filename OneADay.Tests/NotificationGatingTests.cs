@@ -350,7 +350,7 @@ public class NotificationGatingTests : BunitContext
         cut.Find("button.ri-fab").Click();
         SatisfyComposeFloor(cut.Instance, "_dialogShownAt");
 
-        SetField(cut.Instance, "_category", new string('C', 40_000));   // a <select>, forged
+        SetField(cut.Instance, "_category", new string('C', 40_000));   // a category, forged
         cut.Find("#ri-details").Input(new string('D', 40_000));
         cut.Find("div.ri-actions button.oad-btn-green").Click();
 
@@ -392,7 +392,7 @@ public class NotificationGatingTests : BunitContext
         cut.Find("button.ri-fab").Click();
         SatisfyComposeFloor(cut.Instance, "_dialogShownAt");
 
-        cut.Find("#ri-category").Change(IssueCategories.Evaluation);
+        cut.Find($"input[name='ri-category'][value='{IssueCategories.Evaluation}']").Change(true);
         cut.Find("#ri-details").Input("my answer was marked wrong");
         cut.Find("div.ri-actions button.oad-btn-green").Click();
 

@@ -31,6 +31,14 @@
     line-height: 1;
 }
 
+/* Off the challenge, wide screens only: at 900px and below the menu is the hamburger, which
+   has the entry. MainLayout's breakpoint — change both together. */
+@media (max-width: 900px) {
+    .ri-fab-wide-only {
+        display: none;
+    }
+}
+
 /* On narrow screens collapse to just the icon */
 @media (max-width: 520px) {
     .ri-fab-label {
@@ -61,6 +69,12 @@
     border-radius: var(--radius);
     padding: 1.4rem 1.5rem 1.5rem;
     box-shadow: 0 16px 44px rgba(34, 51, 77, .28);
+}
+
+/* It takes the focus on opening only so the menu closes and a keyboard starts inside it;
+   a ring round the whole dialog would mark nothing the dialog doesn't already. */
+.ri-modal:focus {
+    outline: none;
 }
 
 .ri-head {
@@ -117,6 +131,57 @@
 
 .ri-field textarea {
     min-height: 120px;
+}
+
+/* The categories: one row each, the whole row tappable, the text free to wrap. */
+.ri-categories {
+    border: none;
+    margin: 0 0 1.1rem;
+    padding: 0;
+    /* A fieldset is as wide as its longest line by default, which is the very
+       cut-off this list replaced. */
+    min-width: 0;
+}
+
+.ri-categories legend {
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 0;
+    margin-bottom: 0.4rem;
+}
+
+.ri-choice {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    margin: 0;
+    padding: 0.65rem 0.8rem;
+    min-height: 44px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    font-weight: 400;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: border-color .15s ease, background-color .15s ease;
+}
+
+.ri-choice + .ri-choice {
+    margin-top: 0.45rem;
+}
+
+.ri-choice input {
+    flex: none;
+    width: 1.05rem;
+    height: 1.05rem;
+    margin: 0.17rem 0 0;
+    accent-color: var(--blue);
+    cursor: pointer;
+}
+
+.ri-choice:has(input:checked) {
+    border-color: var(--blue);
+    background: var(--blue-tint);
 }
 
 .ri-counter {
