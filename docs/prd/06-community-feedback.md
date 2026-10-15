@@ -36,7 +36,7 @@ checks that run invisibly.
   intended way: come back to the page.
 - The author always sees every teaser's statistics in admin. Deleting a teaser deletes them.
 
-*History: until 2026-09-22 the page also counted people — "🧠 466 minds have taken on this
+*History: until 2026-09-22 the page also counted people — "466 minds have taken on this
 challenge" — by storing an anonymous ID for everyone who tried each teaser. The IDs were never
 pruned and every answer rewrote the whole file, so saving an answer got slower for as long as the
 site ran (roughly 9 MB of IDs a year at 500 visitors a day). Replaced by two numbers that grow only

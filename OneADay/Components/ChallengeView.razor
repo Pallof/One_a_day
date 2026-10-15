@@ -150,7 +150,9 @@
          tabindex="-1" @ref="_solvedDialog" @onkeydown="OnSolvedKeyDown">
         <button class="cv-solved-close" @onclick="DismissSolved" aria-label="Close">✕</button>
 
-        <p class="cv-solved-mark" aria-hidden="true">🎉</p>
+        @* The mascot, still stumped — by the visitor this time (PRD 09). The confetti is
+           the celebration. *@
+        <img class="cv-solved-mark" src="@Assets["img/stumpty.png"]" alt="" width="327" height="400" />
         <h2 id="cv-solved-title" class="cv-solved-title">Correct!</h2>
         <p class="cv-solved-sub">
             Solved in @_attempts @Wording.Plural(_attempts, "attempt").

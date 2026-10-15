@@ -1,3 +1,23 @@
+/* The mascot beside the opening paragraph (PRD 09). Floated, so the words wrap round it
+   rather than waiting below a picture; flow-root keeps it inside the box. */
+.about-body {
+    display: flow-root;
+}
+
+.about-mascot {
+    float: right;
+    width: 140px;
+    height: auto;
+    margin: 0.2rem 0 0.75rem 1.25rem;
+}
+
+@media (max-width: 560px) {
+    .about-mascot {
+        width: 96px;
+        margin-left: 0.9rem;
+    }
+}
+
 /* app.css zeroes p margins globally, so consecutive paragraphs would otherwise butt
    together and read as one block — which is what made this page a wall of text even
    though it already had two <p> elements. */

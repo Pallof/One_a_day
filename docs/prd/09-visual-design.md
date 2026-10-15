@@ -94,6 +94,8 @@ page about 40px over.
 
 ## Components
 
+- **The mascot** — Stumpty, a puzzled yellow duck sitting on a tree stump *(the author's own
+  drawing, finished with an image generator; adopted 2026-10-14)*. See [below](#the-mascot).
 - **Cards** — white, hairline border, soft shadow, 14px rounded corners.
 - **Masthead** — centred Lora over a 64px gold rule, with the **dateline** above
   ([PRD 01](01-daily-challenge.md)).
@@ -108,6 +110,39 @@ page about 40px over.
 - **Reconnect message**, shown when the page's live connection drops. It never appears in normal
   development, so it's easy to forget — but it shows on every deploy, network blip and laptop wake,
   making it the second thing some visitors see. It uses the named colours like everything else.
+
+### The mascot
+
+**The whole duck on its stump wherever the page shows it; its face alone as the browser icon**
+*(author's decision, 2026-10-14)*. The stump is half the name, so the page never crops it off.
+
+| Where | What | Size |
+|---|---|---|
+| Header, beside the name | Whole duck | 40px tall — as tall as it goes without making the header taller (the section pills are 40.8px) |
+| Footer tagline | Whole duck | the height of the words |
+| About, beside the opening paragraph | Whole duck, with a description for screen readers | 140px wide; 96px on a phone |
+| The solve dialog, at the top | Whole duck — it replaced 🎉, as the confetti already celebrates | 96px tall |
+| Browser tab | The face, close up | 32px |
+| A phone's home screen | The face | 180px |
+
+It replaced the brain emoji, which looked different on every device, so the site's mark wasn't the
+same picture for everyone. It also replaced Blazor's own logo, which the tab had shown since the
+project was created. The tab icon goes through `Assets`, so its address changes with the file;
+browsers hold on to an old tab icon otherwise.
+
+- **Two sizes are served** from `wwwroot/img/`: 120px tall for the header and footer (18 KB) and
+  400px for About and the dialog (121 KB). That way the header on every page doesn't load the
+  big one.
+- **The originals live in `docs/brand/`, never `wwwroot/`.** Everything in `wwwroot/` is served
+  to anyone who asks, and a large file there is what a bot would fetch (see Bootstrap, under
+  *Removed on purpose*).
+- **Image generators fake transparency.** Asked for a see-through version, they paint a grey and
+  white checkerboard into the picture. Before using a new drawing, check the file really has an
+  alpha channel (`sips -g hasAlpha`). The current cut-out was made with macOS's own background
+  removal (Finder → Quick Actions → Remove Background).
+- **Its colours aren't from the palette** (yellow, orange and wood brown), and that's fine for a
+  picture. The duck's yellow sits beside `--gold`, which is why it looks at home. The palette rule
+  is for the styles.
 
 ### The Twenty Four nudge
 
@@ -158,6 +193,13 @@ exists, showing it again is nagging.
 - [x] No page sets its own maximum width
 - [x] Bootstrap is no longer loaded or shipped, and nothing regressed. Its address returns 404, and
       every route loads all of its files
+- [x] **The mascot** — `MascotTests`, each mutation-verified: the whole duck beside the name (with
+      no alt text), in the footer tagline, on About (described for screen readers) and in the
+      solve dialog, each one a file `wwwroot` serves; the tab and home-screen icons linked through
+      `Assets`, at 32px and 180px
+- [x] The mascot, checked by hand: with the 40px duck the header stays 65.8px tall on a wide
+      screen and 69px on a phone. At 375px, About's text wraps round a 96px duck with no sideways
+      scroll. The solve dialog with its duck fits 1512 × 860 without scrolling
 
 ### Not yet converted
 

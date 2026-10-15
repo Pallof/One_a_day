@@ -25,7 +25,7 @@
             <strong>Spoilers ahead.</strong>
             This is the challenge from @_ranOn.ToString("dddd d MMMM yyyy", CultureInfo.InvariantCulture)
             and its full solution.
-            If you haven't tried it yet, have a go first — the question is hidden below too, so you can
+            If you haven't tried it yet, have a go first — the answer is hidden below too, so you can
             attempt it before comparing.
         </div>
 
@@ -35,26 +35,29 @@
                 <DifficultyBadge Level="_teaser.Difficulty" />
             </div>
 
-            <div class="ys-veil @(_showQuestion ? "ys-open" : "")">
-                <div class="ys-content">
-                    <p class="ys-question-text">@_teaser.Question</p>
-                    @if (!string.IsNullOrWhiteSpace(_teaser.ImageFileName))
+            @* The question in the open, the hint behind a tap (author's decision, 2026-10-14):
+               reading the question gives nothing away and is what someone needs to have a go;
+               the hint is the first spoiler. *@
+            <p class="ys-question-text">@_teaser.Question</p>
+            @if (!string.IsNullOrWhiteSpace(_teaser.ImageFileName))
+            {
+                <img class="ys-image" src="@($"{ImageStore.RequestPath}/{_teaser.ImageFileName}")"
+                     alt="Support image for this teaser" />
+            }
+
+            @if (!string.IsNullOrWhiteSpace(_teaser.Hint))
+            {
+                <div class="ys-veil ys-hint-veil @(_showHint ? "ys-open" : "")">
+                    <div class="ys-content">
+                        <p class="ys-hint">Hint: @_teaser.Hint</p>
+                    </div>
+                    @if (!_showHint)
                     {
-                        <img class="ys-image" src="@($"{ImageStore.RequestPath}/{_teaser.ImageFileName}")"
-                             alt="Support image for this teaser" />
+                        <button class="ys-unveil" @onclick="() => _showHint = true">
+                            Tap to show the hint
+                        </button>
                     }
                 </div>
-                @if (!_showQuestion)
-                {
-                    <button class="ys-unveil" @onclick="() => _showQuestion = true">
-                        Tap to show the question
-                    </button>
-                }
-            </div>
-
-            @if (_showQuestion && !string.IsNullOrWhiteSpace(_teaser.Hint))
-            {
-                <p class="ys-hint">Hint: @_teaser.Hint</p>
             }
         </div>
 
@@ -88,7 +91,7 @@
     /// <summary>The day this puzzle ran — yesterday, not whenever it was written.</summary>
     private DateOnly _ranOn;
 
-    private bool _showQuestion;
+    private bool _showHint;
     private bool _showSolution;
 
     protected override void OnInitialized()

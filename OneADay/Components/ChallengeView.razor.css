@@ -263,9 +263,10 @@
 }
 
 .cv-solved-mark {
-    font-size: 2.4rem;
-    line-height: 1;
-    margin-bottom: 0.5rem;
+    display: block;
+    height: 96px;
+    width: auto;
+    margin: 0 auto 0.6rem;
 }
 
 .cv-solved-title {

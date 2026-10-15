@@ -1,4 +1,4 @@
-# Stumpty 🧠
+# Stumpty
 
 **A daily brain teaser to help people use and stretch their minds.**
 
@@ -220,7 +220,7 @@ Before deploying publicly:
 - [ ] Deploy — see [Deploying to Fly.io](#deploying-to-flyio)
 
 Ideas after that:
-- [ ] Solve streaks and a share button ("Stumpty #12 — solved in 2 attempts 🧠")
+- [ ] Solve streaks and a share button ("Stumpty #12 — solved in 2 attempts")
 - [ ] A "queue is running dry" warning when no teaser is scheduled for tomorrow
 - [ ] Bulk import so a week of teasers can be added at once
 
