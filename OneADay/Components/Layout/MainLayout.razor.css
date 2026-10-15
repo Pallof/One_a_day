@@ -53,14 +53,11 @@
     white-space: nowrap;
 }
 
+/* The duck on its stump (PRD 09). 40px is as tall as it can go without making the header
+   taller: the section pills beside it are 40.8px. */
 .oad-mark {
-    display: inline-grid;
-    place-items: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    background: var(--gold);
-    font-size: 1.05rem;
+    height: 40px;
+    width: auto;
     flex: none;
 }
 
@@ -242,6 +239,13 @@
 
 .oad-footer-sep {
     color: var(--line);
+}
+
+/* The duck, at the size of the words around it. */
+.oad-footer-mark {
+    height: 1.3em;
+    width: auto;
+    vertical-align: -0.3em;
 }
 
 /* On a phone the separator would dangle at the end of the first line. */

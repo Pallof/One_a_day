@@ -37,8 +37,8 @@ public class SubmissionLimitsTests
     [Fact]
     public void A_cut_never_splits_an_emoji_in_half()
     {
-        // 🧠 is two characters to .NET. Cutting between them would store half a character.
-        var text = new string('x', 599) + "🧠🧠";
+        // 🦆 is two characters to .NET. Cutting between them would store half a character.
+        var text = new string('x', 599) + "🦆🦆";
 
         var clipped = TextLimit.Clip(text, 600);
 

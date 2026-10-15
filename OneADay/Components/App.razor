@@ -26,7 +26,12 @@
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["OneADay.styles.css"]" />
     <ImportMap />
-    <link rel="icon" type="image/png" href="favicon.png" />
+    @* The duck's face, close up (PRD 09) — the page itself shows the whole duck on its stump.
+       The 180px one is what a phone puts on its home screen. Through Assets so the address
+       changes with the file: browsers hold on to an old tab icon, and this one replaced
+       Blazor's own. *@
+    <link rel="icon" type="image/png" sizes="32x32" href="@Assets["favicon.png"]" />
+    <link rel="apple-touch-icon" href="@Assets["apple-touch-icon.png"]" />
     <HeadOutlet @rendermode="InteractiveServer" />
 </head>
 

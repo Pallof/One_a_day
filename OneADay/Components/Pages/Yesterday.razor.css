@@ -84,8 +84,13 @@
     background: #fff;
 }
 
-.ys-hint {
+/* The space goes on the veil, so its tap-to-show button covers the hint and nothing more. */
+.ys-hint-veil {
     margin-top: 1rem;
+}
+
+.ys-hint {
+    margin: 0;
     background: var(--gold-tint);
     border-radius: 8px;
     padding: 0.7rem 1rem;

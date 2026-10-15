@@ -103,10 +103,13 @@ right answer.
 
 - Linked from under the answer box on the daily challenge, and from the main menu.
 - **No answer box** — it's for reading, not replaying.
-- A **spoiler warning** names the date the puzzle ran. The question and the solution each sit
-  behind their **own tap-to-reveal blur**, so someone who missed the day can try it before
-  comparing. Blurred text can't be selected, so it can't be read by highlighting it.
-- Shows the difficulty, picture and hint alongside the answer and explanation.
+- A **spoiler warning** names the date the puzzle ran, and says the answer is hidden below.
+- **The question is shown; the hint and the solution each sit behind their own tap-to-reveal
+  blur** *(author's decision, 2026-10-14)*. The question gives nothing away and is what someone
+  who missed the day needs to have a go; the hint is the first spoiler. Blurred text can't be
+  selected, so it can't be read by highlighting it. No hint written, no hint blur.
+  *History: until then the question was the one blurred, and the hint showed with it.*
+- Shows the difficulty and picture with the question, and the answer with its explanation.
 - With nothing earlier to publish, it says so rather than erroring.
 
 ## Implementation notes
