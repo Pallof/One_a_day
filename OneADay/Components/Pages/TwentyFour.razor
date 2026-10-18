@@ -66,8 +66,10 @@
     </div>
 
     <div class="oad-box">
-        <h2>Your answer:</h2>
-        <input class="tf-input" placeholder="Type your answer"
+        @* type="text" is what app.css styles every text box by; without it this one was a bare
+           browser box. The heading doubles as its label for screen readers. *@
+        <h2 id="tf-answer-label">Your answer:</h2>
+        <input type="text" class="tf-input" aria-labelledby="tf-answer-label" placeholder="Type your answer"
                maxlength="120"
                @bind="_expression" @bind:event="oninput"
                @onkeydown="OnKeyDown"

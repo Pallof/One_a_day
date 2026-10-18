@@ -38,7 +38,7 @@ Built with **C# / Blazor Server (.NET 10)**.
   so a whole week can be queued in one sitting
 - Set difficulty, attach a support image, and apply backend-only tags for sorting
 - Review visitor suggestions and promote good ones straight into the add form
-- Per-teaser stats: unique solvers and success rate
+- Per-teaser stats: answers sent and success rate
 
 ---
 
@@ -161,8 +161,8 @@ OneADay.Tests/               xUnit tests for answer validation
 | Route | Page |
 |---|---|
 | `/` | Challenge of the day |
-| `/yesterday` | Yesterday's solution — spoiler-veiled question and answer |
-| `/twentyfour` | Twenty Four — placeholder, under maintenance |
+| `/yesterday` | Yesterday's solution — the question, with the hint and the answer each behind a tap |
+| `/twentyfour` | Twenty Four — make 24 from four dealt cards |
 | `/about` · `/contact` | About, and the suggest-a-teaser form |
 | `/admin` | Author tools |
 
@@ -211,13 +211,13 @@ original design, kept for reference — the app deliberately has no accounts tod
 
 ## Status & roadmap
 
-Working today: everything in the feature list above, running locally.
+Working today: everything in the feature list above, live at https://stumpty.com.
 
 Before deploying publicly:
 - [x] **Protect `/admin`** — it only exists on the author's machine; the live site answers
       `/admin` with a "No entry" page (PRD 10)
 - [x] Pick a host: Fly.io, behind Cloudflare (PRD 11)
-- [ ] Deploy — see [Deploying to Fly.io](#deploying-to-flyio)
+- [x] Deploy — live at https://stumpty.com; see [Deploying to Fly.io](#deploying-to-flyio)
 
 Ideas after that:
 - [ ] Solve streaks and a share button ("Stumpty #12 — solved in 2 attempts")

@@ -21,12 +21,12 @@ The number is only the order the docs were written in.
 | [08 — Recycling rotation](08-recycling-rotation.md) | Spec of record |
 | [09 — Visual design system](09-visual-design.md) | Spec of record |
 | [10 — Admin access](10-admin-authentication.md) | Spec of record |
-| [11 — Deployment](11-deployment.md) | Proposed |
+| [11 — Deployment](11-deployment.md) | Spec of record |
 | [12 — Streaks & sharing](12-streaks-and-sharing.md) | Proposed |
 | [13 — Content pipeline](13-content-pipeline.md) | Proposed |
 | [14 — Email notifications](14-email-notifications.md) | Spec of record |
 | [15 — Email subscriptions](15-email-subscriptions.md) | Spec of record |
-| [16 — Site metrics](16-site-metrics.md) | Proposed |
+| [16 — Site metrics](16-site-metrics.md) | Spec of record |
 
 ## Conventions
 

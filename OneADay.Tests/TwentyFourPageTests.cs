@@ -78,6 +78,21 @@ public class TwentyFourPageTests : BunitContext
         Assert.DoesNotContain("fraction", rules, StringComparison.OrdinalIgnoreCase);
     }
 
+    // ---- the answer box --------------------------------------------------------------
+
+    [Fact]
+    public void The_answer_box_is_a_text_box_named_by_its_heading()
+    {
+        // app.css styles every box by input[type="text"]; without the type this one was a bare
+        // browser box (cold review, 2026-10-15). The heading names it for screen readers.
+        var page = Render<TwentyFour>();
+        var box = page.Find("input.tf-input");
+
+        Assert.Equal("text", box.GetAttribute("type"));
+        var label = page.Find($"#{box.GetAttribute("aria-labelledby")}");
+        Assert.Equal("Your answer:", label.TextContent.Trim());
+    }
+
     // ---- the keypad ------------------------------------------------------------------
 
     [Fact]

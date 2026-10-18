@@ -74,24 +74,6 @@ public class TeaserStore
         }
     }
 
-    /// <summary>
-    /// All teasers (past, today, and upcoming) for the All Questions page,
-    /// newest first. The page labels each by date and protects upcoming answers.
-    /// </summary>
-    public IReadOnlyList<BrainTeaser> Search(string? term)
-    {
-        lock (_lock)
-        {
-            IEnumerable<BrainTeaser> matches = _teasers;
-            if (!string.IsNullOrWhiteSpace(term))
-            {
-                matches = matches.Where(t =>
-                    t.Question.Contains(term, StringComparison.OrdinalIgnoreCase));
-            }
-            return matches.OrderByDescending(t => t.Date).ToList();
-        }
-    }
-
     public void Save(BrainTeaser teaser)
     {
         lock (_lock)

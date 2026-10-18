@@ -315,6 +315,14 @@ label {
     margin-bottom: 0.4rem;
 }
 
+/* The not-found page shows the mascot instead of an emoji (PRD 09). */
+.sub-mascot {
+    display: block;
+    height: 96px;
+    width: auto;
+    margin: 0 auto 0.6rem;
+}
+
 .sub-lead {
     font-size: 1.1rem;
     margin-bottom: 0.6rem;

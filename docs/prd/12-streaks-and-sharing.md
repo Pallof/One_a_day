@@ -49,6 +49,10 @@ logins — so the wording should never imply a streak is permanent.
 10. Confirm the copy visibly ("Copied!").
 11. Use the device's own share menu where available, otherwise the clipboard.
 
+*Already built: the shared link previews with a picture and a description of the site
+([PRD 09](09-visual-design.md#the-link-preview), 2026-10-15). The Share button only needs to
+supply the text.*
+
 ## Open questions
 
 - Include the attempt count? It's the interesting part, but might put people off sharing a scrappy
