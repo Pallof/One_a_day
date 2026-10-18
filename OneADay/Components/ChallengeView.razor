@@ -17,7 +17,8 @@
         {
             <p class="cv-note">@Note</p>
         }
-        <p class="cv-question-text">@Teaser.Question</p>
+        @* Can't be copied, so looking it up means typing it out (PRD 01). *@
+        <p class="cv-question-text oad-no-copy">@Teaser.Question</p>
 
         @if (!string.IsNullOrWhiteSpace(Teaser.ImageFileName))
         {

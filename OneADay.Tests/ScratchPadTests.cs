@@ -47,12 +47,36 @@ public class ScratchPadTests : BunitContext
     }
 
     [Fact]
+    public void The_button_says_whiteboard_and_clicking_the_word_opens_the_pad_too()
+    {
+        // Inside the button, so it's part of what can be clicked. A screen reader hears the
+        // button's own name, which is the same word, so voice control finds it by what it says.
+        var pad = Render<ScratchPad>();
+
+        var caption = pad.Find("button.sp-launcher > .sp-caption");
+        Assert.Equal("Whiteboard", caption.TextContent.Trim());
+        Assert.Equal("true", caption.GetAttribute("aria-hidden"));
+        Assert.Equal(caption.TextContent.Trim(), pad.Find("button.sp-launcher").GetAttribute("aria-label"));
+    }
+
+    [Fact]
+    public void The_word_shows_on_phones_as_well_as_computers()
+    {
+        // At first it was for computers only; phones got it the same day (author's decision,
+        // 2026-10-18). No rule for it, at any screen size, may hide it.
+        var css = File.ReadAllText(Path.Combine(RepoFiles.Root, "OneADay", "Components", "ScratchPad.razor.css"));
+
+        Assert.Contains(".sp-caption {\n    display: block;", css);
+        Assert.DoesNotMatch(@"\.sp-caption\s*\{[^}]*display:\s*none", css);
+    }
+
+    [Fact]
     public void It_starts_closed_behind_its_whiteboard_button_with_the_pen_picked()
     {
         var pad = Render<ScratchPad>();
 
         var launcher = pad.Find("button.sp-launcher");
-        Assert.Equal("Scratch pad", launcher.GetAttribute("aria-label"));
+        Assert.Equal("Whiteboard", launcher.GetAttribute("aria-label"));
         Assert.Equal("false", launcher.GetAttribute("aria-expanded"));
         Assert.NotNull(launcher.QuerySelector("svg.sp-icon"));
         Assert.False(pad.Find(".sp").HasAttribute("data-open"));

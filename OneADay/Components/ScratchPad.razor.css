@@ -30,6 +30,27 @@
     background: var(--blue-tint);
 }
 
+/* The word under the button: an icon alone doesn't say what it opens (PRD 01). It hangs in the
+   gap below the button, so nothing moves to make room, on a phone as much as a computer. */
+.sp-caption {
+    display: block;
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 3px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
+    color: var(--ink-soft);
+}
+
+.sp-launcher:hover .sp-caption,
+.sp[data-open] .sp-caption {
+    color: var(--blue-deep);
+}
+
 /* Shown by the script, which sets data-open; Blazor never touches that attribute. */
 .sp-panel {
     display: none;
