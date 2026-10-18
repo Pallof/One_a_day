@@ -81,9 +81,73 @@ destroy every puzzle, statistic and subscriber.
 6. **HTTPS**, with certificates renewed automatically.
 7. **Time zone.** Already handled — days are pinned to Pacific whatever the server's clock — but
    check on the host, since a server on UTC is exactly the case this guards against.
-8. **Backups.** A scheduled copy of `App_Data/` off the host, with a restore **tested at least
-   once**. It holds subscriber addresses and the encryption keys, so the copy must be as private as
-   the host.
+8. **Backups.** ✅ **In place, and a restore tested, 2026-10-15.** A scheduled copy of `App_Data/`
+   off the host, with a restore **tested at least once**. It holds subscriber addresses and the
+   encryption keys, so the copy must be as private as the host.
+
+   **What's backed up, and how often.** Fly snapshots the whole disk (`stumpty_data`) every day at
+   about 04:50 UTC, late evening Pacific, and keeps **30 days** of them. Fly's default is 5. The live
+   disk was raised to 30 with `fly volumes update` on 2026-10-15; fly.toml records it for any disk a
+   deploy creates, and `DeployFilesTests` pins it. Snapshots store only what changed: five of
+   them took 60 MB, well inside Fly's free 10 GB. They're encrypted like the disk and reachable only
+   through the Fly account, so they're as private as the host.
+
+   **Off the host, shown rather than assumed.** Fly's docs don't say where snapshots are kept, so
+   the restore test put its copy in a different zone, which means a different server, and every file
+   came back.
+
+   **What it doesn't cover:**
+   - **Up to a day of changes.** Before anything risky, take a snapshot by hand:
+     `fly volumes snapshots create <volume id>`.
+   - **Losing the Fly account.** If billing lapses, the account is locked or the app is deleted, the
+     snapshots go with it, and Fly itself says they "shouldn't be your primary backup method". A
+     nightly encrypted copy to Cloudflare R2 would close that gap. On 2026-10-15 it was weighed and
+     left for later: the data is 80 KB, and the likely failures are a dead server or quiet damage,
+     which snapshots cover.
+   - **Deleted addresses linger.** Unsubscribing deletes the record ([PRD 15](15-email-subscriptions.md)),
+     but it stays in snapshots for up to 30 days, and Fly can't delete a snapshot early. A restore
+     also brings back anyone who unsubscribed after that snapshot, and they would get the next
+     email. With daily snapshots that's at most a day's worth; the metrics totals show how many.
+
+   **Runbook: checking a backup.** This is the drill run on 2026-10-15. It touches nothing live.
+   1. Find the disk, then its snapshots:
+      `fly volumes list -a stumpty`, then `fly volumes snapshots list <volume id>`.
+   2. Restore a snapshot into a new disk, in a different zone from the live one:
+      ```bash
+      fly volumes create restore_test --snapshot-id <snapshot id> --size 1 --region ord \
+        --require-unique-zone --unique-zone-app-wide -a stumpty
+      ```
+   3. Mount it on a throwaway machine. Run this from a folder outside the repo, so nothing in
+      fly.toml can reach the machine. The machine runs only `sleep` and stops itself after 30
+      minutes. It has no ports, so it gets no traffic, and it runs none of the site's code, so it
+      sends no email:
+      ```bash
+      fly machine run python:3.13-alpine sleep 1800 -a stumpty --region ord \
+        --volume <new volume id>:/restore --name restore-test --vm-memory 256 --restart no
+      ```
+   4. From the repo folder, run `deploy/check-restore.py` on it. The script prints sizes, counts,
+      dates and short hashes. It never prints an address or the key, and it ends `RESULT: OK` or
+      `FAIL`:
+      ```bash
+      fly ssh console -a stumpty --machine <restore machine id> -C "sh -c 'echo $(base64 < deploy/check-restore.py | tr -d '\n') | base64 -d > /tmp/check.py && python3 -I /tmp/check.py /restore'"
+      ```
+   5. Compare with the live machine. Any file not written since the snapshot must have the same
+      size and hash:
+      ```bash
+      fly ssh console -a stumpty --machine <live machine id> -C "sh -c 'cd /app/App_Data && ls -l --time-style=+%FT%RZ *.json keys && sha256sum teasers.json issues.json suggestions.json weekly-summary.json keys/* | cut -c1-12,65-'"
+      ```
+   6. Remove both. **Check each ID first:** the live machine runs the `stumpty:` image, and the
+      live disk is `stumpty_data`.
+      `fly machine destroy <restore machine id> --force -a stumpty`, then
+      `fly volumes destroy <new volume id> -a stumpty`.
+
+   **Runbook: recovering for real** (not yet rehearsed; the drill proves the data, not this swap).
+   Take a snapshot of the damaged disk first, if it still exists. Then restore the chosen snapshot
+   as in step 2, naming it `stumpty_data` instead of `restore_test`, because fly.toml mounts the disk
+   by name. Destroy the damaged disk and the live machine, so a deploy can't pick the old disk back
+   up, then run `fly deploy --ha=false`, which makes a new machine on the restored disk. Write down
+   the old disk's ID before destroying it. According to Fly's docs, its snapshots outlive it until
+   their retention runs out, but they can only be found by that ID.
 9. **Logging** good enough to notice unexpected errors.
 10. **Long-lived connections allowed** — ruling out hosts that only serve fixed files or short-lived
     functions.
@@ -186,6 +250,35 @@ destroy every puzzle, statistic and subscriber.
     [PRD 15](15-email-subscriptions.md)) — so that nothing sent over a live connection can grow a
     file, or the memory holding it, without end.
 
+17. **Run the tests on every change.** ✅ **Built 2026-10-15.** Until then the suite ran only on the
+    author's Mac, so it protected nothing unless someone remembered to run it.
+    `.github/workflows/tests.yml` now runs `dotnet test OneADay.Tests`, the README's own command, on
+    GitHub's Linux machines. It runs for every pull request into master and every push to master,
+    and a pull request shows a red ✗ when any test fails.
+
+    - **Linux, like the server.** Before it was switched on, the suite ran in Microsoft's .NET 10
+      Linux image on x64 and arm64, as an ordinary user rather than root. All 706 tests passed,
+      eight runs in a row, and none needed changing. Three test classes lean on the operating
+      system: `DeployFilesTests` runs `deploy/pull-live-data.sh` under Linux's `sh` with a
+      stand-in `fly`, `SubscriptionTests` asks `git` itself, and `AtomicFileTests` watches for the
+      temporary file. Their code was broken on purpose there, and each test failed, so they check
+      the same things on Linux as on the Mac.
+    - **A clean checkout.** CI sees only what is committed: no `App_Data/`, no question bank and no
+      secrets. Every test builds its own throwaway data, and none may start to need the real files.
+    - **Least access.** The workflow's token can only read the repo and isn't left on disk for the
+      tests to find. Pull requests from other people's copies of the repo get no secrets at all.
+      Each action is pinned to an exact commit, because a version tag can later be moved to other
+      code.
+    - **The newest .NET 10 SDK** (`10.0.x`), like the Dockerfile's `sdk:10.0`, so CI builds with
+      what Fly's builder uses.
+    - **Binding only once required.** On its own, a red run warns but doesn't stop a merge. To make
+      it binding, require the `test` check for master in the repo's settings, under branch
+      protection or rulesets.
+    - **Deploying on merge is not built.** Deploys stay manual (`fly deploy --ha=false`, see the
+      README). Automating them would need an app-scoped Fly deploy token, stored as the repository
+      secret `FLY_API_TOKEN`. The author sets that secret in GitHub's settings; it never goes in a
+      file.
+
 ## Candidate hosts
 
 | Host | Fit | Cost |
@@ -226,7 +319,18 @@ answers. The draft was missed at first and caught by the security review of 2026
       they count separately
 - [ ] Data Protection keys persist across a restart — a visitor isn't treated as new
 - [ ] Day rollover correct on a UTC-clock server
-- [ ] A backup has been taken **and restored** once
+- [x] A backup has been taken **and restored** once. **2026-10-15:** the daily 04:51 UTC snapshot
+      was restored into a new disk in another zone (e543; the live disk is in acb2) and mounted on a
+      throwaway machine.
+      - All 9 files were there and parsed: 25 teasers, rotation history through Oct 14 (the day the
+        snapshot was taken), the subscriber list (counted, never read) and the Data Protection key.
+      - The five files not written since the snapshot matched the live copies byte for byte:
+        teasers, issues, suggestions, weekly-summary and the key. The other four had changed since,
+        as they should have.
+      - The machine and disk were then removed.
+- [x] `DeployFilesTests` pins 30 days of snapshots in fly.toml's `[[mounts]]`. Mutation-verified
+      with three breaks, each caught: 5 days, the line removed, and the line moved to another
+      section.
 - [ ] Links in a real email open the public site
 - [x] Deploy command documented in the README
 - [ ] The server's own `.fly.dev` address gets an empty 403, while stumpty.com loads
@@ -267,6 +371,17 @@ answers. The draft was missed at first and caught by the security review of 2026
 - [x] Mutation-verified: five breaks, each caught by the test written for it
 - [x] Checked in the running app on 2026-09-25: the home page went out as 4,462 of its 10,016 bytes,
       and the live connection still worked
+
+### Continuous integration — `.github/workflows/tests.yml`
+
+- [x] The whole suite passes on Linux in a clean checkout, as an ordinary user, on x64 and arm64,
+      eight runs in a row
+- [x] Mutation-verified on Linux: four breaks, each caught, and each makes `dotnet test` exit with 1,
+      which is what fails the run. The breaks were: the download script fetching
+      `subscribers.json`, the script skipping its running-site check, `.gitignore` letting
+      `App_Data/` back in, and the save's temporary file moving to the system temp folder
+- [ ] A pull request shows a green run
+- [ ] A deliberately failing test turns a pull request red
 
 ## Risks
 

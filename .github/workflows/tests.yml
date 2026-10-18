@@ -1,0 +1,35 @@
+# Runs the test suite on every pull request into master and every push to master, on Linux,
+# with the same command the README gives for running it locally. See PRD 11, requirement 17.
+
+name: Tests
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+# Read-only: this workflow never writes to the repo, so its token can't either.
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    # The suite takes about 10 seconds; anything near this means a test is stuck.
+    timeout-minutes: 10
+    env:
+      DOTNET_NOLOGO: "1"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+    steps:
+      # Actions are pinned to a commit, not a tag: a tag can be moved to different code later.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Nothing here pushes, so the token isn't left on disk for the tests to find.
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+
+      - run: dotnet test OneADay.Tests
