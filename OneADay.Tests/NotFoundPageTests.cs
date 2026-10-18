@@ -51,13 +51,17 @@ public class NotFoundPageTests : BunitContext
     }
 
     [Fact]
-    public void Both_voices_keep_the_cat_and_the_way_home()
+    public void Both_voices_keep_the_duck_and_the_way_home()
     {
+        // The mascot, not the cat that stood in before it existed (PRD 09).
         foreach (var path in new[] { "admin", "yesterdayy" })
         {
             var page = Open(path);
 
-            Assert.Contains("🐱", page.Markup);
+            var duck = page.Find("img.sub-mascot").GetAttribute("src")!;
+            Assert.Equal("img/stumpty.png", duck);
+            Assert.True(File.Exists(Path.Combine(RepoFiles.Wwwroot, duck)), $"'{duck}' isn't in wwwroot.");
+            Assert.DoesNotContain("cat", page.Find(".sub-box").TextContent);
             Assert.NotEmpty(page.FindAll("a[href='']"));
         }
     }

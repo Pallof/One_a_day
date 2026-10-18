@@ -1,6 +1,6 @@
 # PRD 16 — Site metrics
 
-**Status:** Proposed · **Priority: P2 — post-launch** · **Data:** `App_Data/metrics.json` and `App_Data/weekly-summary.json` (new)
+**Status:** Spec of record · **Data:** `App_Data/metrics.json` and `App_Data/weekly-summary.json` (new)
 
 ## In plain terms
 

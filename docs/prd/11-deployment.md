@@ -1,6 +1,6 @@
 # PRD 11 — Deployment
 
-**Status:** Proposed · **Priority: P1 — the remaining launch blocker**
+**Status:** Spec of record · live at https://stumpty.com
 
 ## In plain terms
 
@@ -98,7 +98,7 @@ destroy every puzzle, statistic and subscriber.
     | `CloudflareLock__Secret` | **Yes** — a secret, at least 32 characters, the same value as Cloudflare's header rule | **Refuses to start**, unless `CloudflareLock__Enabled` is false (requirement 14) |
     | `Proxy__Enabled` + a trusted source | Behind a proxy | **Refuses to start** if one is set without the other |
     | `Email__AppPassword` | For any email | No mail; the site is unaffected ([PRD 14](14-email-notifications.md)) |
-    | `Site__BaseUrl` = `https://stumpty.com` | Yes | **Fails silently** — every link in every email is built from it, and it defaults to a local address ([PRD 15](15-email-subscriptions.md)) |
+    | `Site__BaseUrl` = `https://stumpty.com` | Yes | **Fails silently** — every link in every email is built from it, and so is the link preview's picture; it defaults to a local address ([PRD 15](15-email-subscriptions.md), [PRD 09](09-visual-design.md#the-link-preview)) |
 
     The refusals are deliberate: without the key the site would quietly store recoverable visitor
     addresses while looking fine ([PRD 06](06-community-feedback.md)), so stopping the deploy is the

@@ -28,7 +28,7 @@ public enum SuggestionOutcome
 
 /// <summary>
 /// File-backed store for brain teasers suggested by visitors on the
-/// Contact us page. Lives in App_Data/suggestions.json; reviewed in admin.
+/// Suggest a teaser page. Lives in App_Data/suggestions.json; reviewed in admin.
 ///
 /// Rate limiting: 1 suggestion per device per day, and at most
 /// <see cref="MaxPerIpPerDay"/> per IP per day as a bot backstop. The limit

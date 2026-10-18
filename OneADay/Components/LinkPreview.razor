@@ -1,0 +1,35 @@
+@using Microsoft.Extensions.Options
+@inject IOptions<SiteOptions> Site
+
+@* What a messaging app shows when someone shares a link to the site (PRD 09). The apps' own
+   servers read it, and they don't run scripts, so it has to be in the page as first sent —
+   which is why it lives in App's <head> and not in a page.
+
+   The same for every page, and it never names today's puzzle: a preview turns up in a chat
+   before anyone chose to look. The picture's address is absolute because the apps fetch it
+   from their servers, not from the page. *@
+<meta name="description" content="@Description" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Stumpty" />
+<meta property="og:title" content="@Title" />
+<meta property="og:description" content="@Description" />
+<meta property="og:image" content="@Site.Value.Link(Assets["img/stumpty-card.png"])" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="@ImageAlt" />
+@* X reads the og: tags above too; this one asks it for the large picture. *@
+<meta name="twitter:card" content="summary_large_image" />
+
+@code {
+    // An invitation, not a brand name: the apps already show "Stumpty" as the site name, and
+    // the card carries it too (PRD 09).
+    private const string Title = "Can you solve today's puzzle?";
+
+    // The reassurance first: WhatsApp cuts the description off after two lines.
+    private const string Description =
+        "Free, no sign-up. A new brain teaser every day: riddles, logic and math puzzles.";
+
+    private const string ImageAlt =
+        "Stumpty, a puzzled yellow duck sitting on a tree stump, beside the words " +
+        "\"One puzzle a day to sharpen how you think.\"";
+}

@@ -1,4 +1,3 @@
-using System.Buffers.Binary;
 using System.Text.RegularExpressions;
 using Bunit;
 using Microsoft.AspNetCore.Components;
@@ -33,8 +32,6 @@ public class MascotTests : BunitContext
         SetRendererInfo(new RendererInfo("Server", isInteractive: true));
     }
 
-    private static readonly string Wwwroot = Path.Combine(FindRepoRoot(), "OneADay", "wwwroot");
-
     /// <summary>The layout on About, around an empty page — About has no sign-up to set up.</summary>
     private IRenderedComponent<MainLayout> Layout()
     {
@@ -49,7 +46,7 @@ public class MascotTests : BunitContext
     private static void AssertMascot(string expected, string? src)
     {
         Assert.Equal(expected, src);
-        Assert.True(File.Exists(Path.Combine(Wwwroot, src!)),
+        Assert.True(File.Exists(Path.Combine(RepoFiles.Wwwroot, src!)),
             $"'{src}' isn't in wwwroot, so the page would show a broken image.");
     }
 
@@ -108,31 +105,12 @@ public class MascotTests : BunitContext
     {
         // The page's <head> is App.razor, which only renders inside the running site. 32px is
         // a tab on a sharp screen; 180px is what an iPhone puts on its home screen.
-        var app = File.ReadAllText(Path.Combine(FindRepoRoot(), "OneADay", "Components", "App.razor"));
+        var app = RepoFiles.AppRazor();
         var link = Regex.Match(app, $"""<link rel="{rel}"[^>]*href="@Assets\["([^"]+)"\]""");
 
         Assert.True(link.Success, $"App.razor has no <link rel=\"{rel}\"> through Assets.");
         Assert.Equal(file, link.Groups[1].Value);
-        Assert.Equal((size, size), PngSize(Path.Combine(Wwwroot, file)));
-    }
-
-    /// <summary>A PNG's width and height, from its header. Fails if the file isn't a PNG.</summary>
-    private static (int Width, int Height) PngSize(string path)
-    {
-        var bytes = File.ReadAllBytes(path);
-        Assert.True(bytes.AsSpan(0, 8).SequenceEqual(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }),
-            $"{Path.GetFileName(path)} isn't a PNG.");
-        return (BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan(16)), BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan(20)));
-    }
-
-    private static string FindRepoRoot()
-    {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, ".gitignore")))
-        {
-            dir = dir.Parent;
-        }
-        return dir?.FullName ?? throw new InvalidOperationException("Couldn't find the repo root.");
+        Assert.Equal((size, size), RepoFiles.PngSize(Path.Combine(RepoFiles.Wwwroot, file)));
     }
 
     protected override void Dispose(bool disposing)

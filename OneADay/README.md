@@ -73,8 +73,8 @@ per-teaser Stats column.
 | Route | Wireframe page |
 |---|---|
 | `/` | Home — welcome banner, Challenge of the day, submission box |
-| `/yesterday` | Yesterday's solution — the previous challenge and its answer, both behind blur veils |
-| `/twentyfour` | Twenty Four — placeholder page, under maintenance (also answers the legacy `/questions`) |
+| `/yesterday` | Yesterday's solution — the previous challenge, with its hint and its answer each behind a blur veil |
+| `/twentyfour` | Twenty Four — make 24 from four dealt cards (also answers the legacy `/questions`) |
 | `/about` | About us |
-| `/contact` | Contact us — suggest-a-teaser form (difficulty, teaser, solution + hint); submissions land in `App_Data/suggestions.json` and are reviewed in admin. Rate-limited to 1/day per device (and 3/day per hashed IP as a bot backstop) |
+| `/contact` | Suggest a teaser — the suggestion form (difficulty, teaser, solution + hint); submissions land in `App_Data/suggestions.json` and are reviewed in admin. Rate-limited to 1/day per device (and 3/day per hashed IP as a bot backstop) |
 | `/admin` | Your input system for adding daily teasers |

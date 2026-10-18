@@ -122,6 +122,7 @@ page about 40px over.
 | Footer tagline | Whole duck | the height of the words |
 | About, beside the opening paragraph | Whole duck, with a description for screen readers | 140px wide; 96px on a phone |
 | The solve dialog, at the top | Whole duck — it replaced 🎉, as the confetti already celebrates | 96px tall |
+| The not-found page | Whole duck — it replaced a 🐱 left from before the mascot (2026-10-15) | 96px tall |
 | Browser tab | The face, close up | 32px |
 | A phone's home screen | The face | 180px |
 
@@ -143,6 +144,53 @@ browsers hold on to an old tab icon otherwise.
 - **Its colours aren't from the palette** (yellow, orange and wood brown), and that's fine for a
   picture. The duck's yellow sits beside `--gold`, which is why it looks at home. The palette rule
   is for the styles.
+
+### The link preview
+
+What iMessage, WhatsApp, Slack, Discord, Facebook, LinkedIn and X show when someone shares a link
+to the site *(added 2026-10-15)*. A bare link from a stranger looks suspicious; a picture, a name
+and a line saying what the site is lets someone decide before they tap.
+
+- **Title:** *Can you solve today's puzzle?* An invitation rather than a brand name: the apps
+  show "Stumpty" as the site name beside it, and the card carries it too.
+- **Description:** *Free, no sign-up. A new brain teaser every day: riddles, logic and math
+  puzzles.* The reassurance comes first because WhatsApp cuts the description off after two
+  lines. Search engines get the same words.
+- **Picture:** the duck beside the name and the tagline, on the paper colour, 1200 × 630, the
+  shape all of these apps expect (`wwwroot/img/stumpty-card.png`). The tagline is large and
+  bold so it can still be read where Slack and Discord show the card small. iMessage shows
+  only the picture and the title, so there the card is the only thing that says what the
+  site is.
+
+*History: the first version (2026-10-15) had the title "Stumpty — one puzzle a day", led the
+description with the puzzles and ended with "Free, with no account needed", and set the tagline
+in light grey at 42pt. Shown cold to a reviewer who knew nothing of the site, it read as "an
+ad for a brand, not an invitation to play": WhatsApp cut off the reassurance, the tagline was
+unreadable in Slack and Discord, and "Stumpty" appeared up to four times. All three were changed
+the same day. Its other ideas were turned down: a sample puzzle on the card (a spoiler, and
+the bank handed out one teaser at a time), and "takes 2 minutes" (not true of the hard ones).*
+
+Rules:
+
+- **It's in the page as first sent.** The apps' servers read the page without running scripts,
+  so the tags are in App's `<head>` (`Components/LinkPreview.razor`), not added by a page.
+- **The same for every page, and never today's puzzle.** A preview shows up in a chat before
+  anyone has chosen to look. Putting the question in it would spoil the puzzle and hand the bank
+  out one teaser a day.
+- **The picture's address is absolute** (`https://stumpty.com/img/…`), because the apps fetch it
+  from their own servers. It's built from `Site__BaseUrl`, the same setting the emails use, so a
+  wrong value there breaks the preview silently too (PRD 11).
+- **Keep the card under 300 KB.** WhatsApp is known to skip larger pictures. It's 182 KB as a PNG,
+  which keeps the lettering sharp.
+- **To change the words on the card,** edit and rerun `docs/brand/link-card.swift`; its comment
+  gives the command. The card goes through `Assets`, so a new card gets a new address.
+- **The apps remember previews.** A link already shared keeps its old preview in that
+  conversation, and Facebook and LinkedIn keep theirs for days. To refresh them after a change,
+  paste the link into Facebook's Sharing Debugger or LinkedIn's Post Inspector.
+
+**Checking it on the live site:** after a deploy, paste `https://stumpty.com` into a preview
+checker such as opengraph.xyz, or send it to yourself. If the preview comes up blank, look first
+at Cloudflare's bot settings: the apps' fetchers are bots, and Cloudflare must let them through.
 
 ### The Twenty Four nudge
 
@@ -200,6 +248,14 @@ exists, showing it again is nagging.
 - [x] The mascot, checked by hand: with the 40px duck the header stays 65.8px tall on a wide
       screen and 69px on a phone. At 375px, About's text wraps round a 96px duck with no sideways
       scroll. The solve dialog with its duck fits 1512 × 860 without scrolling
+- [x] **The link preview** — `LinkPreviewTests`, each mutation-verified: the title, description
+      and site name; search and preview descriptions match; the picture's address is absolute,
+      the card is 1200 × 630 as the tags say and under 300 KB; the tag for X's large picture; the
+      tags are in App's `<head>`
+- [x] The link preview, checked against the running site as a link bot sees it: every page sends
+      all the tags with no script run, and the picture's address returns the PNG
+- [ ] The link preview on the live site, in a preview checker and in a real chat — after the
+      next deploy
 
 ### Not yet converted
 
