@@ -39,6 +39,20 @@ public class DeployFilesTests
     }
 
     [Fact]
+    public void The_disk_keeps_a_month_of_snapshots()
+    {
+        // The daily snapshots are the backup (PRD 11, requirement 8). Fly's default of 5 days is
+        // gone before damage noticed at a Monday summary can be undone.
+        var mounts = File.ReadAllLines(Path.Combine(FindRepoRoot(), "fly.toml"))
+            .Select(line => line.Trim())
+            .SkipWhile(line => line != "[[mounts]]")
+            .Skip(1)
+            .TakeWhile(line => !line.StartsWith('['));
+
+        Assert.Contains("snapshot_retention = 30", mounts);
+    }
+
+    [Fact]
     public void The_live_data_download_fetches_exactly_its_allowlist()
     {
         // This machine holds the real Gmail password, so a real subscriber list here could mail

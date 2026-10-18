@@ -151,4 +151,10 @@ public class MetricsPageTests : BunitContext
         Assert.Contains("Nothing counted in this range yet", panel.Markup);
         Assert.Contains("deploy/pull-live-data.sh", panel.Markup);
     }
+
+    protected override void Dispose(bool disposing)
+    {
+        _env.Dispose();
+        base.Dispose(disposing);
+    }
 }

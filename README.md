@@ -65,6 +65,12 @@ Run the test suite:
 dotnet test OneADay.Tests
 ```
 
+GitHub runs the same command on Linux for every pull request into master and every push to
+master ([`.github/workflows/tests.yml`](.github/workflows/tests.yml)). A pull request shows a
+green ✓ or a red ✗ beside its commits, and the run's log names any failing test. It sees only
+what's committed, so no test may depend on `App_Data/`. Details:
+[PRD 11, requirement 17](docs/prd/11-deployment.md).
+
 ---
 
 ## Adding your daily teaser
@@ -102,7 +108,7 @@ First time:
    change `app` there.
    ```bash
    fly apps create stumpty
-   fly volumes create stumpty_data --size 1 --region ord
+   fly volumes create stumpty_data --size 1 --region ord --snapshot-retention 30
    ```
 3. Set the secrets. Make each key with `openssl rand -base64 32`; `CloudflareLock__Secret`
    must match Cloudflare's header rule (PRD 11, requirement 14). Never put these in a file.
@@ -126,6 +132,10 @@ First time:
 
 After that, `fly deploy --ha=false` ships each update. Updating the question bank on the
 live site is the next piece to build (PRD 11, requirement 13).
+
+**Backups.** Fly snapshots the disk every day and keeps 30 days. Take one by hand before
+anything risky with `fly volumes snapshots create <volume id>`. To restore, follow the
+runbook in [PRD 11, requirement 8](docs/prd/11-deployment.md).
 
 **Seeing the live numbers in admin.** Only the live site counts visitors; this machine never
 does, so your own testing stays out of the numbers. To bring the live counts down, stop the

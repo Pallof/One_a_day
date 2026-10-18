@@ -47,10 +47,15 @@ primary_region = "ord"
     hard_limit = 300
 
 # The disk that survives restarts and redeploys: everything in App_Data lives here. Create it
-# once with `fly volumes create stumpty_data --size 1 --region ord`.
+# once with `fly volumes create stumpty_data --size 1 --region ord --snapshot-retention 30`.
 [[mounts]]
   source = "stumpty_data"
   destination = "/app/App_Data"
+
+  # Fly snapshots the disk daily; keep a month of them (PRD 11, requirement 8). This only
+  # reaches a volume fly deploy creates. The live one was set with
+  # `fly volumes update <volume id> --snapshot-retention 30` on 2026-10-15.
+  snapshot_retention = 30
 
 # One machine, always. The data files assume a single writer (PRD 11, requirement 5), so
 # deploy with `fly deploy --ha=false` so Fly doesn't add a spare.
