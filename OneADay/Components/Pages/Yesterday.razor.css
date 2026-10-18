@@ -40,7 +40,9 @@
 
 .ys-open .ys-content {
     filter: none;
-    user-select: auto;
+    /* Back to what the page allows, which is nothing: this page can't be copied (PRD 01).
+       "auto" here made the revealed solution selectable again, in Chrome at least. */
+    user-select: inherit;
     pointer-events: auto;
 }
 

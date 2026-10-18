@@ -111,6 +111,8 @@ right answer.
   *History: until then the question was the one blurred, and the hint showed with it.*
 - Shows the difficulty and picture with the question, and the answer with its explanation.
 - With nothing earlier to publish, it says so rather than erroring.
+- **Nothing on it can be copied**, revealed or not *(author's decision, 2026-10-18)*: see
+  [PRD 01](01-daily-challenge.md#the-puzzle-cant-be-copied).
 
 ## Implementation notes
 

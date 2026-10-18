@@ -4,14 +4,14 @@
    No Blazor event handlers here, deliberately: wwwroot/js/scratchpad.js does all of it in the
    browser, so a stroke never travels to the server and nothing is saved. *@
 <div class="sp">
-    <div class="sp-panel" id="sp-panel" role="group" aria-label="Scratch pad">
+    <div class="sp-panel" id="sp-panel" role="group" aria-label="Whiteboard">
         <div class="sp-tools">
             <button type="button" class="sp-tool" data-sp="pen" aria-pressed="true">Pen</button>
             <button type="button" class="sp-tool" data-sp="eraser" aria-pressed="false">Eraser</button>
             <button type="button" class="sp-tool" data-sp="undo">Undo</button>
             <button type="button" class="sp-tool" data-sp="clear">Clear</button>
             <button type="button" class="sp-close" data-sp="toggle" title="Close"
-                    aria-label="Close the scratch pad">✕</button>
+                    aria-label="Close the whiteboard">✕</button>
         </div>
         <div class="sp-sheet">
             <canvas class="sp-canvas" aria-label="Drawing area"></canvas>
@@ -21,7 +21,8 @@
         </div>
     </div>
 
-    <button type="button" class="sp-launcher" data-sp="toggle" title="Scratch pad" aria-label="Scratch pad"
+    @* Named for the word under it, so someone saying "click Whiteboard" finds it. *@
+    <button type="button" class="sp-launcher" data-sp="toggle" title="Whiteboard" aria-label="Whiteboard"
             aria-controls="sp-panel" aria-expanded="false">
         @* A little whiteboard with a pencil writing on it. *@
         <svg class="sp-icon" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
@@ -35,5 +36,8 @@
                 <path d="M6.3 8.5 5.4 9 6.3 9.5Z" fill="currentColor" />
             </g>
         </svg>
+        @* Says what the icon is (PRD 01). Inside the button, so clicking the word opens the pad
+           too. *@
+        <span class="sp-caption" aria-hidden="true">Whiteboard</span>
     </button>
 </div>

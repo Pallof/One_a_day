@@ -62,6 +62,13 @@ Paper for working a puzzle out, for anyone without pen and paper to hand *(autho
 - **On this page only**, behind a round floating button, bottom left — a little whiteboard with a
   pencil on it. Bottom left mirrors *Report an issue* at bottom right and stays clear of the
   Twenty Four nudge, which comes in from the right ([PRD 09](09-visual-design.md)).
+- **The word "Whiteboard" sits under the button** *(author's decision, 2026-10-18)*: an icon
+  alone doesn't say what it opens, so few would think to try it. It's part of the button, so
+  clicking the word opens the pad too, and it hangs in the gap below, so nothing moves to make
+  room. The button is *named* Whiteboard too, so someone using voice control can say what they
+  see. *History: at first it was for computers only, on the thinking that on a small screen a
+  button gets tapped out of curiosity. Phones got it the same day: it takes no room there either,
+  and an unlabelled round button can pass for a chat widget.*
 - It opens above its button, **with no backdrop**, so the question stays in view.
 - **Pen, Eraser, Undo, Clear — and nothing else.** No colours, shapes or fill: *"keep it
   simple."* The eraser removes ink rather than painting white; Undo takes back the last stroke,
@@ -86,9 +93,43 @@ Paper for working a puzzle out, for anyone without pen and paper to hand *(autho
 - A narrower pad — a phone turned — shows less of the drawing rather than shrinking it; strokes
   outside the edge come back when it widens.
 
+### The puzzle can't be copied
+
+So that someone who wants to look a puzzle up has to type it out *(author's decision,
+2026-10-18)*. Solvers should try before they search, and a solve is worth more to everyone when
+looking it up takes effort. Like the rest of the site's protection, this keeps honest people
+honest; it doesn't stop a determined one.
+
+- **Today's question can't be selected**, on a computer or with a long press on a phone, so
+  there's nothing to copy. That includes the first 90 characters quoted in *Report an issue* when
+  it's opened on this page.
+- **Select-all and copy** (Ctrl/⌘+A, then Ctrl/⌘+C, or the menu's Copy) copies nothing if the
+  selection touches the question. Dragging it out is refused the same way.
+- **Pasting is untouched**, so an answer can still be pasted into the answer box.
+- **And nothing on [yesterday's page](03-hints-and-solutions.md#yesterdays-solution-yesterday)**
+  — question, hint, answer and solution, revealed or not *(author's decision, same day)*. Guarding
+  only its question would have protected nothing, with the full solution a tap away.
+- **Nowhere else.** The menu, the footer and the other pages copy as normal.
+
+**What it doesn't stop:**
+- **Bots.** A bot reads the page's HTML, where the question is plain text; selection and copying
+  never come into it.
+- **Anyone set on it.** The browser's developer tools and "view source" show the text. A phone can
+  read the text out of a screenshot (iPhone Live Text, Google Lens).
+- **The daily email** ([PRD 15](15-email-subscriptions.md)), which carries the question as ordinary
+  text.
+- **A cost:** anything that works on *selected* text can't reach the guarded text: Speak
+  Selection on an iPhone or Mac, some reading aids for dyslexia, and looking up or translating a
+  single word. Screen readers (VoiceOver, TalkBack, NVDA, JAWS), iPhone Speak Screen, Android
+  Select to Speak and whole-page translation still work. Allowing selection for those features
+  would also bring back one-tap searching ("Search Google for…", "Search Web"), which skips the
+  clipboard altogether. *Author's decision, 2026-10-18: a fair trade-off, to revisit if solvers'
+  feedback shows a genuine pain point.*
+
 ## Non-goals
 
 - Any notion of "missing" a day — no streak penalty ([PRD 12](12-streaks-and-sharing.md))
+- Stopping bots from reading puzzles. Copy protection is about people (see above)
 
 ## Acceptance criteria
 
@@ -111,6 +152,27 @@ Paper for working a puzzle out, for anyone without pen and paper to hand *(autho
 - [x] Eraser ring, by hand: picking the eraser shows a 20px ring mid-pad; one tap on a line cuts
       a 19.5px gap (the rest is edge smoothing) with the ring centred on it. The ring's place
       beside the drawing area is pinned by `ScratchPadTests` (mutation-verified)
+- [x] **"Whiteboard" under the button** — `ScratchPadTests`, mutation-verified with four breaks,
+      each caught: the word moved outside the button, the button keeping its old name, the word
+      hidden everywhere, and the word hidden on small screens only. In Chrome on 2026-10-18, at
+      1280×800 and in a 375×812 phone view: the word sits 2px under the button and inside the
+      screen, a click or tap on it lands on the button, and the phone doesn't scroll sideways
+- [x] **Copy protection** — `CopyProtectionTests`, mutation-verified with twelve breaks, each
+      caught: today's question and the report box's quote carry the guard, and the answer box
+      doesn't; everything on yesterday's page, revealed, sits inside it (caught with the guard
+      removed, and with it on the question alone); the page's own stylesheet never switches
+      selection back on; the stylesheet makes it unselectable, with and without the `-webkit-`
+      prefix, and turns off the iPhone long-press menu; every page loads the script, which
+      watches the same class, refuses copy and cut, and has no paste handler
+- [x] Copy protection, in Chrome on 2026-10-18: the browser's own Select All took the page's text
+      without the question, and its Copy was refused. Copy events were refused on the report box's
+      quote and went through on other text and inside the answer box; a paste event in the answer
+      box went through
+- [x] Yesterday's page, in Chrome on 2026-10-18 with the hint and solution revealed: Select All
+      took none of the page (question, hint, answer, solution, warning, back link) but still took
+      the footer, and copying the solution alone was refused. *History: the first try let the
+      revealed hint and solution be selected again, because the veil's stylesheet set
+      `user-select: auto` on opening; it now inherits*
 
 ## Implementation notes
 
@@ -118,7 +180,9 @@ Paper for working a puzzle out, for anyone without pen and paper to hand *(autho
 `Components/ChallengeView.razor` holds the challenge itself; since the archive went
 ([PRD 04](04-archive-and-discovery.md)), Home is its only user. `Services/AppTime.cs` is the
 clock; `wwwroot/js/confetti.js` the confetti. The scratch pad is `Components/ScratchPad.razor`
-(markup only, no Blazor handlers) and `wwwroot/js/scratchpad.js` (everything it does).
+(markup only, no Blazor handlers) and `wwwroot/js/scratchpad.js` (everything it does). Copy
+protection is the `oad-no-copy` class: `app.css` makes it unselectable, and `wwwroot/js/nocopy.js`
+refuses a copy, cut or drag whose selection touches it.
 
 > **Removed 2026-09-28:** `TeaserStore.GetCurrent` and `GetPreviousBefore`, which did the old
 > date-based selection. Nothing called them, and their tests guarded nothing the site used. They

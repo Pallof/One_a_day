@@ -46,7 +46,9 @@
         {
             @if (_teaserQuestion is not null)
             {
-                <p class="ri-context">About: <em>@Truncate(_teaserQuestion, 90)</em></p>
+                @* The first 90 characters are plenty to search with, so this can't be copied
+                   either (PRD 01). *@
+                <p class="ri-context">About: <em class="oad-no-copy">@Truncate(_teaserQuestion, 90)</em></p>
             }
             else if (_hand is not null)
             {

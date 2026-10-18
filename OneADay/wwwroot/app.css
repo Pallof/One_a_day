@@ -245,6 +245,17 @@ a {
 
 .oad-btn-danger:hover:not(:disabled) { border-color: var(--red); }
 
+/* ------------------------------------------------------------- puzzle text --- */
+
+/* Today's question, and everything on yesterday's page, can't be selected, so it can't be
+   copied into a search box: someone who wants to look it up has to type it out (PRD 01). The callout line stops a long press on
+   an iPhone offering Copy. js/nocopy.js catches what selection misses, such as a select-all. */
+.oad-no-copy {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
 /* ------------------------------------------------------------------ forms --- */
 
 input[type="text"],
