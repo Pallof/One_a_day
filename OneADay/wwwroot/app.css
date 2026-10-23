@@ -132,6 +132,14 @@ a {
     max-width: var(--measure-wide);
 }
 
+/* Today's challenge: the reading column on phones and tablets, and on a laptop the wider
+   measure its two columns need (ChallengeView.razor.css, same 1100px; PRD 09). */
+@media (min-width: 1100px) {
+    .oad-measure-split {
+        max-width: var(--measure-wide);
+    }
+}
+
 /* Page-level wrappers. These deliberately carry NO max-width of their own —
    centring is the layout's job, in exactly one place. */
 .oad-static,

@@ -52,9 +52,10 @@
 </header>
 
 @* The single place the reading column is capped and centred. Admin opts into the
-   wider measure because its tables don't fit a reading column — but the centring
+   wider measure because its tables don't fit a reading column, and today's challenge
+   into a split one that widens on a laptop for its two columns — but the centring
    still happens here, not in the page. *@
-<main id="oad-main" class="oad-main oad-measure @(IsWidePage ? "oad-measure-wide" : "")">
+<main id="oad-main" class="oad-main oad-measure @(IsWidePage ? "oad-measure-wide" : "") @(IsHomePage ? "oad-measure-split" : "")">
     @Body
 </main>
 
