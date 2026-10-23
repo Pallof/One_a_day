@@ -70,9 +70,16 @@ both; the queue and the daily cap belong to this feature.
   must be the Gmail account itself, or Gmail rejects the mail.
 - **Three tries**, waiting longer each time, then give up and log — the item is already saved, so a
   permanent failure costs a ping, not data.
-- **15 seconds per try.** The default is 100 seconds, and the queue sends one at a time, so one
+- **60 seconds per try.** The default is 100 seconds, and the queue sends one at a time, so one
   unreachable mail server would block everything for over five minutes while new notifications were
-  thrown away as the queue filled.
+  thrown away as the queue filled. *15 seconds until 2026-10-22. On 2026-10-21 Gmail took the daily
+  email but confirmed it late; the 15 seconds ran out, and the retry delivered a second copy. A
+  timeout can't tell "never arrived" from "arrived, not yet confirmed", so it should only fire on a
+  server that is truly stuck.*
+- **Every try is the same message.** A mail gets its Message-ID before the first try and keeps it
+  through the retries, and Gmail shows one message per Message-ID, so retrying a mail that had in
+  fact arrived doesn't show it twice. Not every mail provider merges them, which is why the longer
+  timeout still matters.
 - **A daily cap** (default 25, per Pacific day) stops a burst of reports burying the inbox. Hitting it
   skips the mail, never the save.
 - **The cap counts deliveries, not tries.** Counting tries would let an outage burn the day's
@@ -227,8 +234,11 @@ separate.
       real server that refuses
 - [x] ~~`EmailSenderService`'s sending loop~~ — its per-message step (`SendOneAsync`) is tested
       since 2026-09-28; only the loop that feeds it from the queue isn't
-- [ ] `SmtpMailer`'s retry and timeout — needs a mail server that refuses or stalls. The message it
-      builds *is* tested (`SmtpMailerTests`)
+- [ ] `SmtpMailer`'s timeout against a real server. Checked by hand on 2026-10-22 against a fake
+      server that took a whole message and never confirmed it: the send gave up at the timeout, with
+      the message already on the server — the 2026-10-21 duplicate, reproduced. The message it
+      builds *is* tested (`SmtpMailerTests`), and so is the retry, since 2026-10-22: a try that times
+      out is retried with the same Message-ID (mutation-verified)
 
 ## Implementation notes
 

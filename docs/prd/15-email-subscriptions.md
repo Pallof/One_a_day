@@ -97,6 +97,11 @@ that stamp locked a real person out for 24 hours over an email they never got.
   sleep and restarts for free. Each delivery is recorded, so a crash halfway down the list resumes,
   and a server that was down at 7am sends when it returns the same day. **A day missed entirely is
   skipped** — by then it's no longer the puzzle on the site.
+- **A retry is the same email, not a second one.** A send can report failure after the email has
+  arrived, and the next check tries again. Each day's email therefore has a fixed Message-ID, made
+  from the date and the subscriber's internal ID (never the unsubscribe token), and Gmail shows one
+  email per Message-ID. *Added 2026-10-22, after the 2026-10-21 email arrived twice — see
+  [PRD 14](14-email-notifications.md#delivery).*
 - **The teaser comes from `DailySchedule.ForDay`**, the same path as the home page, so email and site
   always agree. If nobody has visited yet, the 7am send is what settles the day
   ([PRD 08](08-recycling-rotation.md)).
@@ -106,7 +111,7 @@ that stamp locked a real person out for 24 hours over an email they never got.
 | Subject | `Stumpty — Friday, September 11 · Medium` |
 | Preview line | Difficulty and the start of the question |
 | Body | Date, "Challenge of the day", the question with its difficulty pill, one button: **Solve today's challenge** |
-| Picture | Not included; a teaser with one says so, rather than sending a question that makes no sense without it |
+| Picture | Under the question, the width of the card, loaded from the site. An email app that holds pictures back shows its description instead, and the plain-text version gives the description and says to see it on the site. *Until 2026-10-18 the email only said there was a picture.* |
 | Footer | The site tagline and a one-click **Unsubscribe** |
 | Headers | `List-Unsubscribe` and `List-Unsubscribe-Post` — the standard ([RFC 8058](https://www.rfc-editor.org/rfc/rfc8058)) that lets mail apps show their own Unsubscribe button |
 
@@ -216,7 +221,6 @@ touch storage, scheduling or wording.
 
 - A send time or time zone per subscriber
 - More than one email a day, reminders, streak nudges or marketing
-- Putting the teaser's picture in the email — the email says there is one
 - Open or click tracking
 - A subscriber list in `/admin`
 
@@ -279,6 +283,9 @@ From the security review of 2026-09-28.
       just any question in the bank
 - [x] Running again the same day sends nothing (mutation-verified); a failed send retries on the next
       check; a new day sends again
+- [x] The retry carries the same Message-ID as the try that reported failure; the next day's, and
+      another subscriber's, differ (mutation-verified: a random ID, or one missing the date or the
+      subscriber, each fail it)
 - [x] The daily cap stops the send, and the rest stay owed
 - [x] Confirming after the send waits for next morning; before it, gets that morning's
       (mutation-verified)
@@ -289,7 +296,15 @@ From the security review of 2026-09-28.
 
 - [x] Both versions carry the question and links, and neither an answer nor a hint; the *Solve
       today's challenge* button itself links to the site (the header's wordmark does too, and used
-      to stand in for it); a teaser with a picture says so in both
+      to stand in for it)
+- [x] **A teaser's picture** shows under the question at its full address on the site, with its
+      description, and the plain version describes it — mutation-verified: left out, undescribed,
+      never sent, and sent with an address relative to the site were each caught
+- [x] **No email carries the brain emoji**; the header shows the duck from the site
+      (2026-10-18, mutation-verified with the emoji put back and the duck taken out). It had
+      stayed in the emails' header badge and footer line after the site dropped it
+- [ ] A real digest with a picture shows it in Gmail and Apple Mail. Gmail fetches pictures
+      through its own proxy, which Cloudflare's bot protection has to let through
 - [x] Teaser text is HTML-encoded (mutation-verified)
 - [x] The difficulty pill uses the site's colour for each level; the confirmation link appears as a
       button **and** as printed text

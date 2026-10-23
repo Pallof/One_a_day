@@ -11,12 +11,17 @@ namespace OneADay.Services;
 /// <param name="Headers">Recipient-specific headers, such as List-Unsubscribe.</param>
 /// <param name="Html">An optional styled version. The author's own notifications leave it
 /// null and stay plain text; subscriber mail sets it.</param>
+/// <param name="MessageKey">Names this message, so every attempt to send it carries the same
+/// Message-ID header. Gmail shows one message per Message-ID, so resending a mail that had in
+/// fact arrived adds nothing to the inbox. Left null, <see cref="SmtpMailer.SendAsync"/> makes
+/// one up, which covers its own retries; a caller that tries again later by itself sets it.</param>
 public sealed record OutgoingMail(
     string To,
     string Subject,
     string Body,
     IReadOnlyDictionary<string, string>? Headers = null,
-    string? Html = null);
+    string? Html = null,
+    string? MessageKey = null);
 
 /// <summary>
 /// Sends one message over SMTP, with retry.
@@ -39,7 +44,13 @@ public class SmtpMailer(IOptions<EmailOptions> options, ILogger<SmtpMailer> log)
     /// callers send serially, so one unreachable host would otherwise stall everything
     /// behind it for over five minutes. Gmail normally answers in under two seconds.
     /// </summary>
-    private const int SendTimeoutMs = 15_000;
+    /// <remarks>
+    /// Was 15s until 2026-10-22. On 2026-10-21 Gmail took a digest but was slow to confirm it,
+    /// the 15s ran out, and the retry delivered a second copy. A timeout can't tell "never
+    /// arrived" from "arrived, unconfirmed", so it should only fire on a server that is
+    /// really stuck. A minute per try still bounds a dead server to about three minutes.
+    /// </remarks>
+    private const int SendTimeoutMs = 60_000;
 
     private readonly EmailOptions _options = options.Value;
 
@@ -48,19 +59,16 @@ public class SmtpMailer(IOptions<EmailOptions> options, ILogger<SmtpMailer> log)
     /// <summary>Sends one message. Returns true only if it actually went out.</summary>
     public virtual async Task<bool> SendAsync(OutgoingMail mail, CancellationToken token)
     {
+        // Settled once, before the first try, so a retry is the same message rather than a
+        // second one.
+        mail = mail with { MessageKey = mail.MessageKey ?? Guid.NewGuid().ToString("N") };
+
         for (var attempt = 1; attempt <= MaxAttempts; attempt++)
         {
             try
             {
-                using var client = new SmtpClient(_options.Host, _options.Port)
-                {
-                    EnableSsl = true,   // STARTTLS on 587
-                    Timeout = SendTimeoutMs,
-                    Credentials = new NetworkCredential(_options.From, _options.AppPassword),
-                };
-
                 using var message = BuildMessage(_options.From, mail);
-                await client.SendMailAsync(message, token);
+                await DeliverAsync(message, token);
                 return true;
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested)
@@ -84,6 +92,22 @@ public class SmtpMailer(IOptions<EmailOptions> options, ILogger<SmtpMailer> log)
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// One attempt over the wire. Virtual so tests can stand in for a server that takes the
+    /// message and then stalls.
+    /// </summary>
+    protected virtual async Task DeliverAsync(MailMessage message, CancellationToken token)
+    {
+        using var client = new SmtpClient(_options.Host, _options.Port)
+        {
+            EnableSsl = true,   // STARTTLS on 587
+            Timeout = SendTimeoutMs,
+            Credentials = new NetworkCredential(_options.From, _options.AppPassword),
+        };
+
+        await client.SendMailAsync(message, token);
     }
 
     /// <summary>
@@ -122,6 +146,13 @@ public class SmtpMailer(IOptions<EmailOptions> options, ILogger<SmtpMailer> log)
             {
                 message.Headers.Add(name, value);
             }
+        }
+
+        if (mail.MessageKey is not null)
+        {
+            // The sender's domain on the right, as most mail libraries do; the key only has to
+            // be unique within it.
+            message.Headers.Add("Message-ID", $"<{mail.MessageKey}@{new MailAddress(from).Host}>");
         }
 
         return message;

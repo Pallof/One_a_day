@@ -21,3 +21,6 @@ OneADay/App_Data/
 # questions with their hints and solutions. Nothing in the app reads it; it is
 # the hand-written draft the bank is imported from. Back it up separately.
 OneADay/BrainTeaserQuestions.txt
+
+# Compiled picture tool (tools/pictures/pictures.py builds it on first use).
+tools/pictures/.build/

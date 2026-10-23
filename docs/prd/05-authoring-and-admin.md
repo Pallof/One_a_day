@@ -24,7 +24,8 @@ the author's copy of the data, not the live site's.
 | **Question** | yes | The teaser text. |
 | **Answer** | yes | Accepted answers, separated by `;` ([PRD 02](02-answer-evaluation.md)). |
 | **Tags** | no | Labels for the author's own sorting. **Never shown to solvers.** |
-| **Support image** | no | For puzzles that need a diagram. |
+| **Support image** | no | A picture under the question: a diagram that helps people picture the puzzle, or just something to make them smile. Every question gets one, made and reviewed as [docs/brand/puzzle-pictures.md](../brand/puzzle-pictures.md) describes *(author's decision, 2026-10-23; from 2026-10-18 it was a nice-to-have)*. The field stays optional, so a question can go in before its picture is ready. |
+| **Picture description** | with a picture | What the picture shows, in words. Screen readers read it out, and email apps that hold pictures back show it instead. **Add teaser** stays disabled until it's written. |
 | **Hint** | no | Unlocks after the first attempt ([PRD 03](03-hints-and-solutions.md)). |
 | **Solution** | no | Shown on solving, and on `/yesterday` the day after the challenge runs. |
 
@@ -42,6 +43,17 @@ the author's copy of the data, not the live site's.
   trusted or reused — and served read-only from `/teaser-images/{name}`.
 - No files left behind: replacing an image deletes the old one, "Remove image" clears it, deleting
   a teaser deletes its image, and an upload abandoned without saving is cleaned up.
+- **Every picture is described in words** *(added 2026-10-18)*. A diagram's description carries
+  every number and label on it, since someone who can't see the picture needs them to solve the
+  puzzle. Until then every picture was read out as "Support image for this teaser". One saved
+  before the field existed is read out as "A picture that goes with the question".
+- **Aim for under 200 KB.** A bigger picture still saves, with a note that it will load slowly on
+  a phone. 1200×675 matches the link-preview card and suits both the page and the email.
+- **A picture must never hint at the answer.** The poles puzzle draws its poles well apart and
+  marks the distance `d = ?`.
+- How the pictures are made, and the house style for cartoons: [docs/brand/puzzle-pictures.md](../brand/puzzle-pictures.md).
+- On the live site a picture goes up with the bank, by hand for now
+  ([PRD 11](11-deployment.md), requirement 13).
 
 ### Teaser table
 
@@ -79,6 +91,9 @@ Suggestions and issue reports are reviewed here too ([PRD 06](06-community-feedb
 - [x] Image type/size validated server-side; orphaned files cleaned up
 - [x] Tags visible in admin, never rendered to solvers
 - [x] Deleting a teaser removes its stats and image
+- [x] **Picture descriptions** — `TeaserPictureTests`, each mutation-verified: a picture can't be
+      saved without one, and the one written is stored; Edit brings it back, so Save isn't left
+      disabled; the challenge and yesterday's page read it out instead of a stock phrase
 
 ## Implementation notes
 

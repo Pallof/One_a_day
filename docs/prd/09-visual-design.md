@@ -123,6 +123,7 @@ page about 40px over.
 | About, beside the opening paragraph | Whole duck, with a description for screen readers | 140px wide; 96px on a phone |
 | The solve dialog, at the top | Whole duck — it replaced 🎉, as the confetti already celebrates | 96px tall |
 | The not-found page | Whole duck — it replaced a 🐱 left from before the mascot (2026-10-15) | 96px tall |
+| The emails' header, beside the name | Whole duck, loaded from the site | 34px tall. Added 2026-10-18: the brain emoji had stayed there after the site dropped it |
 | Browser tab | The face, close up | 32px |
 | A phone's home screen | The face | 180px |
 

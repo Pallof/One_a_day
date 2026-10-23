@@ -11,6 +11,9 @@ public sealed record MailContent(string Subject, string Body, string Html);
 /// <summary>Where the digest's links point, already absolute.</summary>
 public sealed record DigestLinks(string Solve, string Unsubscribe);
 
+/// <summary>The teaser's picture: its absolute address, and what it shows in words.</summary>
+public sealed record DigestPicture(string Url, string Description);
+
 /// <summary>
 /// The wording of every email a subscriber receives, kept pure so it can be tested
 /// without SMTP.
@@ -60,22 +63,23 @@ public static class SubscriptionMail
     /// <summary>
     /// The daily challenge.
     /// </summary>
-    /// <param name="hasImage">
-    /// Neither version carries the teaser's picture, so the reader is told there is one
-    /// rather than being handed a question that makes no sense without it.
+    /// <param name="picture">
+    /// The teaser's picture, if it has one (PRD 15). The styled version shows it under the
+    /// question; an email app that holds pictures back shows its description instead. The
+    /// plain-text version can't show a picture, so it gives the description and says where
+    /// to see it.
     /// </param>
     public static MailContent Digest(
-        DateOnly day, Difficulty difficulty, string question, bool hasImage, DigestLinks links)
+        DateOnly day, Difficulty difficulty, string question, DigestPicture? picture, DigestLinks links)
     {
         var date = day.ToString("dddd, MMMM d", CultureInfo.InvariantCulture);
         var subject = $"Stumpty — {date} · {difficulty}";
-        const string pictureNote = "This one comes with a picture — open it on the site to see it.";
 
         var text = $"""
             Challenge of the day · {date} · {difficulty}
 
             {question}
-            {(hasImage ? $"\n({pictureNote})\n" : "")}
+            {(picture is null ? "" : $"\n(Picture: {picture.Description.TrimEnd('.')}. See it on the site.)\n")}
             Solve today's challenge: {links.Solve}
 
             —
@@ -88,7 +92,7 @@ public static class SubscriptionMail
             Card(
                 QuestionHead(difficulty) +
                 Lead(question, margin: "14px 0 0") +
-                (hasImage ? Callout("🖼️ " + pictureNote) : "")) +
+                (picture is null ? "" : Picture(picture.Url, picture.Description))) +
             Spacer(26) +
             Button(links.Solve, "Solve today's challenge");
 

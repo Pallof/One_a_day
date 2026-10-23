@@ -279,9 +279,9 @@ public class SubscriptionTests
 
     private static readonly DigestLinks Links = new("https://site/", "https://site/unsubscribe?token=abc123");
 
-    private static MailContent Digest(string question = "Q?", bool hasImage = false,
+    private static MailContent Digest(string question = "Q?", DigestPicture? picture = null,
                                       Difficulty difficulty = Difficulty.Easy) =>
-        SubscriptionMail.Digest(new DateOnly(2026, 9, 11), difficulty, question, hasImage, Links);
+        SubscriptionMail.Digest(new DateOnly(2026, 9, 11), difficulty, question, picture, Links);
 
     /// <summary>What a reader sees in the HTML version, entities and all resolved.</summary>
     private static string Rendered(MailContent mail) => WebUtility.HtmlDecode(mail.Html);
@@ -323,12 +323,43 @@ public class SubscriptionTests
     }
 
     [Fact]
-    public void A_teaser_with_a_picture_says_so()
+    public void A_teaser_with_a_picture_shows_it_and_says_what_it_shows()
     {
-        Assert.Contains("picture", Digest(hasImage: true).Body);
-        Assert.Contains("picture", Rendered(Digest(hasImage: true)));
-        Assert.DoesNotContain("picture", Digest(hasImage: false).Body);
-        Assert.DoesNotContain("picture", Rendered(Digest(hasImage: false)));
+        // The styled version shows the picture under the question, with its description for an
+        // app that holds pictures back. The plain one can't show it, so it describes it and says
+        // where to look (PRD 15).
+        var picture = new DigestPicture("https://site/teaser-images/poles.png", "Two poles, d = ? apart.");
+        var mail = Digest(picture: picture);
+
+        Assert.Matches(@"<img src=""https://site/teaser-images/poles.png"" alt=""Two poles, d = \? apart."" width=""486""", mail.Html);
+        Assert.Contains("(Picture: Two poles, d = ? apart. See it on the site.)", mail.Body);
+
+        var plain = Digest();
+        Assert.DoesNotContain("teaser-images", plain.Html);
+        Assert.DoesNotContain("Picture", plain.Body);
+    }
+
+    [Fact]
+    public void No_email_carries_the_brain_emoji()
+    {
+        // The duck replaced it on the site (PRD 09); the emails kept it in their header badge
+        // and footer line until 2026-10-18. The header now shows the duck from the site.
+        var mails = new[]
+        {
+            SubscriptionMail.Confirmation("https://site/subscribe/confirm?token=t", "https://site/"),
+            Digest(),
+            Digest(picture: new DigestPicture("https://site/teaser-images/p.png", "p")),
+        };
+
+        foreach (var mail in mails)
+        {
+            foreach (var version in new[] { mail.Body, mail.Html, Rendered(mail) })
+            {
+                Assert.DoesNotContain("🧠", version);
+                Assert.DoesNotContain("&#129504;", version);
+            }
+            Assert.Contains("<img src=\"https://site/img/stumpty-mark.png\"", mail.Html);
+        }
     }
 
     [Fact]
@@ -389,11 +420,15 @@ internal sealed class RecordingMailer(EmailOptions? options = null) : SmtpMailer
 {
     public List<OutgoingMail> Sent { get; } = [];
 
+    /// <summary>Every send asked for, including the ones told to fail.</summary>
+    public List<OutgoingMail> Tried { get; } = [];
+
     /// <summary>Addresses whose sends should fail, to exercise the retry path.</summary>
     public HashSet<string> FailFor { get; } = [];
 
     public override Task<bool> SendAsync(OutgoingMail mail, CancellationToken token)
     {
+        Tried.Add(mail);
         if (FailFor.Contains(mail.To))
         {
             return Task.FromResult(false);
@@ -411,10 +446,19 @@ public class DailyDigestTests : IDisposable
     private static readonly DateTime Night = new(2026, 9, 11, 3, 0, 0);
 
     private (DailyDigestService Service, SubscriberStore Store, RecordingMailer Mailer) Build(
-        int maxPerDay = 400)
+        int maxPerDay = 400, bool pictures = false)
     {
         _env.SeedTeasers(Enumerable.Range(1, 6)
-            .Select(i => TeaserFactory.On($"2026-08-{i:00}", $"question {i}", answer: $"answer {i}", hint: $"hint {i}"))
+            .Select(i =>
+            {
+                var teaser = TeaserFactory.On($"2026-08-{i:00}", $"question {i}", answer: $"answer {i}", hint: $"hint {i}");
+                if (pictures)
+                {
+                    teaser.ImageFileName = $"picture-{i}.png";
+                    teaser.ImageAlt = $"picture {i}";
+                }
+                return teaser;
+            })
             .ToArray());
 
         var services = new ServiceCollection();
@@ -564,6 +608,30 @@ public class DailyDigestTests : IDisposable
     }
 
     [Fact]
+    public async Task A_retry_the_next_minute_is_the_same_email_not_a_second_one()
+    {
+        // A send can report failure after the mail arrived: on 2026-10-21 Gmail took it, then
+        // its "OK" came too late. The retry has to carry the same Message-ID, which Gmail
+        // shows only once.
+        var (service, store, mailer) = Build();
+        Subscribe(store, "flaky@example.com");
+        Subscribe(store, "other@example.com");
+        mailer.FailFor.Add("flaky@example.com");
+
+        await service.RunOnceAsync(Morning, default);
+        mailer.FailFor.Clear();
+        await service.RunOnceAsync(Morning.AddMinutes(1), default);
+        await service.RunOnceAsync(Morning.AddDays(1), default);
+
+        var flaky = mailer.Tried.Where(m => m.To == "flaky@example.com").Select(m => m.MessageKey).ToList();
+        Assert.Equal(3, flaky.Count);
+        Assert.NotNull(flaky[0]);
+        Assert.Equal(flaky[0], flaky[1]);       // retried: the same email
+        Assert.NotEqual(flaky[1], flaky[2]);    // tomorrow's is a new one
+        Assert.DoesNotContain(mailer.Tried.First(m => m.To == "other@example.com").MessageKey, flaky);
+    }
+
+    [Fact]
     public async Task A_new_day_sends_again()
     {
         var (service, store, mailer) = Build();
@@ -626,6 +694,21 @@ public class DailyDigestTests : IDisposable
             Assert.DoesNotContain("answer ", version);
             Assert.DoesNotContain("hint ", version);
         }
+    }
+
+    [Fact]
+    public async Task The_digest_shows_the_days_picture_from_the_site()
+    {
+        var (service, store, mailer) = Build(pictures: true);
+        Subscribe(store, "reader@example.com");
+
+        await service.RunOnceAsync(Morning, default);
+        var mail = Assert.Single(mailer.Sent);
+
+        // Today's own picture, at its address on the site: an inbox has nothing to be relative to.
+        var today = _env.NewRotationStore().RunFor(DateOnly.FromDateTime(Morning));
+        var teaser = _env.NewTeaserStore().GetById(today!.TeaserId)!;
+        Assert.Contains($"<img src=\"https://site/teaser-images/{teaser.ImageFileName}\" alt=\"{teaser.ImageAlt}\"", mail.Html);
     }
 
     public void Dispose() => _env.Dispose();

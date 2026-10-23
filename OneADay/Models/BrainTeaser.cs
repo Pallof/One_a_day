@@ -24,6 +24,16 @@ public class BrainTeaser
     /// <summary>Filename of an optional support image, served from /teaser-images.</summary>
     public string? ImageFileName { get; set; }
 
+    /// <summary>
+    /// What the picture shows, in words (PRD 05): read out by screen readers, and shown by an
+    /// email app that holds pictures back. A diagram's description carries every number on it.
+    /// </summary>
+    public string? ImageAlt { get; set; }
+
+    /// <summary>The picture's description, or a plain stand-in for one written before there was a field for it.</summary>
+    public string ImageDescription() =>
+        string.IsNullOrWhiteSpace(ImageAlt) ? "A picture that goes with the question" : ImageAlt.Trim();
+
     public string Question { get; set; } = string.Empty;
 
     /// <summary>Accepted answer. Multiple accepted answers can be separated with ';'.</summary>
