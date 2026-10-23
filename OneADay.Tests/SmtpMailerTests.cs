@@ -1,11 +1,14 @@
 using System.Net.Mail;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using OneADay.Services;
 
 namespace OneADay.Tests;
 
 /// <summary>
-/// The message as it goes over the wire. SmtpClient can write a message to a folder
-/// instead of sending it, which gives the real MIME output with no server involved.
+/// The message as it goes over the wire, and what a retry sends. SmtpClient can write a
+/// message to a folder instead of sending it, which gives the real MIME output with no
+/// server involved.
 /// </summary>
 public sealed class SmtpMailerTests : IDisposable
 {
@@ -71,6 +74,49 @@ public sealed class SmtpMailerTests : IDisposable
         var eml = WireFormat(new OutgoingMail("reader@example.com", "Subject", "plain", Html: longLine));
 
         Assert.All(eml.Split("\r\n"), line => Assert.True(line.Length <= 998, $"line of {line.Length}"));
+    }
+
+    [Fact]
+    public void The_message_key_becomes_the_message_id_on_the_senders_domain()
+    {
+        var eml = WireFormat(new OutgoingMail("reader@example.com", "Subject", "plain",
+            MessageKey: "digest.2026-10-21.abc"));
+
+        Assert.Contains("Message-ID: <digest.2026-10-21.abc@example.com>", eml);
+    }
+
+    [Fact]
+    public async Task A_retry_after_a_timeout_sends_the_same_message_not_a_new_one()
+    {
+        // 2026-10-21: Gmail took the digest, its "OK" came after the timeout, and the retry
+        // landed as a second copy. A retry with the same Message-ID is one Gmail shows once.
+        var mailer = new StallsOnceMailer();
+
+        var sent = await mailer.SendAsync(new OutgoingMail("reader@example.com", "Subject", "plain"), default);
+
+        Assert.True(sent);
+        Assert.Equal(2, mailer.MessageIds.Count);
+        Assert.NotNull(mailer.MessageIds[0]);
+        Assert.Equal(mailer.MessageIds[0], mailer.MessageIds[1]);
+    }
+
+    /// <summary>A server whose first reply never comes in time, as on 2026-10-21.</summary>
+    private sealed class StallsOnceMailer() : SmtpMailer(
+        Options.Create(new EmailOptions
+        {
+            Enabled = true, To = "a@x.com", From = "sender@example.com", Host = "h", AppPassword = "p",
+        }),
+        NullLogger<SmtpMailer>.Instance)
+    {
+        public List<string?> MessageIds { get; } = [];
+
+        protected override Task DeliverAsync(MailMessage message, CancellationToken token)
+        {
+            MessageIds.Add(message.Headers["Message-ID"]);
+            return MessageIds.Count == 1
+                ? Task.FromException(new SmtpException("The operation has timed out."))
+                : Task.CompletedTask;
+        }
     }
 
     public void Dispose() => Directory.Delete(_dir, recursive: true);

@@ -184,6 +184,12 @@ destroy every puzzle, statistic and subscriber.
     `fly ssh sftp put OneADay/App_Data/teasers.json /app/App_Data/teasers.json` delivers it. The
     one command for later updates is still to build.
 
+    **Pictures go up with the bank** ([PRD 05](05-authoring-and-admin.md)), one file each, into
+    `/app/App_Data/teaser-images/`. One left behind shows as a broken image on the page and in the
+    email, so the site checks at every start, which is when it reads a new bank, and logs a
+    warning for each picture it lacks, with the command that uploads it *(built 2026-10-18;
+    checked by hiding a picture and restarting)*.
+
 14. **Only answer Cloudflare.** ✅ **Built 2026-09-24.** Cloudflare's rate limit and cache only cover
     traffic that goes through it, but every Fly app also answers at its own `.fly.dev` address. Fly
     bills $0.02 per GB sent, and a bot picks the biggest file it can find. Measured on the published

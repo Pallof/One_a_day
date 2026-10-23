@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components.Forms;
+using OneADay.Models;
 
 namespace OneADay.Services;
 
@@ -50,6 +51,16 @@ public class ImageStore
 
         return fileName;
     }
+
+    /// <summary>
+    /// Teasers whose picture isn't on this machine (PRD 11). A bank uploaded without its new
+    /// pictures would show a broken image on the page and in the email.
+    /// </summary>
+    public IReadOnlyList<BrainTeaser> MissingPictures(IEnumerable<BrainTeaser> teasers) =>
+        teasers
+            .Where(t => !string.IsNullOrWhiteSpace(t.ImageFileName)
+                        && !File.Exists(Path.Combine(_dir, Path.GetFileName(t.ImageFileName))))
+            .ToList();
 
     public void Delete(string? fileName)
     {

@@ -70,6 +70,10 @@
             {
                 <span class="oad-warning">@_imageError</span>
             }
+            @if (_imageNote is not null)
+            {
+                <span class="oad-warning">@_imageNote</span>
+            }
             @if (!string.IsNullOrWhiteSpace(_form.ImageFileName))
             {
                 <div class="oad-image-preview">
@@ -78,6 +82,18 @@
                 </div>
             }
         </div>
+
+        @* Required with a picture (PRD 05): a screen reader reads it out, and an email app that
+           holds pictures back shows it instead. *@
+        @if (!string.IsNullOrWhiteSpace(_form.ImageFileName))
+        {
+            <div class="oad-field">
+                <label for="image-alt">Describe the picture *</label>
+                <textarea id="image-alt" rows="2" maxlength="@MaxImageAltLength"
+                          placeholder="What it shows, for anyone who can't see it. Include every number or label a solver needs."
+                          @bind="_form.ImageAlt" @bind:event="oninput"></textarea>
+            </div>
+        }
 
         <div class="oad-field">
             <label for="hint">Hint (optional)</label>
@@ -92,7 +108,7 @@
 
         <div class="oad-admin-actions">
             <button class="oad-btn-green" @onclick="SaveAsync"
-                    disabled="@(string.IsNullOrWhiteSpace(_form.Question) || string.IsNullOrWhiteSpace(_form.Answer))">
+                    disabled="@(string.IsNullOrWhiteSpace(_form.Question) || string.IsNullOrWhiteSpace(_form.Answer) || PictureNeedsDescription)">
                 @(_editingId is null ? "Add teaser" : "Save changes")
             </button>
             @if (_editingId is not null)
@@ -372,7 +388,16 @@
     private string? _dateWarning;
     private string _tagsText = string.Empty;
     private string? _imageError;
+    private string? _imageNote;           // a picture big enough to load slowly on a phone
     private string? _originalImageName;   // image the teaser had when Edit was opened
+
+    private const int MaxImageAltLength = 400;
+
+    /// <summary>Above this, a picture still saves, with a note: it loads slowly on a phone.</summary>
+    private const long SuggestedMaxImageBytes = 200 * 1024;
+
+    private bool PictureNeedsDescription =>
+        !string.IsNullOrWhiteSpace(_form.ImageFileName) && string.IsNullOrWhiteSpace(_form.ImageAlt);
     private DateOnly _today;
     private IReadOnlyList<BrainTeaser> _all = [];
     private IReadOnlyList<TeaserSuggestion> _suggestions = [];
@@ -436,6 +461,7 @@
         _originalImageName = null;
         _tagsText = string.Empty;
         _imageError = null;
+        _imageNote = null;
         // Default to the first upcoming day that doesn't have a teaser yet.
         var date = _today;
         while (Store.GetForDate(date) is not null)
@@ -459,6 +485,7 @@
             Difficulty = teaser.Difficulty,
             Tags = new List<string>(teaser.Tags),
             ImageFileName = teaser.ImageFileName,
+            ImageAlt = teaser.ImageAlt,
             Question = teaser.Question,
             Answer = teaser.Answer,
             Hint = teaser.Hint,
@@ -467,6 +494,7 @@
         _savedMessage = null;
         _dateWarning = null;
         _imageError = null;
+        _imageNote = null;
     }
 
     private Task SaveAsync()
@@ -478,7 +506,16 @@
             return Task.CompletedTask;
         }
 
+        // The button is disabled without one, but only in the browser.
+        if (PictureNeedsDescription)
+        {
+            return Task.CompletedTask;
+        }
+
         _form.Tags = ParsedTags;
+        _form.ImageAlt = string.IsNullOrWhiteSpace(_form.ImageFileName)
+            ? null
+            : TextLimit.Clip(_form.ImageAlt, MaxImageAltLength);
         Store.Save(_form);
 
         // Original image was replaced or removed during this edit → clean it up.
@@ -509,13 +546,18 @@
         _imageError = null;
         DiscardStagedImage();   // replacing a previous un-saved upload
         _form.ImageFileName = await Images.SaveAsync(file);
+        _imageNote = file.Size > SuggestedMaxImageBytes
+            ? $"This picture is {file.Size / 1024:N0} KB, so it will load slowly on a phone. Aim for under {SuggestedMaxImageBytes / 1024} KB."
+            : null;
     }
 
     private void RemoveImage()
     {
         DiscardStagedImage();
         _form.ImageFileName = null;
+        _form.ImageAlt = null;
         _imageError = null;
+        _imageNote = null;
     }
 
     /// <summary>Deletes a just-uploaded image that hasn't been committed to a saved teaser.</summary>

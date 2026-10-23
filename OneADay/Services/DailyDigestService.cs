@@ -145,11 +145,18 @@ public sealed class DailyDigestService(
             Solve: _site.Link(""),
             Unsubscribe: _site.Link($"unsubscribe?token={subscriber.Token}"));
 
+        // The same address the page uses, made absolute: an inbox has no site to be relative to.
+        var picture = string.IsNullOrWhiteSpace(teaser.ImageFileName)
+            ? null
+            : new DigestPicture(
+                _site.Link($"{ImageStore.RequestPath}/{teaser.ImageFileName}"),
+                teaser.ImageDescription());
+
         var content = SubscriptionMail.Digest(
             today,
             teaser.Difficulty,
             teaser.Question,
-            hasImage: !string.IsNullOrWhiteSpace(teaser.ImageFileName),
+            picture,
             links);
 
         return new OutgoingMail(subscriber.Email, content.Subject, content.Body,
@@ -162,6 +169,10 @@ public sealed class DailyDigestService(
                 ["List-Unsubscribe"] = $"<{links.Unsubscribe}>",
                 ["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click",
             },
-            Html: content.Html);
+            Html: content.Html,
+            // The same on every pass today, so next minute's retry of a send that reported
+            // failure but had in fact arrived is the same message, not a second copy. The Id,
+            // never the Token: the token is the unsubscribe secret.
+            MessageKey: $"digest.{today:yyyy-MM-dd}.{subscriber.Id:N}");
     }
 }

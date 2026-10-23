@@ -43,7 +43,7 @@
             @if (!string.IsNullOrWhiteSpace(_teaser.ImageFileName))
             {
                 <img class="ys-image" src="@($"{ImageStore.RequestPath}/{_teaser.ImageFileName}")"
-                     alt="Support image for this teaser" />
+                     alt="@_teaser.ImageDescription()" />
             }
 
             @if (!string.IsNullOrWhiteSpace(_teaser.Hint))

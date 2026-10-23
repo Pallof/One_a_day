@@ -173,6 +173,17 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = ImageStore.RequestPath,
 });
 
+// Pictures are uploaded by hand alongside the bank, and one left behind shows as a broken image
+// on the page and in the email. The site restarts to read a new bank, so this runs just as one
+// arrives, and says how to fix it (PRD 11).
+foreach (var teaser in teaserImages.MissingPictures(app.Services.GetRequiredService<TeaserStore>().GetAll()))
+{
+    var upload = $"fly ssh sftp put OneADay/App_Data/teaser-images/{teaser.ImageFileName} " +
+                 $"/app/App_Data/teaser-images/{teaser.ImageFileName}";
+    app.Logger.LogWarning("The teaser dated {Date} has a picture that isn't on this server. From the repo, run: {Upload}",
+        teaser.Date.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture), upload);
+}
+
 // One-click unsubscribe for mail clients (RFC 8058) — see SubscriptionEndpoints.
 app.MapOneClickUnsubscribe();
 

@@ -4,7 +4,7 @@ namespace OneADay.Models;
 
 /// <summary>
 /// The HTML every subscriber email shares, drawn to look like the site: paper background,
-/// the gold-circle wordmark, a serif masthead over a gold rule, white cards, green buttons.
+/// the duck-and-wordmark header, a serif masthead over a gold rule, white cards, green buttons.
 /// </summary>
 /// <remarks>
 /// <para><b>Email HTML is its own dialect.</b> Gmail ignores CSS variables and web fonts,
@@ -79,7 +79,7 @@ public static class EmailLayout
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;">
         <tr><td class="oad-pad" style="padding:22px 28px 16px;border-bottom:1px solid {{Line}};">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-        <td width="34" height="34" align="center" valign="middle" bgcolor="{{Gold}}" style="width:34px;height:34px;border-radius:17px;background-color:{{Gold}};font-size:17px;line-height:34px;text-align:center;">&#129504;</td>
+        <td width="28" height="34" valign="middle"><img src="{{E(siteUrl.TrimEnd('/'))}}/img/stumpty-mark.png" width="28" height="34" alt="" style="display:block;width:28px;height:34px;border:0;"></td>
         <td style="padding-left:10px;font-family:{{Serif}};font-size:23px;line-height:34px;font-weight:700;color:{{Ink}};"><a href="{{E(siteUrl)}}" style="color:{{Ink}};text-decoration:none;">Stumpty</a></td>
         </tr></table>
         </td></tr>
@@ -147,9 +147,12 @@ public static class EmailLayout
     public static string Soft(string text, string margin = "12px 0 0") =>
         $$"""<p style="margin:{{margin}};font-family:{{Sans}};font-size:16px;line-height:25px;color:{{InkSoft}};">{{E(text)}}</p>""";
 
-    /// <summary>A gold-tint note, like the site's locked-hint strip.</summary>
-    public static string Callout(string text) =>
-        $$"""<p style="margin:16px 0 0;padding:11px 15px;background-color:{{GoldTint}};border-radius:10px;font-family:{{Sans}};font-size:15px;line-height:22px;color:{{Amber}};">{{E(text)}}</p>""";
+    /// <summary>
+    /// The teaser's picture, the width of the card. The width attribute is for Outlook, which
+    /// ignores the style and would otherwise draw it full size; everyone else shrinks it to fit.
+    /// </summary>
+    public static string Picture(string url, string description) =>
+        $$"""<img src="{{E(url)}}" alt="{{E(description)}}" width="486" style="display:block;width:100%;max-width:486px;height:auto;margin:18px 0 0;border:1px solid {{Line}};border-radius:10px;font-family:{{Sans}};font-size:15px;line-height:22px;color:{{InkSoft}};">""";
 
     /// <summary>The green primary button, like <c>.oad-btn-green</c>.</summary>
     public static string Button(string href, string label) => $$"""
@@ -176,7 +179,7 @@ public static class EmailLayout
         $$"""<p style="margin:{{margin}};font-family:{{Sans}};font-size:14px;line-height:22px;color:{{InkSoft}};">{{html}}</p>""";
 
     /// <summary>The site's own footer tagline.</summary>
-    public static string Tagline => FooterLine("Stumpty &#129504; — one puzzle a day to sharpen how you think.");
+    public static string Tagline => FooterLine("Stumpty — one puzzle a day to sharpen how you think.");
 
     /// <summary>The soft ink, for links that sit in the footer.</summary>
     public static string FooterLink(string href, string label) => Link(href, label, InkSoft);

@@ -124,6 +124,11 @@ First time:
    ```bash
    fly ssh sftp put OneADay/App_Data/teasers.json /app/App_Data/teasers.json
    ```
+   Then each question's picture, if any, from `OneADay/App_Data/teaser-images/`. On start the
+   site logs a warning for any picture it lacks, with the command that uploads it:
+   ```bash
+   fly ssh sftp put OneADay/App_Data/teaser-images/<name> /app/App_Data/teaser-images/<name>
+   ```
 6. Connect stumpty.com with
    [Fly's Cloudflare guide](https://fly.io/docs/networking/understanding-cloudflare/):
    run `fly certs add stumpty.com`, add the `_fly-ownership` record that
