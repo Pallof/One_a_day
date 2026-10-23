@@ -67,6 +67,9 @@ mistake was in four places. Now only the layout (`MainLayout`) applies a width, 
   the room. Both bands span the window, so the lines above and below reach the screen edges while
   their contents stay aligned.
 - `/admin` uses the wide measure — applied by the layout, not the page.
+- Today's challenge uses a **split** measure (`oad-measure-split`): the reading column up to
+  1100px wide, the 1040px wide measure from there on, for its two columns (below). The layout
+  applies it too.
 - **No page may scroll sideways.** Wide content, admin tables especially, scrolls inside its own box.
 
 Checked by measurement, not by eye: equal left and right margins at 375, 480, 768, 900, 1024, 1280,
@@ -80,6 +83,26 @@ scrollbar**, so today's puzzle and its answer box are in view at once. The verti
 Two decisions came from it: the footer is **one line**, because a second row pushed the home page
 past 860px; and the main area's bottom padding was cut from 4.5rem, which on its own pushed every
 page about 40px over.
+
+**On a laptop, today's challenge is two columns** *(author's decision, 2026-10-23)*. A picture on
+every question pushed the home page about 350px past a laptop's window, and even with no picture
+it was over a 15-inch MacBook Pro's 790px. From 1100px wide the question and its picture sit on the
+left; the hint, the answer box and the way to yesterday's solution on the right. Narrower than
+that, so on phones, tablets and laptop windows that aren't full width, it's the single column as
+before.
+
+**A long question's picture gives way.** In the two columns the picture takes what the question
+leaves: the window's height, less the rest of the page (377px, measured), less the question's
+lines. The server counts those as the question's length divided by 50 characters, which never
+undercounts a question in the bank, because the left column is the same width on every laptop. The
+picture is never taller than its usual size or shorter than 140px. Measured over all 25 questions:
+
+| Window | Fits without scrolling | Pictures made smaller |
+|---|---|---|
+| 1512 × 860 (14-inch laptop, the target) | 25 of 25 | 2 |
+| 1440 × 790 (15-inch MacBook Pro) | 25 of 25 | 5 |
+| 1920 × 1000 | 25 of 25 | none |
+| 1536 × 730 (15.6-inch Windows laptop at 125%) | 23 of 25 | the two longest still scroll, by 20 and 50px |
 
 ## Navigation
 
@@ -240,6 +263,12 @@ exists, showing it again is nagging.
 - [x] Both webfonts load and apply
 - [x] Nav swaps to the hamburger at 900px, and the panel opens on touch
 - [x] No page sets its own maximum width
+- [x] **Today's challenge on a laptop**, checked by measurement on 2026-10-23: two columns from
+      1100px with no sideways scroll; one column, at 680px, at 1024px and on a 375px phone; every
+      question in the bank fits 1512 × 860 and 1440 × 790, the long ones with a smaller picture
+- [x] **What the two columns rely on** — `ChallengeLayoutTests`, each mutation-verified: the
+      question's line count for its picture, 50 characters a line; the hint, answer box and
+      yesterday's link in one column; only today's challenge widening the page
 - [x] Bootstrap is no longer loaded or shipped, and nothing regressed. Its address returns 404, and
       every route loads all of its files
 - [x] **The mascot** — `MascotTests`, each mutation-verified: the whole duck beside the name (with

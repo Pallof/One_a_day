@@ -42,6 +42,30 @@
     background: #fff;
 }
 
+/* ------------------------------------------------------------ two columns --- */
+
+/* On a laptop the question and its picture sit to the left of the hint and answer box,
+   so the whole challenge fits one screen (PRD 09, "Fitting on one screen"). Stacked,
+   the picture pushed the page about 350px past a 15-inch laptop's window. The width
+   comes from the layout's .oad-measure-split, which widens at the same 1100px. */
+@media (min-width: 1100px) {
+    .cv {
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+        column-gap: 1.25rem;
+        align-items: start;
+    }
+
+    /* The picture takes what the question leaves: the window, less the rest of the page
+       (377px, measured, plus a few to spare), less the question's lines at 1.86rem each
+       (--q-lines, from the component). A short question's picture is its usual size; the
+       longest go down to 140px tall, which fits every question on a 790px-tall window. */
+    .cv-image {
+        max-height: clamp(140px, calc(100vh - 384px - var(--q-lines, 1) * 1.86rem), 340px);
+        margin-inline: auto;
+    }
+}
+
 /* ------------------------------------------------------------------- hint --- */
 
 .cv-hint-section {

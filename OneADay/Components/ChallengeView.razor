@@ -8,7 +8,7 @@
 @implements IDisposable
 
 <div class="cv">
-    <div class="oad-box cv-question">
+    <div class="oad-box cv-question" style="--q-lines: @QuestionLines">
         <div class="cv-question-head">
             <h2>Question:</h2>
             <DifficultyBadge Level="Teaser.Difficulty" />
@@ -26,6 +26,9 @@
         }
     </div>
 
+    @* Everything after the question. On a laptop it's the right-hand column, beside the
+       question and its picture; on a phone it simply follows the question. *@
+    <div class="cv-side">
     @if (!string.IsNullOrWhiteSpace(Teaser.Hint) && !_solved && !_revealed)
     {
         <div class="cv-hint-section">
@@ -133,6 +136,7 @@
             @Wording.Plural(_stats.SuccessfulSubmissions, "was", "were") correct
         </p>
     }
+    </div>
 </div>
 
 @* Always rendered on the daily page so the slide-out animates both ways; the
@@ -199,6 +203,19 @@
 
     /// <summary>Remembers a dismissal, so the nudge is a suggestion and not a nag.</summary>
     private const string NudgeDismissedKey = "oad-24-nudge-dismissed";
+
+    /// <summary>
+    /// Characters per line of the question in the laptop layout's left column. That column is
+    /// the same width on every laptop, and measured over the bank no question runs more than 50
+    /// a line, so dividing by 50 never undercounts (2026-10-23).
+    /// </summary>
+    private const int QuestionCharsPerLine = 50;
+
+    /// <summary>
+    /// About how many lines the question takes beside the answer box. A long question's picture
+    /// gives up that much height so the challenge still fits a laptop's window (PRD 09).
+    /// </summary>
+    private int QuestionLines => Math.Max(1, (int)Math.Ceiling(Teaser.Question.Length / (double)QuestionCharsPerLine));
 
     [Parameter, EditorRequired] public BrainTeaser Teaser { get; set; } = default!;
 
