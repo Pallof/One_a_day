@@ -4,8 +4,11 @@
 
 <PageTitle>Stumpty — Yesterday's solution</PageTitle>
 
-@* Nothing on this page can be copied, revealed or not (author's decision, 2026-10-18; PRD 01). *@
-<div class="ys-page oad-no-copy">
+@* Nothing on this page can be copied, revealed or not (author's decision, 2026-10-18; PRD 01).
+   On a laptop it's two columns (PRD 09): the question on the left; the warning, the solution and
+   the way back on the right. The order here is the phone's, warning first, and the grid moves
+   things into place from there. *@
+<div class="ys-page oad-no-copy @(_teaser is null ? "" : "ys-split")">
     <div class="oad-banner">Yesterday's solution</div>
 
     @if (_teaser is null)
@@ -30,7 +33,7 @@
             attempt it before comparing.
         </div>
 
-        <div class="oad-box">
+        <div class="oad-box ys-question" style="--q-lines: @QuestionLines.Of(_teaser.Question)">
             <div class="ys-head">
                 <h2>Question:</h2>
                 <DifficultyBadge Level="_teaser.Difficulty" />
@@ -62,7 +65,7 @@
             }
         </div>
 
-        <div class="oad-box">
+        <div class="oad-box ys-solution">
             <h2>Solution:</h2>
 
             <div class="ys-veil @(_showSolution ? "ys-open" : "")">

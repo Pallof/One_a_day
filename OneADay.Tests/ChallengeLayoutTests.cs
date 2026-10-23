@@ -6,24 +6,35 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using OneADay.Components;
 using OneADay.Components.Layout;
+using OneADay.Components.Pages;
 using OneADay.Models;
 using OneADay.Services;
 
 namespace OneADay.Tests;
 
 /// <summary>
-/// Today's challenge on a laptop (PRD 09, "Fitting on one screen"): two columns, the question and
-/// its picture beside the answer box, and a long question's picture giving way so the page still
-/// fits the window. The widths and heights themselves are CSS, checked by measurement; these pin
-/// what the CSS relies on.
+/// Today's challenge and yesterday's solution on a laptop (PRD 09, "Fitting on one screen"): two
+/// columns, the question and its picture on the left, and a long question's picture giving way so
+/// the page still fits the window. The widths and heights themselves are CSS, checked by
+/// measurement; these pin what the CSS relies on.
 /// </summary>
 public class ChallengeLayoutTests : BunitContext
 {
     private readonly TestEnvironment _env = new();
 
+    /// <summary>Yesterday's question: 120 characters, so three lines at 50 a line.</summary>
+    private static readonly string YesterdaysQuestion = new('y', 120);
+
     public ChallengeLayoutTests()
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
+        // Two days, so yesterday's solution has something to show that isn't today's challenge.
+        var today = AppTime.Today;
+        _env.SeedTeasers(
+            TeaserFactory.On(today.ToString("yyyy-MM-dd"), "Today's question?"),
+            TeaserFactory.On(today.AddDays(-1).ToString("yyyy-MM-dd"), YesterdaysQuestion,
+                             hint: "Think it through.", solution: "Because."));
+        Services.AddSingleton(new DailySchedule(_env.NewTeaserStore(), _env.NewRotationStore()));
         Services.AddReportDialog(_env);         // the layout carries it on every page
         Services.AddSingleton(_env.NewStatsStore());
         Services.AddDataProtection();
@@ -79,13 +90,45 @@ public class ChallengeLayoutTests : BunitContext
         Assert.NotNull(side.QuerySelector("a.cv-yesterday"));
     }
 
-    /// <summary>Only today's challenge widens for its two columns; every other page keeps the reading column.</summary>
+    /// <summary>
+    /// Yesterday's question tells its picture its line count too: the same left column, so the
+    /// same count.
+    /// </summary>
+    [Fact]
+    public void Yesterdays_question_tells_its_picture_how_many_lines_it_takes()
+    {
+        var page = Render<Yesterday>();
+
+        Assert.Contains("--q-lines: 3", page.Find(".ys-question").GetAttribute("style"));
+    }
+
+    /// <summary>
+    /// On a phone yesterday's page reads warning, question, solution, the way back, and the
+    /// laptop's grid only moves those same parts into two columns. So the markup keeps that order,
+    /// and marks each part for the grid to place.
+    /// </summary>
+    [Fact]
+    public void Yesterdays_page_keeps_the_phone_order_and_marks_each_part_for_the_grid()
+    {
+        var page = Render<Yesterday>().Find(".ys-page");
+
+        Assert.Contains("ys-split", page.ClassList);
+        Assert.Equal(
+            ["oad-banner", "ys-spoiler-warning", "ys-question", "ys-solution", "ys-back"],
+            page.Children.Select(c => c.ClassList.First(n => n.StartsWith("ys-") || n == "oad-banner")));
+    }
+
+    /// <summary>
+    /// Only today's challenge and yesterday's solution widen for their two columns; every other
+    /// page keeps the reading column.
+    /// </summary>
     [Theory]
     [InlineData("", true)]
-    [InlineData("yesterday", false)]
+    [InlineData("yesterday", true)]
     [InlineData("about", false)]
     [InlineData("contact", false)]
-    public void Only_todays_challenge_widens_for_two_columns(string path, bool widens)
+    [InlineData("twentyfour", false)]
+    public void Only_the_challenge_and_yesterdays_solution_widen_for_two_columns(string path, bool widens)
     {
         Services.GetRequiredService<NavigationManager>().NavigateTo(path);
         var layout = Render<MainLayout>(p => p.Add(l => l.Body, (RenderFragment)(_ => { })));
