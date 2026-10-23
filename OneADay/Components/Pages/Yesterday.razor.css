@@ -86,6 +86,51 @@
     background: #fff;
 }
 
+/* --- two columns ------------------------------------------------------- */
+
+/* On a laptop the question and its picture sit on the left; the spoiler warning, the solution it
+   warns about and the way back on the right, so the page fits one screen (PRD 09, "Fitting on
+   one screen"). The markup keeps the phone's order, warning first; the grid places each part.
+   The last row soaks up the question's extra height, so the right column stays packed at the
+   top. The width comes from the layout's .oad-measure-split, which widens at the same 1100px. */
+@media (min-width: 1100px) {
+    .ys-split {
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+        grid-template-rows: auto auto auto auto 1fr;
+        column-gap: 1.25rem;
+        align-items: start;
+    }
+
+    .ys-split > .oad-banner {
+        grid-column: 1 / -1;
+    }
+
+    .ys-question {
+        grid-column: 1;
+        grid-row: 2 / -1;
+    }
+
+    .ys-spoiler-warning,
+    .ys-solution,
+    .ys-back {
+        grid-column: 2;
+    }
+
+    .ys-back {
+        justify-self: start;
+    }
+
+    /* As on today's challenge: the picture takes what the question leaves, the window less the
+       rest of the page (401px, measured, with the hint bar under the picture; plus a few to
+       spare) and the question's lines (--q-lines, at 1.15rem × 1.65 each, rounded up to 1.9rem).
+       Never under 140px, never over its usual size. */
+    .ys-image {
+        max-height: clamp(140px, calc(100vh - 408px - var(--q-lines, 1) * 1.9rem), 320px);
+        margin-inline: auto;
+    }
+}
+
 /* The space goes on the veil, so its tap-to-show button covers the hint and nothing more. */
 .ys-hint-veil {
     margin-top: 1rem;

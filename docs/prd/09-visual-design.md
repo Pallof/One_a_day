@@ -67,9 +67,9 @@ mistake was in four places. Now only the layout (`MainLayout`) applies a width, 
   the room. Both bands span the window, so the lines above and below reach the screen edges while
   their contents stay aligned.
 - `/admin` uses the wide measure — applied by the layout, not the page.
-- Today's challenge uses a **split** measure (`oad-measure-split`): the reading column up to
-  1100px wide, the 1040px wide measure from there on, for its two columns (below). The layout
-  applies it too.
+- Today's challenge and yesterday's solution use a **split** measure (`oad-measure-split`): the
+  reading column up to 1100px wide, the 1040px wide measure from there on, for their two columns
+  (below). The layout applies it too.
 - **No page may scroll sideways.** Wide content, admin tables especially, scrolls inside its own box.
 
 Checked by measurement, not by eye: equal left and right margins at 375, 480, 768, 900, 1024, 1280,
@@ -103,6 +103,24 @@ picture is never taller than its usual size or shorter than 140px. Measured over
 | 1440 × 790 (15-inch MacBook Pro) | 25 of 25 | 5 |
 | 1920 × 1000 | 25 of 25 | none |
 | 1536 × 730 (15.6-inch Windows laptop at 125%) | 23 of 25 | the two longest still scroll, by 20 and 50px |
+
+**Yesterday's solution follows suit** *(author's decision, 2026-10-23)*. At 1440 × 790 it was
+1,055px tall. From 1100px wide the question, its picture and the hint sit on the left; the spoiler
+warning, the solution it warns about and the way back on the right. The warning moved beside the
+solution rather than across the top: the question itself gives nothing away. The markup keeps the
+phone's order, warning first, and the grid places each part, so phones read it as before. A long
+question's picture gives way by the same rule (the rest of this page is 401px, with the hint bar).
+Measured over all 25 questions, with each one's own solution:
+
+| Window | Fits without scrolling |
+|---|---|
+| 1512 × 860 | 24 of 25 |
+| 1440 × 790 | 24 of 25 |
+| 1920 × 1000 | 24 of 25 |
+| 1536 × 730 | 22 of 25 |
+
+The one that never fits is held up by its solution, not its picture: the blurred solution takes
+its full height even before it's revealed, and that one alone is taller than the window.
 
 ## Navigation
 
