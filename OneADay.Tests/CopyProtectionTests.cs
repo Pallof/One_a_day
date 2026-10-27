@@ -80,7 +80,7 @@ public class CopyProtectionTests : BunitContext
         foreach (var veil in page.FindAll("button.ys-unveil").ToList()) { veil.Click(); }
 
         foreach (var part in new[] { ".oad-banner", ".ys-spoiler-warning", ".ys-question-text",
-                                     ".ys-hint", ".ys-answer", ".ys-explanation", ".ys-back" })
+                                     ".ys-answer", ".ys-explanation", ".ys-back" })
         {
             Assert.True(page.Find(part).Closest($".{Guard}") is not null, $"{part} can be copied.");
         }

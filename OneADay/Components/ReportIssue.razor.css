@@ -26,9 +26,11 @@
     border-color: var(--blue);
 }
 
+/* Drawn, not an emoji, so it takes the button's colour and turns blue with it on hover. */
 .ri-fab-icon {
-    font-size: 1rem;
-    line-height: 1;
+    width: 1.15rem;
+    height: 1.15rem;
+    flex-shrink: 0;
 }
 
 /* Off the challenge, wide screens only: at 900px and below the menu is the hamburger, which

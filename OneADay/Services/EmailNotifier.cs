@@ -86,7 +86,7 @@ public sealed class EmailNotifier
             {
                 _log.LogWarning(
                     "Notification queue is at capacity ({Capacity}); discarding the oldest " +
-                    "pending notification. Items are still saved — only the email is lost. " +
+                    "pending notification. Items are still saved. Only the email is lost. " +
                     "Newest subject: {Subject}", Capacity, safeSubject);
             }
 

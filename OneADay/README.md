@@ -4,8 +4,7 @@ A daily brain teaser web app built with C# Blazor (interactive server rendering)
 following the wireframes in `Desktop/One_a_day/Picture Directory/One a Day layout.pdf`.
 
 One new teaser appears each day as the **Challenge of the day**. Visitors type an
-answer into the submission box and get instant feedback, with an optional hint after
-a couple of wrong attempts.
+answer into the submission box and get instant feedback.
 
 ## Running the app
 
@@ -49,8 +48,8 @@ These rules are pinned down by unit tests in `../OneADay.Tests` — run
 - **Support image** (optional) — upload a PNG/JPG/GIF/WebP (max 3 MB) to
   attach to a teaser. Stored in `App_Data/teaser-images/` under a random
   filename and served from `/teaser-images`; shown below the question.
-- **Hint** (optional) appears as a concealed click-to-reveal bar between the
-  question and the submission box.
+- **Hint** (optional) is kept with the teaser, but the site doesn't show it
+  ([PRD 03](../docs/prd/03-hints-and-solutions.md)).
 - **Solution** (optional) is shown once solved. The daily challenge never reveals
   it otherwise — there is no archive to browse ([PRD 04](../docs/prd/04-archive-and-discovery.md)).
 
@@ -73,8 +72,8 @@ per-teaser Stats column.
 | Route | Wireframe page |
 |---|---|
 | `/` | Home — welcome banner, Challenge of the day, submission box |
-| `/yesterday` | Yesterday's solution — the previous challenge, with its hint and its answer each behind a blur veil |
+| `/yesterday` | Yesterday's solution: the previous challenge, with its answer behind a blur veil |
 | `/twentyfour` | Twenty Four — make 24 from four dealt cards (also answers the legacy `/questions`) |
 | `/about` | About us |
-| `/contact` | Suggest a teaser — the suggestion form (difficulty, teaser, solution + hint); submissions land in `App_Data/suggestions.json` and are reviewed in admin. Rate-limited to 1/day per device (and 3/day per hashed IP as a bot backstop) |
+| `/contact` | Suggest a teaser — the suggestion form (difficulty, teaser, solution); submissions land in `App_Data/suggestions.json` and are reviewed in admin. Rate-limited to 1/day per device (and 3/day per hashed IP as a bot backstop) |
 | `/admin` | Your input system for adding daily teasers |

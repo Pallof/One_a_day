@@ -179,7 +179,7 @@ public static class EmailLayout
         $$"""<p style="margin:{{margin}};font-family:{{Sans}};font-size:14px;line-height:22px;color:{{InkSoft}};">{{html}}</p>""";
 
     /// <summary>The site's own footer tagline.</summary>
-    public static string Tagline => FooterLine("Stumpty — one puzzle a day to sharpen how you think.");
+    public static string Tagline => FooterLine("Stumpty · one puzzle a day to sharpen how you think.");
 
     /// <summary>The soft ink, for links that sit in the footer.</summary>
     public static string FooterLink(string href, string label) => Link(href, label, InkSoft);

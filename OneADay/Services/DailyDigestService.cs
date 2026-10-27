@@ -115,7 +115,7 @@ public sealed class DailyDigestService(
             if (!_budget.HasRoom(today))
             {
                 log.LogWarning("Daily digest cap ({Cap}) reached with {Left} subscribers still " +
-                               "owed. The account is near its sending ceiling — see PRD 15.",
+                               "owed. The account is near its sending ceiling. See PRD 15.",
                                _budget.MaxPerDay, due.Count - sent);
                 break;
             }

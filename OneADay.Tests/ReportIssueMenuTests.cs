@@ -91,7 +91,7 @@ public class ReportIssueMenuTests : BunitContext
         var layout = Layout(path);
 
         var entry = layout.Find(".oad-menu-panel li button.oad-menu-action");
-        Assert.Equal("⚠️ Report an issue", entry.TextContent.Trim());
+        Assert.Equal("Report an issue", entry.TextContent.Trim());
         Assert.Empty(layout.FindAll(".ri-modal"));
 
         entry.Click();

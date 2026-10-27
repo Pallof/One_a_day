@@ -48,8 +48,8 @@ public static class DevelopmentModeGuard
             return null;   // Production, Staging, anything else: the admin page is already off
         }
 
-        const string risk = "Development mode switches on the admin page — every future answer " +
-                            "included — for anyone who can reach this app.";
+        const string risk = "Development mode switches on the admin page, with every future answer " +
+                            "in it, for anyone who can reach this app.";
 
         if (!isDebugBuild)
         {
@@ -65,7 +65,7 @@ public static class DevelopmentModeGuard
                    $"the author's computer. {risk} If this is a server, run it in Production: " +
                    "remove ASPNETCORE_ENVIRONMENT=Development (or DOTNET_ENVIRONMENT, or " +
                    "--environment Development). Note that `dotnet run` switches Development on " +
-                   "by itself, from launchSettings.json — deploy a published build instead. If " +
+                   "by itself, from launchSettings.json. Deploy a published build instead. If " +
                    "this is the author's own computer, the one-time setup is in PRD 10.";
         }
 

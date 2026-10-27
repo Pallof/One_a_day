@@ -70,7 +70,7 @@ public class MascotTests : BunitContext
         var line = Layout().Find(".oad-footer-line");
 
         AssertMascot("img/stumpty-mark.png", line.QuerySelector("img.oad-footer-mark")?.GetAttribute("src"));
-        Assert.Equal("Stumpty — one puzzle a day to sharpen how you think.",
+        Assert.Equal("Stumpty · one puzzle a day to sharpen how you think.",
             Regex.Replace(line.TextContent, @"\s+", " ").Trim());
     }
 

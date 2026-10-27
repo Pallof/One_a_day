@@ -17,7 +17,7 @@ can benefit from it or enjoy solving a quick challenge.
 *The About page's wording, word for word — keep the two in step.*
 
 It is deliberately **small, anonymous and frictionless**: no sign-up, no leaderboard pressure —
-just today's puzzle, an answer box, and a hint when you're genuinely stuck.
+just today's puzzle and an answer box.
 
 ## The name
 
@@ -39,7 +39,7 @@ letting it follow a renamed project would make every one unreadable ([PRD 11](11
 
 | User | Needs |
 |---|---|
-| **Solver** (primary) | A quick daily mental workout: instant feedback, a hint if stuck, and how they did against others. Arrives with no account and expects none. |
+| **Solver** (primary) | A quick daily mental workout: instant feedback, and how they did against others. Arrives with no account and expects none. |
 | **Author** (the site owner) | To publish one teaser a day without friction, queue a week ahead in one sitting, and hear when a question is broken or unfair. |
 
 ## Product principles
@@ -52,8 +52,8 @@ letting it follow a renamed project would make every one unreadable ([PRD 11](11
 2. **Generous, never wrong.** A right answer is never rejected over formatting — case,
    punctuation, `9` vs `nine`, `48` vs `48 mph` — and a wrong one never passes
    ([PRD 02](02-answer-evaluation.md)).
-3. **Effort before help.** Hints and solutions are earned, so the puzzle stays a puzzle
-   ([PRD 03](03-hints-and-solutions.md)).
+3. **Effort before answers.** A solution is earned, by solving or by waiting a day, so the
+   puzzle stays a puzzle. The site offers no hints *(2026-10-27)* ([PRD 03](03-hints-and-solutions.md)).
 4. **Never spoil the future.** No answer to today's or a scheduled teaser can be reached, even by
    guessing an address.
 5. **Data stays legible.** Everything lives in plain text files (JSON) the author can read, edit
@@ -65,7 +65,7 @@ Shipped, and covered by the specs of record:
 
 - The daily challenge — midnight-Pacific rollover, countdown, confetti ([01](01-daily-challenge.md))
 - Generous answer checking — numbers, number words, formulas, alternatives ([02](02-answer-evaluation.md))
-- Earned hints; solutions published the day after a challenge runs ([03](03-hints-and-solutions.md))
+- Solutions published the day after a challenge runs; no hints ([03](03-hints-and-solutions.md))
 - **No archive** — only today's puzzle can be reached ([04](04-archive-and-discovery.md))
 - **Twenty Four** — a game that makes its own puzzles, so it can't use up the teasers ([07](07-twenty-four.md))
 - **Recycling** — past teasers come back when none is scheduled, so dry spells don't show and newcomers see the back catalogue ([08](08-recycling-rotation.md))

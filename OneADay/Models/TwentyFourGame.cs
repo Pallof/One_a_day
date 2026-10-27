@@ -148,14 +148,14 @@ public static class TwentyFourGame
         if (expression.Length > MaxExpressionLength)
         {
             return new(TwentyFourResult.TooLong,
-                $"That's far longer than four numbers need — keep it under {MaxExpressionLength} characters.");
+                $"That's far longer than four numbers need. Keep it under {MaxExpressionLength} characters.");
         }
 
         var offending = expression.FirstOrDefault(c => !char.IsDigit(c) && !AllowedCharacters.Contains(c));
         if (offending != default)
         {
             var what = offending == '.'
-                ? "Decimal points aren't allowed — use only the numbers you were dealt."
+                ? "Decimal points aren't allowed. Use only the numbers you were dealt."
                 : $"'{offending}' isn't allowed. Use your numbers with + - * / and parentheses only.";
             return new(TwentyFourResult.IllegalCharacter, what);
         }
@@ -168,7 +168,7 @@ public static class TwentyFourGame
         if (!Arithmetic.TryEvaluate(expression, out var value))
         {
             return new(TwentyFourResult.Malformed,
-                "That isn't a complete answer — check for a missing number or a stray operator.");
+                "That isn't a complete answer. Check for a missing number or a stray operator.");
         }
 
         var used = Arithmetic.Operands(expression);
@@ -186,7 +186,7 @@ public static class TwentyFourGame
                 $"That comes to {Trim(Arithmetic.Round(value))}, not {Target}.");
         }
 
-        return new(TwentyFourResult.Correct, $"Correct — {expression.Trim()} = {Target}.");
+        return new(TwentyFourResult.Correct, $"Correct! {expression.Trim()} = {Target}.");
     }
 
     /// <summary>Every '(' closed in order, and nothing closed that was never opened.</summary>

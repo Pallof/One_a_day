@@ -75,7 +75,7 @@ public class ChallengeLayoutTests : BunitContext
 
     /// <summary>
     /// The grid puts the question on the left and everything else on the right, so everything
-    /// else has to be one box: the hint, the answer box and the way to yesterday's solution.
+    /// else has to be one box: the answer box and the way to yesterday's solution.
     /// </summary>
     [Fact]
     public void Everything_after_the_question_is_one_column()
@@ -85,7 +85,6 @@ public class ChallengeLayoutTests : BunitContext
         var columns = challenge.Find(".cv").Children;
         Assert.Equal(["cv-question", "cv-side"], columns.Select(c => c.ClassList.Last()));
         var side = columns[1];
-        Assert.NotNull(side.QuerySelector(".cv-hint-section"));
         Assert.NotNull(side.QuerySelector("textarea.cv-input"));
         Assert.NotNull(side.QuerySelector("a.cv-yesterday"));
     }

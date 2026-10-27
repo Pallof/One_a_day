@@ -24,11 +24,10 @@ Built with **C# / Blazor Server (.NET 10)**.
   - numeric equivalence (`9` = `9.0`, `1,000` = `1000`)
   - spelled-out numbers (`eighty` = `80`, `forty-eight mph` = `48 mph`)
   - multiple accepted phrasings per question
-- **Hints that must be earned** — locked until you've made at least one attempt
 - **Solutions unlock the next day** — never while a challenge is live, however many attempts you make
-- **Yesterday's solution page** — spoiler warning plus separate blur veils over the question and the answer, so you can still attempt it first
+- **Yesterday's solution page**: a spoiler warning, the question in the open and the answer behind a blur veil, so you can still attempt it first
 - **Difficulty badges** — Easy / Medium / Hard, colour-coded green / yellow / red
-- **Confetti** on a correct answer 🎉
+- **Confetti** on a correct answer
 - **Post-solve countdown** to the next challenge
 - **Community stats** — "342 out of 1,208 total submissions were correct", revealed only after you solve
 - **Suggest a teaser** — visitors can submit their own (rate-limited to one per day)
@@ -85,7 +84,7 @@ Open the **☰ menu → Add a teaser (admin)**, or go straight to `/admin`.
 | **Answer** | Separate alternative accepted answers with `;` — e.g. `48; 48 mph; forty-eight`. |
 | **Tags** | Comma-separated labels (`logic, math`) for your own sorting. Never shown to visitors. |
 | **Support image** | Optional PNG/JPG/GIF/WebP up to 3 MB, for puzzles that need a diagram. |
-| **Hint** | Unlocks for the solver after their first attempt. |
+| **Hint** | Optional. Kept with the teaser, but the site doesn't show it (PRD 03). |
 | **Solution** | Shown once solved, or revealable the day after the challenge runs. |
 
 ---
@@ -159,7 +158,7 @@ Start the site again and open `/admin` → **Site metrics** ([PRD 16](docs/prd/1
 ```
 OneADay/                     the Blazor app
   Components/
-    ChallengeView.razor      shared question + submission + hint + stats UI
+    ChallengeView.razor      shared question + submission + stats UI
     DifficultyBadge.razor    colour-coded Easy/Medium/Hard badge
     Pages/                   Home, Yesterday, TwentyFour, About, Contact, Admin
   Models/BrainTeaser.cs      the teaser + all answer-matching rules
@@ -176,7 +175,7 @@ OneADay.Tests/               xUnit tests for answer validation
 | Route | Page |
 |---|---|
 | `/` | Challenge of the day |
-| `/yesterday` | Yesterday's solution — the question, with the hint and the answer each behind a tap |
+| `/yesterday` | Yesterday's solution: the question, with the answer behind a tap |
 | `/twentyfour` | Twenty Four — make 24 from four dealt cards |
 | `/about` · `/contact` | About, and the suggest-a-teaser form |
 | `/admin` | Author tools |

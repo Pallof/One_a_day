@@ -130,7 +130,7 @@ public static class CloudflareLock
             if (Interlocked.Exchange(ref warned, 1) == 0)
             {
                 logger.LogWarning(
-                    "Turned away a request without Cloudflare's {Header} header — expected for " +
+                    "Turned away a request without Cloudflare's {Header} header. That's expected for " +
                     "anything that skips Cloudflare. If real visitors are turned away too, " +
                     "Cloudflare's header rule and {Variable} don't match (PRD 11). Further " +
                     "rejections aren't logged.",

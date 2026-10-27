@@ -29,29 +29,8 @@
     @* Everything after the question. On a laptop it's the right-hand column, beside the
        question and its picture; on a phone it simply follows the question. *@
     <div class="cv-side">
-    @if (!string.IsNullOrWhiteSpace(Teaser.Hint) && !_solved && !_revealed)
-    {
-        <div class="cv-hint-section">
-            @if (_showHint)
-            {
-                <button class="cv-hint-revealed" @onclick="() => _showHint = false">
-                    <span>💡 Hint: @Teaser.Hint</span>
-                    <span class="cv-hint-hide">Click to hide</span>
-                </button>
-            }
-            else if (_attempts >= MinAttemptsBeforeHint)
-            {
-                <button class="cv-hint-toggle" @onclick="() => _showHint = true">
-                    💡 Stuck? Click to reveal a hint
-                </button>
-            }
-            else
-            {
-                <div class="cv-hint-locked">🔒 Give it a try first — a hint unlocks after your first attempt.</div>
-            }
-        </div>
-    }
-
+    @* No hint, though the bank still holds one for most teasers (author's decision,
+       2026-10-27; PRD 03). *@
     <div class="oad-box">
         <h2 id="cv-answer-label">Submission:</h2>
         @* @bind:after gives us a keystroke hook without fighting @bind:event for the
@@ -84,7 +63,7 @@
            rather than leaving solvers hunting for a reveal button. *@
         @if (!CanReveal && !_solved && _attempts > 0)
         {
-            <p class="cv-locked-note">🔒 No peeking today — the solution unlocks tomorrow.</p>
+            <p class="cv-locked-note">No peeking today. The solution unlocks tomorrow.</p>
         }
 
         @if (_revealed || (_solved && !string.IsNullOrWhiteSpace(Teaser.Solution)))
@@ -192,7 +171,6 @@
 }
 
 @code {
-    private const int MinAttemptsBeforeHint = 1;
     private const int MaxSubmissionLength = 300;
 
     /// <summary>Wrong answers before we suggest a change of scene.</summary>
@@ -224,7 +202,6 @@
     private string? _feedback;
     private bool _solved;
     private bool _revealed;
-    private bool _showHint;
     private int _attempts;
     private StatsSnapshot? _stats;
     private Timer? _countdownTimer;
@@ -257,7 +234,6 @@
         _feedback = null;
         _solved = false;
         _revealed = false;
-        _showHint = false;
         _attempts = 0;
         _showSolved = false;
         _stats = Stats.Get(Teaser.Id);
@@ -404,7 +380,7 @@
         if (Teaser.AcceptsAnswer(_submission))
         {
             _solved = true;
-            _feedback = $"Correct! Solved in {_attempts} {Wording.Plural(_attempts, "attempt")}. 🎉";
+            _feedback = $"Correct! Solved in {_attempts} {Wording.Plural(_attempts, "attempt")}.";
             if (IsDaily)
             {
                 StartCountdown();
@@ -415,8 +391,8 @@
         else
         {
             _feedback = CanReveal
-                ? "Not quite — try again, or reveal the solution."
-                : "Not quite — stretch that brain and try again!";
+                ? "Not quite. Try again, or reveal the solution."
+                : "Not quite. Stretch that brain and try again!";
 
             // Struggling. Offer a change of scene rather than letting them grind —
             // and only after several genuine tries, so it never reads as "give up".

@@ -44,7 +44,8 @@ logins — so the wording should never imply a streak is permanent.
 ### Sharing
 
 8. A **Share** button after solving copies a short summary, e.g.
-   `Stumpty — 29 Jul 2026 · solved in 2 attempts (🔥6) https://…`
+   `Stumpty · 29 Jul 2026 · solved in 2 attempts, 6-day streak https://…`
+   (no em-dash or emoji: [PRD 09](09-visual-design.md#removed-on-purpose))
 9. It must **never** include the question, the answer, or anything that spoils the puzzle.
 10. Confirm the copy visibly ("Copied!").
 11. Use the device's own share menu where available, otherwise the clipboard.

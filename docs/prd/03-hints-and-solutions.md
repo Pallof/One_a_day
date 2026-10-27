@@ -4,11 +4,9 @@
 
 ## In plain terms
 
-Help has to exist — a puzzle with no way forward is a dead end — but help one click away turns
-the puzzle into reading. So help is earned. A hint unlocks after your first attempt. Wrong tries
-never unlock the solution, however many you make: you see it by **solving** the puzzle, or the next
-day on the "yesterday's solution" page. **Solving or waiting earns the answer; trying harder
-doesn't.**
+The site shows no hints *(author's decision, 2026-10-27)*. Wrong tries never unlock the solution,
+however many you make: you see it by **solving** the puzzle, or the next day on the "yesterday's
+solution" page. **Solving or waiting earns the answer; trying harder doesn't.**
 
 The subtle part: old puzzles get recycled as today's challenge, so *"is this puzzle old?"* is not
 the same question as *"is this puzzle live?"* Mixing them up would give away the answer people are
@@ -18,12 +16,17 @@ working on right now.
 
 ### Hints
 
-- Optional per teaser; none written, none shown. It sits **between the question and the answer
-  box**, hidden by default.
-- It **unlocks after the first attempt.** Before that, a locked notice that clearly isn't a button:
-  *"🔒 Give it a try first — a hint unlocks after your first attempt."*
-- One click shows it; **clicking it again hides it** ("Click to hide").
-- Using a hint costs nothing and isn't recorded.
+- **Not shown anywhere on the site** *(author's decision, 2026-10-27)*: not on today's challenge,
+  not on yesterday's page. A review that day found most of them either gave the trick away or
+  were too vague to help.
+- **The bank keeps them.** Each teaser still has its `Hint` field in `teasers.json`, and the admin
+  form still takes one, so bringing hints back is a change to the pages and not to the data.
+- No email ever carried one ([PRD 15](15-email-subscriptions.md)).
+
+*History: until 2026-10-27 the hint sat between the question and the answer box. It unlocked
+after the first attempt, behind a locked notice before that; one click showed it and another hid
+it. On yesterday's page it sat behind its own tap-to-reveal blur. Using one cost nothing and
+wasn't recorded.*
 
 ### Solutions
 
@@ -36,9 +39,9 @@ working on right now.
   is dated in the past while being today's challenge. Decide from the schedule, never the
   teaser's date.
 - Revealing shows the main accepted answer and the explanation, and locks the answer box.
-- On a **live** challenge, after the first attempt, a note sets expectations — *"🔒 No peeking
-  today — the solution unlocks tomorrow."* — so nobody hunts for a button that isn't there. On a
-  past one, the retry message points to the button: *"Not quite — try again, or reveal the
+- On a **live** challenge, after the first attempt, a note sets expectations, *"No peeking
+  today. The solution unlocks tomorrow."*, so nobody hunts for a button that isn't there. On a
+  past one, the retry message points to the button: *"Not quite. Try again, or reveal the
   solution."*
 
 Since the archive went ([PRD 04](04-archive-and-discovery.md)), today's is the only challenge page,
@@ -53,8 +56,9 @@ teasers can't be reached at all, and must never offer a reveal if they could.
 
 ## Acceptance criteria
 
-- [x] Hint locked before the first attempt, unlocked after it
-- [x] Revealed hint re-conceals on click
+- [x] **No hint on today's challenge or yesterday's page**, though the teaser has one: not before
+      an attempt, not after wrong ones, not once the solution shows (`NoHintTests` and
+      `YesterdaySolutionTests`, mutation-verified 2026-10-27 by putting a hint back on each page)
 - [x] Reveal button available immediately on a past challenge, with no attempt threshold
 - [x] Reveal button **never** appears on a live challenge, however many attempts are made
       (verified with 4 failed attempts on a teaser dated today)
@@ -62,8 +66,10 @@ teasers can't be reached at all, and must never offer a reveal if they could.
 - [x] Scheduled (future) teasers never reveal
 - [x] Solved teasers with no written solution render no empty panel
 
-*All seven were ticked before the archive was removed, while past teasers still had pages. No
-automated test covers the reveal button.*
+*The five after the first were ticked before the archive was removed, while past teasers still
+had pages. `NoHintTests` clicks the reveal button and checks the solution shows; nothing
+automated checks it stays away from a live challenge. Two hint criteria (locked until the first
+attempt; hidden again on a second click) were dropped with the hints on 2026-10-27.*
 
 ## Yesterday's solution (`/yesterday`)
 
@@ -104,11 +110,12 @@ right answer.
 - Linked from under the answer box on the daily challenge, and from the main menu.
 - **No answer box** — it's for reading, not replaying.
 - A **spoiler warning** names the date the puzzle ran, and says the answer is hidden below.
-- **The question is shown; the hint and the solution each sit behind their own tap-to-reveal
-  blur** *(author's decision, 2026-10-14)*. The question gives nothing away and is what someone
-  who missed the day needs to have a go; the hint is the first spoiler. Blurred text can't be
-  selected, so it can't be read by highlighting it. No hint written, no hint blur.
-  *History: until then the question was the one blurred, and the hint showed with it.*
+- **The question is shown; the solution sits behind a tap-to-reveal blur** *(author's decision,
+  2026-10-14)*. The question gives nothing away and is what someone who missed the day needs to
+  have a go. Blurred text can't be selected, so it can't be read by highlighting it. No hint
+  *(2026-10-27, see [Hints](#hints))*.
+  *History: until 2026-10-14 the question was the one blurred, and the hint showed with it; from
+  then until 2026-10-27 the hint had a blur of its own.*
 - Shows the difficulty and picture with the question, and the answer with its explanation.
 - With nothing earlier to publish, it says so rather than erroring.
 - **Nothing on it can be copied**, revealed or not *(author's decision, 2026-10-18)*: see
@@ -116,8 +123,8 @@ right answer.
 
 ## Implementation notes
 
-In `Components/ChallengeView.razor` the hint gate is `MinAttemptsBeforeHint = 1`, and the reveal
-depends only on the `CanReveal` parameter — on what's live, not on effort. The home page passes
+In `Components/ChallengeView.razor` the reveal depends only on the `CanReveal` parameter: on
+what's live, not on effort. The home page passes
 `CanReveal="false"` unconditionally, which is also what keeps recycling safe; any future caller
 must decide from the schedule, never from `Teaser.Date`. `/yesterday` uses
 `DailySchedule.PreviousBefore`.

@@ -40,7 +40,7 @@ It never shows the puzzle's own date: puzzles get recycled, and the date would g
 - Answers are capped at **300 characters**, in the browser *and* on the server, so a crafted
   request can't get round it. How answers are judged: [PRD 02](02-answer-evaluation.md).
 - **Wrong** → an encouraging message; unlimited retries.
-- **Right** → *"Correct! Solved in N attempts. 🎉"*, the box locks, and the author's explanation
+- **Right** → *"Correct! Solved in N attempts."*, the box locks, and the author's explanation
   shows if there is one. **Confetti** fires — self-contained (no outside library), and skipped for
   anyone whose device asks for reduced motion.
 
@@ -107,7 +107,7 @@ honest; it doesn't stop a determined one.
   selection touches the question. Dragging it out is refused the same way.
 - **Pasting is untouched**, so an answer can still be pasted into the answer box.
 - **And nothing on [yesterday's page](03-hints-and-solutions.md#yesterdays-solution-yesterday)**
-  — question, hint, answer and solution, revealed or not *(author's decision, same day)*. Guarding
+  — question, answer and solution, revealed or not *(author's decision, same day)*. Guarding
   only its question would have protected nothing, with the full solution a tap away.
 - **Nowhere else.** The menu, the footer and the other pages copy as normal.
 

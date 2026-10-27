@@ -27,11 +27,12 @@ Named once at the top of `wwwroot/app.css` and used by name everywhere else. Two
 | Hairline | `--line` | `#E4E1D6` |
 | Text | `--ink` / `--ink-soft` | `#22334D` / `#54627A` |
 | Links, information | `--blue` / `--blue-deep` / `--blue-tint` | `#2B7BC7` / `#1E5E9C` / `#EAF3FB` |
-| Accent, hints | `--gold` / `--gold-tint` / `--amber` | `#F0A500` / `#FDF3DA` / `#9A6700` |
+| Accent, caution | `--gold` / `--gold-tint` / `--amber` | `#F0A500` / `#FDF3DA` / `#9A6700` |
 | Success | `--green` / `--green-deep` / `--green-tint` | `#2F855A` / `#256B49` / `#E7F3EC` |
 | Error, hard | `--red` / `--red-tint` | `#B03A2E` / `#F9E9E7` |
 
-**Gold** means a hint or caution, **blue** information or a way onward, **green** success, **red**
+**Gold** means caution or a highlight (the spoiler warning, the Medium badge, the rule under a
+title), **blue** information or a way onward, **green** success, **red**
 wrong or hardest.
 
 ### Type
@@ -87,7 +88,7 @@ page about 40px over.
 **On a laptop, today's challenge is two columns** *(author's decision, 2026-10-23)*. A picture on
 every question pushed the home page about 350px past a laptop's window, and even with no picture
 it was over a 15-inch MacBook Pro's 790px. From 1100px wide the question and its picture sit on the
-left; the hint, the answer box and the way to yesterday's solution on the right. Narrower than
+left; the answer box and the way to yesterday's solution on the right. Narrower than
 that, so on phones, tablets and laptop windows that aren't full width, it's the single column as
 before.
 
@@ -105,11 +106,11 @@ picture is never taller than its usual size or shorter than 140px. Measured over
 | 1536 × 730 (15.6-inch Windows laptop at 125%) | 23 of 25 | the two longest still scroll, by 20 and 50px |
 
 **Yesterday's solution follows suit** *(author's decision, 2026-10-23)*. At 1440 × 790 it was
-1,055px tall. From 1100px wide the question, its picture and the hint sit on the left; the spoiler
+1,055px tall. From 1100px wide the question and its picture sit on the left; the spoiler
 warning, the solution it warns about and the way back on the right. The warning moved beside the
 solution rather than across the top: the question itself gives nothing away. The markup keeps the
 phone's order, warning first, and the grid places each part, so phones read it as before. A long
-question's picture gives way by the same rule (the rest of this page is 401px, with the hint bar).
+question's picture gives way by the same rule (the rest of this page is 401px, measured with the hint bar that has since gone, so it now has room to spare).
 Measured over all 25 questions, with each one's own solution:
 
 | Window | Fits without scrolling |
@@ -141,8 +142,6 @@ its full height even before it's revealed, and that one alone is taller than the
 - **Masthead** — centred Lora over a 64px gold rule, with the **dateline** above
   ([PRD 01](01-daily-challenge.md)).
 - **Difficulty badge** — a tinted pill with a coloured dot, not a solid block.
-- **Hint bar** — gold while locked or on offer, **blue once revealed**, so it reads as information
-  rather than a standing offer ([PRD 03](03-hints-and-solutions.md)).
 - **Playing cards** — Twenty Four's hand ([PRD 07](07-twenty-four.md)).
 - **Floating buttons** — round or pill-shaped, white, hairline border, soft shadow, 1.25rem from
   the bottom corners: *Report an issue* bottom right ([PRD 06](06-community-feedback.md)), the
@@ -267,6 +266,16 @@ exists, showing it again is nagging.
   make the server send.
 - **Two glossy gradient buttons**, one with a looping animated shine. Nothing else has a gradient,
   and a moving highlight beside a puzzle competes with the puzzle.
+- **The hint bar**, gold while locked or on offer and blue once revealed, went with the hints
+  themselves *(2026-10-27, [PRD 03](03-hints-and-solutions.md))*.
+- **Em-dashes and emoji, from everything the site shows or sends** *(author's decision,
+  2026-10-27)*: pages, page titles, emails, admin and the app's own log messages. Both made the
+  site read as machine-written. Sentences use a full stop, comma or colon instead, and titles and
+  subjects use a middle dot: "Stumpty · About". The big emoji above the sign-up, confirm and
+  unsubscribe messages went with nothing in their place, and the floating report button has a
+  drawn mark instead of the warning sign. Two kinds of symbol stay because they do a job: the
+  close buttons' cross (✕) and the card suits on Twenty Four. `CopyStyleTests` holds the rule:
+  it reads every page, component and script, leaving out the comments.
 
 ## Non-goals
 
@@ -285,7 +294,7 @@ exists, showing it again is nagging.
       1100px with no sideways scroll; one column, at 680px, at 1024px and on a 375px phone; every
       question in the bank fits 1512 × 860 and 1440 × 790, the long ones with a smaller picture
 - [x] **What the two columns rely on** — `ChallengeLayoutTests`, each mutation-verified: the
-      question's line count for its picture, 50 characters a line; the hint, answer box and
+      question's line count for its picture, 50 characters a line; the answer box and
       yesterday's link in one column; only today's challenge widening the page
 - [x] Bootstrap is no longer loaded or shipped, and nothing regressed. Its address returns 404, and
       every route loads all of its files

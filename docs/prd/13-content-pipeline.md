@@ -34,7 +34,7 @@ on a busy Thursday. Three conveniences would help:
 
 1. Admin shows a prominent warning when fewer than **N days** (default 3) of *upcoming* teasers are
    scheduled, naming the last scheduled date.
-2. It states the gap — e.g. *"⚠️ Nothing scheduled after Mon 3 Aug. Tomorrow is empty."*
+2. It states the gap — e.g. *"Nothing scheduled after Mon 3 Aug. Tomorrow is empty."*
 3. It tells **"tomorrow is empty"** (urgent) apart from **"running low"** (soon).
 4. A **gap mid-schedule** (a skipped date between two scheduled ones) is flagged too, since
    recycling hides it from solvers.

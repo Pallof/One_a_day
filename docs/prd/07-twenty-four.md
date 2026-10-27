@@ -133,9 +133,9 @@ Checked in this order, each failure naming what went wrong:
 |---|---|---|
 | 1 | Not empty (and at most 120 characters) | *Type an answer first.* |
 | 2 | **Only allowed characters** | *'^' isn't allowed. Use your numbers with + - * / and parentheses only.* |
-| 3 | No decimal points | *Decimal points aren't allowed — use only the numbers you were dealt.* |
+| 3 | No decimal points | *Decimal points aren't allowed. Use only the numbers you were dealt.* |
 | 4 | **Brackets balanced**, in order | *Those parentheses don't match up.* |
-| 5 | **Complete arithmetic** | *That isn't a complete answer — check for a missing number or a stray operator.* |
+| 5 | **Complete arithmetic** | *That isn't a complete answer. Check for a missing number or a stray operator.* |
 | 6 | **Exactly the numbers dealt**, duplicates counted | *Use each of your numbers exactly once. You were dealt 1, 2, 3, 9, but used 12, 12.* |
 | 7 | **Comes to 24** | *That comes to 15, not 24.* |
 

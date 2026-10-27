@@ -26,7 +26,7 @@ the author's copy of the data, not the live site's.
 | **Tags** | no | Labels for the author's own sorting. **Never shown to solvers.** |
 | **Support image** | no | A picture under the question: a diagram that helps people picture the puzzle, or just something to make them smile. Every question gets one, made and reviewed as [docs/brand/puzzle-pictures.md](../brand/puzzle-pictures.md) describes *(author's decision, 2026-10-23; from 2026-10-18 it was a nice-to-have)*. The field stays optional, so a question can go in before its picture is ready. |
 | **Picture description** | with a picture | What the picture shows, in words. Screen readers read it out, and email apps that hold pictures back show it instead. **Add teaser** stays disabled until it's written. |
-| **Hint** | no | Unlocks after the first attempt ([PRD 03](03-hints-and-solutions.md)). |
+| **Hint** | no | Kept with the teaser; the site doesn't show it (2026-10-27, [PRD 03](03-hints-and-solutions.md)). |
 | **Solution** | no | Shown on solving, and on `/yesterday` the day after the challenge runs. |
 
 ### Scheduling

@@ -54,7 +54,8 @@ rankings.
 ## Teaser suggestions (`/contact`)
 
 - **No published email address** — a form instead, with three fields: **difficulty**, **the
-  teaser**, and **solution + hint**. The last two are required (Submit stays disabled until both
+  teaser**, and **solution** *(it asked for a hint too until the site stopped showing hints,
+  2026-10-27)*. The last two are required (Submit stays disabled until both
   are filled) and capped at 600 characters, by the page and again by the server: the page's limit
   only binds a browser, and a script on the live connection can send about 32,000 characters.
 - After sending: a thank-you, and nothing more offered that day. A visitor over the limit sees a

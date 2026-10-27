@@ -26,7 +26,7 @@ public static partial class WeeklySummaryMail
     /// <param name="siteUrl">Where the wordmark links.</param>
     public static MailContent Build(MetricsReport report, string siteUrl)
     {
-        var subject = $"Stumpty — the week in numbers, {Short(report.From)} – {Short(report.To)}";
+        var subject = $"Stumpty · the week in numbers, {Short(report.From)} – {Short(report.To)}";
         return new MailContent(subject, PlainText(report), Html(report, subject, siteUrl));
     }
 
@@ -131,7 +131,7 @@ public static partial class WeeklySummaryMail
     public static string ShareOf(Share share) =>
         share.Percent is { } percent
             ? $"{percent.ToString("0", C)}% · {share.Part} of {share.Whole}{TooFew(share.Whole)}"
-            : "—";
+            : "n/a";
 
     /// <summary>The one rule both versions use: below 20 browsers, a figure is too few to judge.</summary>
     private static bool IsTooFew(int browsers) => browsers < Share.TooFewBelow;

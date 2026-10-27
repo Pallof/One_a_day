@@ -26,7 +26,6 @@
 
         @if (_done)
         {
-            <p class="sd-mark" aria-hidden="true">📬</p>
             <h2 id="sd-title" class="sd-title">Check your inbox</h2>
             @* The spam-folder line earns its place: mail from a new sender often lands
                there, and a confirmation nobody finds is a subscriber lost silently — they
@@ -126,7 +125,7 @@
         {
             // The one message that IS allowed to differ: it's about what they typed, not
             // about whether the address is on the list.
-            _error = "That doesn't look like an email address — check it and try again.";
+            _error = "That doesn't look like an email address. Check it and try again.";
             return;
         }
         _error = null;
