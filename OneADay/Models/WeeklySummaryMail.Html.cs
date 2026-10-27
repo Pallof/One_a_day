@@ -86,7 +86,7 @@ public static partial class WeeklySummaryMail
         public static Tile Of(string label, Share share) =>
             share.Percent is { } percent
                 ? new(label, $"{percent.ToString("0", C)}%", $"{share.Part} of {share.Whole}", IsTooFew(share.Whole))
-                : new(label, "—", "none yet", TooFew: false);
+                : new(label, "n/a", "none yet", TooFew: false);
     }
 
     private static string TileLabel(Tile tile) => $$"""
@@ -137,7 +137,7 @@ public static partial class WeeklySummaryMail
         string[] week = [$"{report.Confirmations} confirmed this week", $"{report.Unsubscribes} unsubscribed"];
         var list = report.Subscribers is { } size
             ? Fact("Daily email", $"{size.Confirmed} confirmed", [$"{size.Pending} waiting, as of {Short(size.Day)}", .. week])
-            : Fact("Daily email", "—", ["size not recorded yet", .. week]);
+            : Fact("Daily email", "n/a", ["size not recorded yet", .. week]);
 
         return $$"""
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
@@ -246,7 +246,7 @@ public static partial class WeeklySummaryMail
     {
         var rate = row.SolveRate.Percent is { } percent
             ? $"""<strong style="color:{Ink};">{percent.ToString("0", C)}%</strong> · {row.SolveRate.Part} of {row.SolveRate.Whole}{Few(IsTooFew(row.SolveRate.Whole))}"""
-            : "— nobody tried it";
+            : "n/a, nobody tried it";
         return $$"""<p style="margin:12px 0 0;font-family:{{Sans}};font-size:15px;line-height:24px;color:{{InkSoft}};">Solve rate {{rate}}</p>""";
     }
 

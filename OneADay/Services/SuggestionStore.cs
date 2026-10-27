@@ -4,13 +4,17 @@ namespace OneADay.Services;
 
 public class TeaserSuggestion
 {
-    /// <summary>The longest teaser, or solution and hint, the form takes. The server holds to it too.</summary>
+    /// <summary>The longest teaser, or solution, the form takes. The server holds to it too.</summary>
     public const int MaxFieldLength = 600;
 
     public Guid Id { get; set; } = Guid.NewGuid();
     public DateTime SubmittedAt { get; set; }
     public string Difficulty { get; set; } = "Medium";
     public string Question { get; set; } = string.Empty;
+    /// <summary>
+    /// The suggested solution. The form asked for a hint too until the site stopped showing
+    /// hints (2026-10-27); the name stays so suggestions already saved under it still load.
+    /// </summary>
     public string SolutionAndHint { get; set; } = string.Empty;
 }
 

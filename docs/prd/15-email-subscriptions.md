@@ -108,7 +108,7 @@ that stamp locked a real person out for 24 hours over an email they never got.
 
 | Part | Content |
 |---|---|
-| Subject | `Stumpty — Friday, September 11 · Medium` |
+| Subject | `Stumpty · Friday, September 11 · Medium` |
 | Preview line | Difficulty and the start of the question |
 | Body | Date, "Challenge of the day", the question with its difficulty pill, one button: **Solve today's challenge** |
 | Picture | Under the question, the width of the card, loaded from the site. An email app that holds pictures back shows its description instead, and the plain-text version gives the description and says to see it on the site. *Until 2026-10-18 the email only said there was a picture.* |

@@ -72,7 +72,7 @@ public sealed class TrafficAlertService(
         }
 
         log.LogWarning(
-            "Unusual traffic: {Total:N0} requests today — {Served:N0} served, {TurnedAway:N0} " +
+            "Unusual traffic: {Total:N0} requests today, {Served:N0} served, {TurnedAway:N0} " +
             "turned away by the Cloudflare lock. The alert line is {Threshold:N0}.",
             report.Total, report.Served, report.TurnedAway, report.Threshold);
 
@@ -92,7 +92,7 @@ public static class TrafficAlertMail
     public static Notification Build(TrafficReport report)
     {
         var c = CultureInfo.InvariantCulture;
-        var subject = string.Create(c, $"Stumpty — unusual traffic: {report.Total:N0} requests today");
+        var subject = string.Create(c, $"Stumpty · unusual traffic: {report.Total:N0} requests today");
 
         var yesterday = report.Yesterday is { } total
             ? string.Create(c, $"Yesterday's total was {total:N0}.")

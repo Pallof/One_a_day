@@ -47,7 +47,7 @@ public class WeeklySummaryTests : IDisposable
         Assert.True(await service.RunOnceAsync(MondaySeven, default));
         var mail = Assert.Single(_mailer.Sent);
         Assert.Equal("author@x.com", mail.To);
-        Assert.Equal("Stumpty — the week in numbers, 28 Sep – 4 Oct", mail.Subject);
+        Assert.Equal("Stumpty · the week in numbers, 28 Sep – 4 Oct", mail.Subject);
     }
 
     [Fact]

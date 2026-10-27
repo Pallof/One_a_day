@@ -40,7 +40,7 @@ public class PageNamingTests : BunitContext
 
         Assert.Equal("Suggest a teaser", page.Find(".oad-banner").TextContent.Trim());
         var tab = Render(page.FindComponent<PageTitle>().Instance.ChildContent!);
-        Assert.Equal("Stumpty — Suggest a teaser", tab.Markup.Trim());
+        Assert.Equal("Stumpty · Suggest a teaser", tab.Markup.Trim());
     }
 
     [Fact]

@@ -1,7 +1,7 @@
 @page "/subscribe/confirm"
 @inject SubscriberStore Subscribers
 
-<PageTitle>Stumpty — Confirm your email</PageTitle>
+<PageTitle>Stumpty · Confirm your email</PageTitle>
 
 @* Confirmation takes a button press, not just the page load.
 
@@ -18,7 +18,7 @@
         {
             <p class="sub-lead">This confirmation link isn't valid.</p>
             <p class="sub-sub">
-                It may have been used already, or the sign-up expired — unconfirmed sign-ups
+                It may have been used already, or the sign-up expired. Unconfirmed sign-ups
                 are cleared after @SubscriberStore.PendingExpiry.Days days. You can sign up
                 again from the link at the bottom of the home page.
             </p>
@@ -26,7 +26,6 @@
         }
         else if (_confirmed)
         {
-            <p class="sub-mark" aria-hidden="true">🎉</p>
             <p class="sub-lead">You're subscribed.</p>
             @* "Your first", not "tomorrow's": confirm before 7am and the first one is
                today's. DailyDigestService holds anyone confirmed after the send until the

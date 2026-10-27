@@ -160,7 +160,7 @@
                                     <td class="mx-num">@row.Solved</td>
                                     <td>@ShareOf(row.SolveRate)</td>
                                     <td>@Spread(row.SolvedIn)</td>
-                                    <td class="mx-num">@(row.AverageAttempts is { } avg ? avg.ToString("0.0") : "—")</td>
+                                    <td class="mx-num">@(row.AverageAttempts is { } avg ? avg.ToString("0.0") : "n/a")</td>
                                 </tr>
                             }
                         </tbody>
@@ -235,7 +235,7 @@
             }
             else
             {
-                <span class="mx-muted">—</span>
+                <span class="mx-muted">n/a</span>
             }
         </span>;
 

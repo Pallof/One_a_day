@@ -10,7 +10,7 @@
 @inject IssueStore Issues
 @inject RotationStore Rotation
 
-<PageTitle>Stumpty — Add a teaser</PageTitle>
+<PageTitle>Stumpty · Add a teaser</PageTitle>
 
 <div class="oad-admin">
     <div class="oad-banner">@(_editingId is null ? "Add a brain teaser" : "Edit brain teaser")</div>
@@ -45,7 +45,7 @@
 
         <div class="oad-field">
             <label for="answer">Answer *</label>
-            <input id="answer" type="text" placeholder="Accepted answer — separate alternatives with ; (e.g. 9; nine)"
+            <input id="answer" type="text" placeholder="Accepted answer. Separate alternatives with ; (e.g. 9; nine)"
                    @bind="_form.Answer" />
         </div>
 
@@ -97,7 +97,7 @@
 
         <div class="oad-field">
             <label for="hint">Hint (optional)</label>
-            <input id="hint" type="text" placeholder="Concealed on the home page until the solver clicks to reveal it" @bind="_form.Hint" />
+            <input id="hint" type="text" placeholder="Kept with the teaser. The site doesn't show hints (PRD 03)." @bind="_form.Hint" />
         </div>
 
         <div class="oad-field">
@@ -137,7 +137,7 @@
         <div class="oad-box">
             @if (_all.Count == 0)
             {
-                <p>No teasers yet — add your first one above.</p>
+                <p>No teasers yet. Add your first one above.</p>
             }
             else
             {
@@ -174,7 +174,7 @@
                                     }
                                     else
                                     {
-                                        <span class="oad-cell-muted">—</span>
+                                        <span class="oad-cell-muted">none</span>
                                     }
                                 </td>
                                 <td>@Truncate(teaser.Answer, 30)</td>
@@ -216,7 +216,7 @@
 
             @if (_suggestions.Count == 0)
             {
-                <p>No suggestions yet — they'll appear here when visitors submit one on the Suggest a teaser page.</p>
+                <p>No suggestions yet. They'll appear here when visitors submit one on the Suggest a teaser page.</p>
             }
             else
             {
@@ -228,7 +228,7 @@
                             <span>@suggestion.SubmittedAt.ToString("d MMM yyyy, h:mm tt") PT</span>
                         </div>
                         <p class="oad-suggestion-q">@suggestion.Question</p>
-                        <p class="oad-suggestion-s"><strong>Solution + hint:</strong> @suggestion.SolutionAndHint</p>
+                        <p class="oad-suggestion-s"><strong>Solution:</strong> @suggestion.SolutionAndHint</p>
                         <div class="oad-suggestion-actions">
                             <button class="oad-btn-plain" @onclick="() => UseSuggestion(suggestion)">Use in form above</button>
                             <button class="oad-btn-danger" @onclick="() => DeleteSuggestion(suggestion.Id)">Delete</button>
@@ -311,13 +311,13 @@
                     <strong>@_issuesBlockedCount</strong> @Wording.Plural(_issuesBlockedCount, "report")
                     dropped as automated (honeypot or faster than
                     @SubmissionGuard.MinComposeSeconds seconds). Reports are never rate
-                    limited — this only screens out scripts.
+                    limited; this only screens out scripts.
                 </p>
             }
 
             @if (_issues.Count == 0)
             {
-                <p>No issues reported — they'll appear here when a visitor uses the "Report an issue" button.</p>
+                <p>No issues reported. They'll appear here when a visitor uses the "Report an issue" button.</p>
             }
             else
             {
@@ -573,7 +573,7 @@
     {
         var stats = Stats.Get(teaserId);
         return stats.TotalSubmissions == 0
-            ? "—"
+            ? "no answers yet"
             : $"{stats.SuccessfulSubmissions:N0}/{stats.TotalSubmissions:N0} successful";
     }
 
@@ -592,8 +592,8 @@
 
     private void UseSuggestion(TeaserSuggestion suggestion)
     {
-        // Pre-fill the add form; the solution+hint lands in Solution for
-        // manual splitting into Answer/Hint/Solution before saving.
+        // Pre-fill the add form; the suggested solution lands in Solution for
+        // manual splitting into Answer/Solution before saving.
         DiscardStagedImage();
         _editingId = null;
         _originalImageName = null;

@@ -125,7 +125,7 @@ public class SmtpMailer(IOptions<EmailOptions> options, ILogger<SmtpMailer> log)
         var message = new MailMessage(from, mail.To)
         {
             Subject = mail.Subject,
-            SubjectEncoding = Encoding.UTF8,   // the subjects carry — and ·
+            SubjectEncoding = Encoding.UTF8,   // the subjects carry ·
             Body = mail.Body,
             BodyEncoding = Encoding.UTF8,
             IsBodyHtml = false,

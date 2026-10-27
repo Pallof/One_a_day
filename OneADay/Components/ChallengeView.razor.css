@@ -44,7 +44,7 @@
 
 /* ------------------------------------------------------------ two columns --- */
 
-/* On a laptop the question and its picture sit to the left of the hint and answer box,
+/* On a laptop the question and its picture sit to the left of the answer box,
    so the whole challenge fits one screen (PRD 09, "Fitting on one screen"). Stacked,
    the picture pushed the page about 350px past a 15-inch laptop's window. The width
    comes from the layout's .oad-measure-split, which widens at the same 1100px. */
@@ -64,76 +64,6 @@
         max-height: clamp(140px, calc(100vh - 384px - var(--q-lines, 1) * 1.86rem), 340px);
         margin-inline: auto;
     }
-}
-
-/* ------------------------------------------------------------------- hint --- */
-
-.cv-hint-section {
-    margin-bottom: 0.85rem;
-}
-
-/* One shared shape for all three hint states — locked, offered, revealed — so
-   the bar doesn't jump as it changes. */
-.cv-hint-toggle,
-.cv-hint-locked,
-.cv-hint-revealed {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    border-radius: var(--radius);
-    padding: 0.9rem 1.15rem;
-    font-size: 1rem;
-    font-family: inherit;
-    text-align: left;
-    line-height: 1.5;
-}
-
-/* Locked: dashed, muted — visibly not a button yet. */
-.cv-hint-locked {
-    background: var(--gold-tint);
-    border: 1px dashed var(--gold);
-    color: var(--amber);
-    justify-content: center;
-    font-size: 0.95rem;
-}
-
-/* Offered: solid and clickable. */
-.cv-hint-toggle {
-    background: var(--gold-tint);
-    border: 1px solid var(--gold);
-    color: var(--amber);
-    font-weight: 700;
-    justify-content: center;
-    cursor: pointer;
-    min-height: 48px;
-    transition: background-color .15s ease;
-}
-
-.cv-hint-toggle:hover {
-    background: var(--gold-tint-hover);
-}
-
-/* Revealed: switches to blue so it reads as information rather than an offer. */
-.cv-hint-revealed {
-    justify-content: space-between;
-    background: var(--blue-tint);
-    border: 1px solid var(--blue);
-    color: var(--blue-deep);
-    cursor: pointer;
-    transition: background-color .15s ease;
-}
-
-.cv-hint-revealed:hover {
-    background: var(--blue-tint-hover);
-}
-
-.cv-hint-hide {
-    flex-shrink: 0;
-    font-size: 0.8rem;
-    font-weight: 700;
-    opacity: 0.7;
-    white-space: nowrap;
 }
 
 /* ------------------------------------------------------------- submission --- */

@@ -12,8 +12,8 @@ namespace OneADay.Tests;
 /// <summary>
 /// Covers the "See yesterday's solution" button and the page it leads to:
 /// which teaser is published, that the page can't be used to replay a puzzle,
-/// and that the question shows while the hint and the solution stay veiled until
-/// deliberately opened.
+/// and that the question shows while the solution stays veiled until deliberately
+/// opened, and the hint never shows at all.
 /// </summary>
 public class YesterdaySolutionTests : BunitContext
 {
@@ -186,10 +186,10 @@ public class YesterdaySolutionTests : BunitContext
     }
 
     [Fact]
-    public void The_question_shows_while_the_hint_and_solution_start_veiled()
+    public void The_question_shows_while_the_solution_starts_veiled()
     {
-        // Author's decision, 2026-10-14: the question gives nothing away and is what someone
-        // who missed the day needs to have a go. The hint is the first spoiler.
+        // The question gives nothing away and is what someone who missed the day needs to
+        // have a go (author's decision, 2026-10-14).
         RegisterAppServices(StoreWithBank());
 
         var cut = Render<Yesterday>();
@@ -198,67 +198,33 @@ public class YesterdaySolutionTests : BunitContext
         Assert.StartsWith("question ", question.TextContent.Trim());
         Assert.Null(question.Closest(".ys-veil"));
 
-        var veils = cut.FindAll(".ys-veil");
-        Assert.Equal(2, veils.Count);
-        Assert.NotNull(veils[0].QuerySelector(".ys-hint"));
-        Assert.NotNull(veils[1].QuerySelector(".ys-answer"));
-        Assert.All(veils, v => Assert.DoesNotContain("ys-open", v.ClassName));
-        Assert.Equal(["Tap to show the hint", "Tap to reveal the solution"],
-            cut.FindAll("button.ys-unveil").Select(b => b.TextContent.Trim()));
-    }
-
-    [Fact]
-    public void Opening_the_hint_leaves_the_solution_hidden()
-    {
-        RegisterAppServices(StoreWithBank());
-
-        var cut = Render<Yesterday>();
-        cut.FindAll("button.ys-unveil")[0].Click();   // the hint only
-
-        var veils = cut.FindAll(".ys-veil");
-        Assert.Contains("ys-open", veils[0].ClassName);
-        Assert.DoesNotContain("ys-open", veils[1].ClassName);
-        // the solution's own reveal button must still be there
+        var veil = cut.Find(".ys-veil");
+        Assert.NotNull(veil.QuerySelector(".ys-answer"));
+        Assert.DoesNotContain("ys-open", veil.ClassName);
         Assert.Equal("Tap to reveal the solution", cut.Find("button.ys-unveil").TextContent.Trim());
     }
 
     [Fact]
-    public void A_teaser_without_a_hint_has_only_the_solution_veiled()
+    public void Opening_the_veil_reveals_the_answer_and_explanation_but_never_the_hint()
     {
-        // No hint written, no empty veil to tap.
-        var teasers = Enumerable.Range(1, 6)
-            .Select(i => TeaserFactory.On(
-                new DateOnly(2026, 8, 1).AddDays(i).ToString("yyyy-MM-dd"),
-                $"question {i}", answer: $"{i}", solution: $"solution {i}"))
-            .ToArray();
-        RegisterAppServices(StoreWith(teasers));
-
-        var cut = Render<Yesterday>();
-
-        Assert.Empty(cut.FindAll(".ys-hint"));
-        Assert.Equal("Tap to reveal the solution", cut.Find("button.ys-unveil").TextContent.Trim());
-        Assert.Single(cut.FindAll(".ys-veil"));
-    }
-
-    [Fact]
-    public void Opening_both_veils_reveals_the_hint_answer_and_explanation()
-    {
+        // The bank keeps its hints; the site shows none (author's decision, 2026-10-27; PRD 03).
         var store = StoreWithBank();
         RegisterAppServices(store);
 
         var cut = Render<Yesterday>();
-        foreach (var b in cut.FindAll("button.ys-unveil").ToList()) { b.Click(); }
+        cut.Find("button.ys-unveil").Click();
 
-        Assert.All(cut.FindAll(".ys-veil"), v => Assert.Contains("ys-open", v.ClassName));
+        Assert.Contains("ys-open", cut.Find(".ys-veil").ClassName);
 
-        // Any teaser in the bank may be drawn, so check the revealed hint, answer and
-        // explanation belong to the question that actually appeared.
+        // Any teaser in the bank may be drawn, so check the revealed answer and explanation
+        // belong to the question that actually appeared.
         var shownQuestion = cut.Find(".ys-question-text").TextContent.Trim();
         var shown = store.GetAll().Single(x => x.Question == shownQuestion);
-        Assert.Contains(shown.Hint!, cut.Find(".ys-hint").TextContent);
         Assert.Contains(shown.Answer, cut.Find(".ys-answer").TextContent);
         Assert.Contains(shown.Solution!, cut.Find(".ys-explanation").TextContent);
         Assert.Empty(cut.FindAll("button.ys-unveil"));
+        Assert.NotNull(shown.Hint);
+        Assert.DoesNotContain("hint", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     protected override void Dispose(bool disposing)

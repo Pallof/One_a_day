@@ -8,7 +8,7 @@
 @inject CurrentTeaserContext OnScreen
 @implements IAsyncDisposable
 
-<PageTitle>Stumpty — 24</PageTitle>
+<PageTitle>Stumpty · 24</PageTitle>
 
 @{
     // Read by the cards and the keypad alike, so the two can never disagree.
@@ -26,7 +26,7 @@
         </p>
         <p class="tf-rules">
             Each number must be used exactly once. Numbers run 1–10, like a deck of cards
-            with the face cards counting as 10 — so duplicates happen.
+            with the face cards counting as 10, so duplicates happen.
         </p>
         @* Players took every hand to be possible and got frustrated (feedback, 2026-10-07).
            A fact about the deck, never about the hand on the table, so it gives nothing
@@ -346,7 +346,7 @@
         {
             return;   // disabled in the browser; see Submit
         }
-        NewHand("Passed — here's a fresh hand.");
+        NewHand("Passed. Here's a fresh hand.");
         await Metrics.TwentyFourPassAsync();
     }
 

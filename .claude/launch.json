@@ -18,6 +18,12 @@
       "runtimeExecutable": "/Users/danielsing/.dotnet/dotnet",
       "runtimeArgs": ["OneADay/bin/publish/OneADay.dll", "--environment", "Development", "--contentRoot", "/Users/danielsing/Claude-Personal/OneaDay-Claude/OneADay/bin/publish", "--urls", "http://localhost:5180"],
       "port": 5180
+    },
+    {
+      "name": "oneaday-no-email",
+      "runtimeExecutable": "/Users/danielsing/.dotnet/dotnet",
+      "runtimeArgs": ["run", "--project", "OneADay", "--urls", "http://localhost:5181", "--", "--Email:Enabled=false"],
+      "port": 5181
     }
   ]
 }

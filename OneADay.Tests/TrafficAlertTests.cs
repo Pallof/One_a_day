@@ -212,7 +212,7 @@ public class TrafficAlertTests
 
         var mail = Assert.Single(mailer.Sent);
         Assert.Equal("author@x.com", mail.To);
-        Assert.Equal("Stumpty — unusual traffic: 10 requests today", mail.Subject);
+        Assert.Equal("Stumpty · unusual traffic: 10 requests today", mail.Subject);
     }
 
     [Fact]
@@ -239,7 +239,7 @@ public class TrafficAlertTests
             new DateOnly(2026, 9, 24), Noon.AddMinutes(5),
             Served: 48_120, TurnedAway: 1_880, Threshold: 50_000, Yesterday: 9_812));
 
-        Assert.Equal("Stumpty — unusual traffic: 50,000 requests today", mail.Subject);
+        Assert.Equal("Stumpty · unusual traffic: 50,000 requests today", mail.Subject);
         Assert.Contains("48,120", mail.Body);
         Assert.Contains("1,880", mail.Body);
         Assert.Contains("Yesterday's total was 9,812.", mail.Body);

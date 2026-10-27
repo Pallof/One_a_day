@@ -6,21 +6,21 @@
 @inject IHttpContextAccessor HttpAccessor
 @inject IpHasher Hasher
 
-<PageTitle>Stumpty — Suggest a teaser</PageTitle>
+<PageTitle>Stumpty · Suggest a teaser</PageTitle>
 
 <div class="oad-static">
     <div class="oad-banner">Suggest a teaser</div>
 
     <div class="oad-box">
         <p class="oad-contact-intro">
-            Got a great brain teaser you'd like to see featured? Send it in below —
-            if it stumps us, it might become a future Challenge of the day!
+            Got a great brain teaser you'd like to see featured? Send it in below.
+            If it stumps us, it might become a future Challenge of the day!
         </p>
 
         @if (_limitReached)
         {
             <div class="oad-contact-thanks">
-                <p>You've already sent us a suggestion today — one per day keeps the inbox fresh. Come back tomorrow with your next stumper!</p>
+                <p>You've already sent us a suggestion today. One per day keeps the inbox fresh. Come back tomorrow with your next stumper!</p>
             </div>
         }
         else if (_inboxFull)
@@ -32,7 +32,7 @@
         else if (_submitted)
         {
             <div class="oad-contact-thanks">
-                <p>🎉 Thanks for your suggestion — we'll take a look! You can send another one tomorrow.</p>
+                <p>Thanks for your suggestion. We'll take a look! You can send another one tomorrow.</p>
             </div>
         }
         else
@@ -54,9 +54,9 @@
             </div>
 
             <div class="oad-contact-field">
-                <label for="solution">Solution + hint *</label>
+                <label for="solution">Solution *</label>
                 <textarea id="solution" rows="3" maxlength="@TeaserSuggestion.MaxFieldLength"
-                          placeholder="The answer, and a hint we can offer to solvers who get stuck"
+                          placeholder="The answer, and how to work it out"
                           @bind="_solutionAndHint" @bind:event="oninput"></textarea>
             </div>
 
@@ -167,7 +167,7 @@
             // a mail problem can't cost this visitor their suggestion — it is already
             // on disk and visible in admin either way.
             Notifier.Enqueue(
-                $"Stumpty — new teaser suggestion ({suggestion.Difficulty})",
+                $"Stumpty · new teaser suggestion ({suggestion.Difficulty})",
                 $"""
                  A visitor suggested a teaser.
 
@@ -177,7 +177,7 @@
                  THE TEASER
                  {suggestion.Question}
 
-                 SOLUTION + HINT
+                 SOLUTION
                  {suggestion.SolutionAndHint}
 
                  Review it in admin to promote it into the teaser form or delete it.

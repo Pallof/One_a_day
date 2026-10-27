@@ -2,7 +2,7 @@
 @using System.Globalization
 @inject DailySchedule Schedule
 
-<PageTitle>Stumpty — Yesterday's solution</PageTitle>
+<PageTitle>Stumpty · Yesterday's solution</PageTitle>
 
 @* Nothing on this page can be copied, revealed or not (author's decision, 2026-10-18; PRD 01).
    On a laptop it's two columns (PRD 09): the question on the left; the warning, the solution and
@@ -14,7 +14,7 @@
     @if (_teaser is null)
     {
         <div class="oad-box">
-            <p>There's no earlier challenge to show yet — today's is the first one. Check back tomorrow!</p>
+            <p>There's no earlier challenge to show yet. Today's is the first one. Check back tomorrow!</p>
             <p><a href="">← Back to the Challenge of the day</a></p>
         </div>
     }
@@ -29,7 +29,7 @@
             <strong>Spoilers ahead.</strong>
             This is the challenge from @_ranOn.ToString("dddd d MMMM yyyy", CultureInfo.InvariantCulture)
             and its full solution.
-            If you haven't tried it yet, have a go first — the answer is hidden below too, so you can
+            If you haven't tried it yet, have a go first. The answer is hidden below too, so you can
             attempt it before comparing.
         </div>
 
@@ -39,29 +39,14 @@
                 <DifficultyBadge Level="_teaser.Difficulty" />
             </div>
 
-            @* The question in the open, the hint behind a tap (author's decision, 2026-10-14):
-               reading the question gives nothing away and is what someone needs to have a go;
-               the hint is the first spoiler. *@
+            @* The question in the open: reading it gives nothing away and is what someone needs
+               to have a go. No hint, as on today's challenge (author's decision, 2026-10-27;
+               PRD 03). *@
             <p class="ys-question-text">@_teaser.Question</p>
             @if (!string.IsNullOrWhiteSpace(_teaser.ImageFileName))
             {
                 <img class="ys-image" src="@($"{ImageStore.RequestPath}/{_teaser.ImageFileName}")"
                      alt="@_teaser.ImageDescription()" />
-            }
-
-            @if (!string.IsNullOrWhiteSpace(_teaser.Hint))
-            {
-                <div class="ys-veil ys-hint-veil @(_showHint ? "ys-open" : "")">
-                    <div class="ys-content">
-                        <p class="ys-hint">Hint: @_teaser.Hint</p>
-                    </div>
-                    @if (!_showHint)
-                    {
-                        <button class="ys-unveil" @onclick="() => _showHint = true">
-                            Tap to show the hint
-                        </button>
-                    }
-                </div>
             }
         </div>
 
@@ -95,7 +80,6 @@
     /// <summary>The day this puzzle ran — yesterday, not whenever it was written.</summary>
     private DateOnly _ranOn;
 
-    private bool _showHint;
     private bool _showSolution;
 
     protected override void OnInitialized()

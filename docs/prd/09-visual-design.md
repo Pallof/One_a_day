@@ -105,11 +105,11 @@ picture is never taller than its usual size or shorter than 140px. Measured over
 | 1536 × 730 (15.6-inch Windows laptop at 125%) | 23 of 25 | the two longest still scroll, by 20 and 50px |
 
 **Yesterday's solution follows suit** *(author's decision, 2026-10-23)*. At 1440 × 790 it was
-1,055px tall. From 1100px wide the question, its picture and the hint sit on the left; the spoiler
+1,055px tall. From 1100px wide the question and its picture sit on the left; the spoiler
 warning, the solution it warns about and the way back on the right. The warning moved beside the
 solution rather than across the top: the question itself gives nothing away. The markup keeps the
 phone's order, warning first, and the grid places each part, so phones read it as before. A long
-question's picture gives way by the same rule (the rest of this page is 401px, with the hint bar).
+question's picture gives way by the same rule (the rest of this page is 401px, measured with the hint bar that has since gone, so it now has room to spare).
 Measured over all 25 questions, with each one's own solution:
 
 | Window | Fits without scrolling |
@@ -267,6 +267,14 @@ exists, showing it again is nagging.
   make the server send.
 - **Two glossy gradient buttons**, one with a looping animated shine. Nothing else has a gradient,
   and a moving highlight beside a puzzle competes with the puzzle.
+- **Em-dashes and emoji, from everything the site shows or sends** *(author's decision,
+  2026-10-27)*: pages, page titles, emails, admin and the app's own log messages. Both made the
+  site read as machine-written. Sentences use a full stop, comma or colon instead, and titles and
+  subjects use a middle dot: "Stumpty · About". The big emoji above the sign-up, confirm and
+  unsubscribe messages went with nothing in their place, and the floating report button has a
+  drawn mark instead of the warning sign. Two kinds of symbol stay because they do a job: the
+  close buttons' cross (✕) and the card suits on Twenty Four. `CopyStyleTests` holds the rule:
+  it reads every page, component and script, leaving out the comments.
 
 ## Non-goals
 
@@ -285,7 +293,7 @@ exists, showing it again is nagging.
       1100px with no sideways scroll; one column, at 680px, at 1024px and on a 375px phone; every
       question in the bank fits 1512 × 860 and 1440 × 790, the long ones with a smaller picture
 - [x] **What the two columns rely on** — `ChallengeLayoutTests`, each mutation-verified: the
-      question's line count for its picture, 50 characters a line; the hint, answer box and
+      question's line count for its picture, 50 characters a line; the answer box and
       yesterday's link in one column; only today's challenge widening the page
 - [x] Bootstrap is no longer loaded or shipped, and nothing regressed. Its address returns 404, and
       every route loads all of its files

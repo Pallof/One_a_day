@@ -100,8 +100,8 @@ public class TeaserStore
             if (!_mayCreateSamples)
             {
                 throw new InvalidOperationException(
-                    $"No question bank at {_filePath}. The live site never creates questions — " +
-                    "publish teasers.json from the author's machine, then start the app (PRD 10).");
+                    $"No question bank at {_filePath}. The live site never creates questions. " +
+                    "Publish teasers.json from the author's machine, then start the app (PRD 10).");
             }
 
             var seeded = Seed();
@@ -141,7 +141,7 @@ public class TeaserStore
                 Question = "I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?",
                 Answer = "an echo; echo",
                 Hint = "You might meet me in the mountains or an empty hall.",
-                Solution = "An echo — it \"speaks\" by repeating sound and needs no body to do it.",
+                Solution = "An echo. It \"speaks\" by repeating sound and needs no body to do it.",
             },
             new BrainTeaser
             {
@@ -150,7 +150,7 @@ public class TeaserStore
                 Question = "What has keys but can't open locks, space but no room, and you can enter but not go inside?",
                 Answer = "a keyboard; keyboard",
                 Hint = "You are probably touching one right now.",
-                Solution = "A keyboard — it has keys, a space bar, and an enter key.",
+                Solution = "A keyboard: it has keys, a space bar, and an enter key.",
             },
             new BrainTeaser
             {
