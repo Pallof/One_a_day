@@ -136,7 +136,7 @@ Styled email is its own dialect. Five rules make it display properly:
 
 ## Unsubscribing
 
-**One click, no button.** The link opens the site, which says **"Sorry to see you go — you're now
+**One click, no button.** The link opens the site, which says **"Sorry to see you go. You're now
 unsubscribed."** Nothing else to press. *(Author's decision, 2026-09-11.)*
 
 It happens only when the page **actually runs in a browser**, not when it's merely fetched. The

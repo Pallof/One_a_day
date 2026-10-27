@@ -220,8 +220,8 @@ Worth adding once the basics have run for a few weeks:
 - **Median time to solve.**
 - **Visits from the daily email**, by tagging the email's button link.
 
-**Hint use is left out** *(author's decision, 2026-10-06)*. [PRD 03](03-hints-and-solutions.md)
-says using a hint "isn't recorded", and that stays true.
+**Hint use is left out** *(author's decision, 2026-10-06)*, and since 2026-10-27 the site shows
+no hints at all ([PRD 03](03-hints-and-solutions.md)).
 
 ## Acceptance criteria
 

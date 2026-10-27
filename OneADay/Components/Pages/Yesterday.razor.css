@@ -122,9 +122,9 @@
     }
 
     /* As on today's challenge: the picture takes what the question leaves, the window less the
-       rest of the page (401px, measured while a hint bar still sat under the picture, which has
-       since gone, so there's room to spare) and the question's lines (--q-lines, at 1.15rem × 1.65 each, rounded up to 1.9rem).
-       Never under 140px, never over its usual size. */
+       rest of the page (401px, measured while a hint bar still sat under the picture; it has
+       since gone, so there's room to spare) and the question's lines (--q-lines, at
+       1.15rem × 1.65 each, rounded up to 1.9rem). Never under 140px, never over its usual size. */
     .ys-image {
         max-height: clamp(140px, calc(100vh - 408px - var(--q-lines, 1) * 1.9rem), 320px);
         margin-inline: auto;

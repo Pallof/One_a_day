@@ -67,7 +67,8 @@ teasers can't be reached at all, and must never offer a reveal if they could.
 - [x] Solved teasers with no written solution render no empty panel
 
 *The five after the first were ticked before the archive was removed, while past teasers still
-had pages. No automated test covers the reveal button. Two hint criteria (locked until the first
+had pages. `NoHintTests` clicks the reveal button and checks the solution shows; nothing
+automated checks it stays away from a live challenge. Two hint criteria (locked until the first
 attempt; hidden again on a second click) were dropped with the hints on 2026-10-27.*
 
 ## Yesterday's solution (`/yesterday`)

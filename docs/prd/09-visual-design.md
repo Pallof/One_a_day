@@ -27,11 +27,12 @@ Named once at the top of `wwwroot/app.css` and used by name everywhere else. Two
 | Hairline | `--line` | `#E4E1D6` |
 | Text | `--ink` / `--ink-soft` | `#22334D` / `#54627A` |
 | Links, information | `--blue` / `--blue-deep` / `--blue-tint` | `#2B7BC7` / `#1E5E9C` / `#EAF3FB` |
-| Accent, hints | `--gold` / `--gold-tint` / `--amber` | `#F0A500` / `#FDF3DA` / `#9A6700` |
+| Accent, caution | `--gold` / `--gold-tint` / `--amber` | `#F0A500` / `#FDF3DA` / `#9A6700` |
 | Success | `--green` / `--green-deep` / `--green-tint` | `#2F855A` / `#256B49` / `#E7F3EC` |
 | Error, hard | `--red` / `--red-tint` | `#B03A2E` / `#F9E9E7` |
 
-**Gold** means a hint or caution, **blue** information or a way onward, **green** success, **red**
+**Gold** means caution or a highlight (the spoiler warning, the Medium badge, the rule under a
+title), **blue** information or a way onward, **green** success, **red**
 wrong or hardest.
 
 ### Type
@@ -87,7 +88,7 @@ page about 40px over.
 **On a laptop, today's challenge is two columns** *(author's decision, 2026-10-23)*. A picture on
 every question pushed the home page about 350px past a laptop's window, and even with no picture
 it was over a 15-inch MacBook Pro's 790px. From 1100px wide the question and its picture sit on the
-left; the hint, the answer box and the way to yesterday's solution on the right. Narrower than
+left; the answer box and the way to yesterday's solution on the right. Narrower than
 that, so on phones, tablets and laptop windows that aren't full width, it's the single column as
 before.
 
@@ -141,8 +142,6 @@ its full height even before it's revealed, and that one alone is taller than the
 - **Masthead** — centred Lora over a 64px gold rule, with the **dateline** above
   ([PRD 01](01-daily-challenge.md)).
 - **Difficulty badge** — a tinted pill with a coloured dot, not a solid block.
-- **Hint bar** — gold while locked or on offer, **blue once revealed**, so it reads as information
-  rather than a standing offer ([PRD 03](03-hints-and-solutions.md)).
 - **Playing cards** — Twenty Four's hand ([PRD 07](07-twenty-four.md)).
 - **Floating buttons** — round or pill-shaped, white, hairline border, soft shadow, 1.25rem from
   the bottom corners: *Report an issue* bottom right ([PRD 06](06-community-feedback.md)), the
@@ -267,6 +266,8 @@ exists, showing it again is nagging.
   make the server send.
 - **Two glossy gradient buttons**, one with a looping animated shine. Nothing else has a gradient,
   and a moving highlight beside a puzzle competes with the puzzle.
+- **The hint bar**, gold while locked or on offer and blue once revealed, went with the hints
+  themselves *(2026-10-27, [PRD 03](03-hints-and-solutions.md))*.
 - **Em-dashes and emoji, from everything the site shows or sends** *(author's decision,
   2026-10-27)*: pages, page titles, emails, admin and the app's own log messages. Both made the
   site read as machine-written. Sentences use a full stop, comma or colon instead, and titles and
