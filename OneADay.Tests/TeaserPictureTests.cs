@@ -38,6 +38,7 @@ public class TeaserPictureTests : BunitContext
         Services.AddSingleton(_env.NewIssueStore());
         Services.AddSingleton(_env.NewRotationStore());
         Services.AddSingleton(_env.NewMetricsStore());
+        Services.AddSingleton(new JudgedAnswerStore(_env));
 
         var page = Render<Admin>();
         page.Find("#question").Change("How far apart are the poles?");
@@ -100,6 +101,7 @@ public class TeaserPictureTests : BunitContext
         Services.AddScoped<ProtectedLocalStorage>();
         Services.AddSingleton(_env.NewStatsStore());
         Services.AddMetrics(_env);
+        Services.AddGrading(_env);
         Services.AddScoped<CurrentTeaserContext>();
         Services.AddSingleton(new DailySchedule(_env.NewTeaserStore(), _env.NewRotationStore()));
 

@@ -49,6 +49,7 @@ public class PageNamingTests : BunitContext
         Services.AddSingleton(_env.NewStatsStore());
         Services.AddScoped<CurrentTeaserContext>();
         Services.AddMetrics(_env);
+        Services.AddGrading(_env);
 
         var page = Render<ChallengeView>(p => p.Add(c => c.Teaser, TeaserFactory.On("2026-08-12")));
         var box = page.Find("textarea.cv-input");

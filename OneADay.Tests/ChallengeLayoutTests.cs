@@ -40,6 +40,7 @@ public class ChallengeLayoutTests : BunitContext
         Services.AddDataProtection();
         Services.AddScoped<ProtectedLocalStorage>();
         Services.AddMetrics(_env);
+        Services.AddGrading(_env);
         Services.AddScoped<CurrentTeaserContext>();
         // The challenge page's footer offers the email sign-up, which needs these.
         Services.AddSingleton(_env.NewSubscriberStore());

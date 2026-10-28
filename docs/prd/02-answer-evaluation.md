@@ -16,6 +16,11 @@ site is generous about *how* an answer is written, without ever accepting a wron
 Telling someone who *is* right that they're wrong would destroy trust fastest, so the rules lean
 generous — never so far that a wrong answer gets through.
 
+Some right answers are still too far from anything the author listed: "second place" when the
+answer is "second", or "right behind the leader". So an answer the checker turns down can get a
+**second opinion from Jev**, a yes/no decision model, where the question allows one *(author's
+decision, 2026-10-27)*. See [The second opinion](#the-second-opinion-jev).
+
 ## Requirements
 
 ### Writing an answer
@@ -70,10 +75,75 @@ One line of text. **Alternative accepted answers are separated by `;`** — e.g.
      `5000`) is still credited.
    - Broken input (`5*(5-`, `((((`, `1/0`) is rejected, never crashes.
 8. **Blank answers are always rejected.**
+9. **A ratio or a time is matched part by part:** `2:1` accepts `2 : 1`, but not `1:2`, and `3:15`
+   doesn't accept `1:5`. Left to rule 1 it lost its colon, so `2:1` read as `21` and accepted a
+   typed `21` *(found 2026-10-27, on the train-in-the-tunnel question)*.
+10. **A lead-in before the answer is looked past.** If what was typed doesn't match, it's tried
+    again without a lead-in at its start, one at a time: "the answer is", "my answer is",
+    "answer:", "I think (that)", "I believe (that)", "I'd say", "it's", "it is". So
+    `I think it's 9` passes for `9`. The rest still has to be an accepted answer on its own, so a
+    lead-in never makes a wrong answer right. Only whole words come off, so `itself` keeps its
+    `its`.
 
 > **Authoring guidance.** Store a **formula** only when the formula *is* the puzzle ("make 24 from
 > these numbers"). When the answer is a value, store the **number** — `0.333`, not `1/3` — or
 > solvers must rebuild a formula from the same numbers instead of just giving the value.
+
+### The second opinion: Jev
+
+Jev is [TypeSafe's](https://openrouter.ai/blog/insights/what-is-jev/) decision model, reached
+through OpenRouter. Asked a yes/no question, it answers with the chance of yes and nothing else,
+so there's no text to parse and nothing it can be talked into saying.
+
+**An answer is judged in this order** (`AnswerGrader`):
+
+1. **The checker** (the rules above). If it says right, Jev is never asked.
+2. **The author's rulings.** Each teaser has a *Ruled wrong* list, `;`-separated like its
+   answers. An answer on it is wrong, whatever Jev said before.
+3. **An earlier verdict.** Every answer Jev judges is kept, so the same answer to the same
+   question, however it's typed, gets the same verdict without asking again. What's kept is Jev's
+   chance, not a yes or no, and it's held against today's bar: moving the bar regrades every kept
+   answer at once, without asking Jev again.
+4. **Jev**, if all of these hold:
+   - It's switched on and has a key (`Jev:Enabled`, and the secret `Jev:ApiKey`).
+   - **The question isn't a formula question.** The checker works formulas out (rule 7), so it's
+     right by definition, and the make-24 puzzles stay as hard as they are.
+   - **A number in the answer is an accepted number.** "It's 48" can go to Jev; "50" can't. And
+     where every accepted answer is a number, the answer must give one. So Jev can never turn a
+     wrong number into a right one. The cost: on a question with word answers too, a right answer
+     worded with another number ("one behind the leader") stays wrong without Jev being asked.
+   - Today's cap isn't used up: **300 questions a Pacific day**, counted whether Jev answers or not.
+     Past it the checker alone decides until midnight. The count restarts with the app.
+   - Fewer than 10,000 verdicts are kept. Past that, one more couldn't be remembered and would be
+     paid for on every try.
+5. **The answer counts as right if Jev's chance is 70% or more.** The chance is kept either way.
+   Ninety was the first choice. On 2026-10-28, 47 trial answers to 17 questions, each sent twice,
+   put every wrong one at 0.49 or less and every right one at 0.73 or more; ninety would have
+   failed 8 of the 27 right ones, among them `a beach towel` and `right behind the leader`.
+   If Jev doesn't answer within **5 seconds**, or fails, the answer is wrong and nothing is kept,
+   so it's asked about again next time. The answer button reads "Checking…" while it waits.
+
+**What Jev is sent:** the question, the author's accepted answers, and what was typed. No
+address, no visitor id. The author agreed to this on 2026-10-27, knowing TypeSafe says requests
+aren't used for training and keeps data "as long as reasonably necessary". What was typed can be
+anything, which is why the request names asking to be marked correct as a "no".
+
+**The author reviews Jev's verdicts in admin** ([PRD 05](05-authoring-and-admin.md)). The live
+site keeps them in `judged-answers.json`; `deploy/pull-live-data.sh` copies it down
+([PRD 10](10-admin-authentication.md)). Each verdict not yet ruled on has two buttons: **Add to
+accepted answers**, after which the checker passes it, and **Rule it wrong**. Both write to the
+teaser in `teasers.json`, so publishing the bank puts them live. Rulings never go back into the
+verdicts file, which keeps one writer per file.
+
+**Writing more accepted answers keeps Jev rare.** On 2026-10-27 the bank gained 92 more, such as
+`second place` and `16th day`. Tried on 123 typical answers, wrong verdicts went from 54 to one
+(the `21` that rule 9 then fixed).
+
+**Settings** (`Jev` in appsettings.json): `Enabled`, `Model` (pinned at `typesafe/jev-1.14`, so a
+newer model can't quietly move the line), `Threshold` (0.7: author's decision, 2026-10-28, from the trial in rule 5), `MaxPerDay` (300), `TimeoutSeconds`
+(5: two was the first choice, raised so a slow network doesn't mark a right answer wrong;
+author's decision, 2026-10-27), `Endpoint`. The key goes in user-secrets locally and `Jev__ApiKey` on the server
+([PRD 11](11-deployment.md)).
 
 ### Guarantees
 
@@ -88,7 +158,9 @@ One line of text. **Alternative accepted answers are separated by `;`** — e.g.
 - Reading the required numbers from the **question text** — they come from the stored answer,
   which is by definition a valid solution.
 - Algebra beyond arithmetic — no variables, powers or roots.
-- Forgiving misspellings (`kyboard` is wrong), or understanding prose answers.
+- Forgiving misspellings (`kyboard` is wrong), or understanding prose answers, **in the checker**.
+  That's what Jev's second opinion is for, and it decides only what the checker can't.
+- Letting Jev overrule the checker's "right", or the author's "wrong".
 
 ## Acceptance criteria
 
@@ -99,6 +171,20 @@ cases:
       forms
 - [x] `TeaserBankTests.cs` — every question in the live bank, accepted phrasings and plausible
       wrong answers
+- [x] Rules 9 and 10, in `AnswerValidationTests.cs`, each mutation-verified on 2026-10-27
+- [x] **The second opinion**, each test mutation-verified on 2026-10-27:
+      `AnswerGraderTests.cs` (the order above, the bar, kept verdicts, no verdict asked again,
+      formula and number questions, the author's ruling, the cap, the switch and the key),
+      `JevClientTests.cs` (the request, and no verdict from an error, an odd reply or a slow one),
+      `JudgedAnswersAdminTests.cs` (the review list and both rulings), and
+      `SolvedAnswerTests.cs` (an answer Jev passes solves the puzzle)
+- [x] **The request shape**, confirmed with a real key on 2026-10-28: `instructions` alone is
+      enough (no `criteria`), the chance comes back at `answers.same_answer.noul`, and replies
+      took 130 to 340 ms, well inside the 5 second wait
+- [x] **The bar**, set from the 2026-10-28 trial: `AnswerGraderTests.cs` checks the shipped
+      bar sits in the gap the trial found, that exactly the bar passes, and that a kept verdict
+      follows today's bar; `JudgedAnswersAdminTests.cs` checks admin labels each verdict by it
+- [ ] Jev on the live site, and a week of verdicts reviewed before the 70% bar is settled
 
 > **History:** a running total of tests used to be a criterion here. It read 144 while the suite
 > was at 284 — it changes whenever *anything* gains a test — and a number that drifts on its own
@@ -115,7 +201,9 @@ included, lives in `Models/Arithmetic.cs`, moved out when the Twenty Four game s
 share one copy ([PRD 07](07-twenty-four.md)) — two copies would drift, and rounding is exactly the
 kind of detail that drifts silently.
 
-It all runs in memory; a submission is never stored, logged, or inserted into any query.
+The checker runs in memory; a submission is never logged or inserted into any query. It's
+stored only when Jev judges it (`judged-answers.json`), and sent only to Jev, as above. Jev's
+client is `Services/JevClient.cs`, and the order is `Services/AnswerGrader.cs`.
 `Arithmetic` is hand-written with a **cap on how deeply brackets nest**, so hostile input
 (`((((((…`) is rejected instead of crashing the server. A very long *flat* expression never
 nests, so callers cap length too: 300 characters on the daily challenge, 120 in the game.

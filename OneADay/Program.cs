@@ -111,6 +111,14 @@ builder.Services.AddScoped<IBrowserNoteStorage, ProtectedBrowserNoteStorage>();
 builder.Services.AddScoped<MetricsCounter>();
 builder.Services.AddHostedService<MetricsFlusher>();
 
+// A second opinion from Jev on answers the checker turns down (PRD 02). Nothing is sent
+// without Jev__ApiKey; judged-answers.json remembers each verdict for admin to review.
+builder.Services.Configure<JevOptions>(builder.Configuration.GetSection(JevOptions.Section));
+builder.Services.AddHttpClient(JevClient.HttpClientName);
+builder.Services.AddSingleton<IAnswerJudge, JevClient>();
+builder.Services.AddSingleton<JudgedAnswerStore>();
+builder.Services.AddSingleton<AnswerGrader>();
+
 // Every Monday from 7am Pacific the live site emails the author last week's numbers, so they
 // needn't download anything to see them. Totals and puzzle questions only. Off in Development.
 builder.Services.AddHostedService<WeeklySummaryService>();

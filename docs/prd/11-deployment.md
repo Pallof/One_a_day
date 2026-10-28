@@ -154,7 +154,7 @@ destroy every puzzle, statistic and subscriber.
 11. **Serve the fonts ourselves.** Loading Lora and Atkinson Hyperlegible from Google puts a third
     party on every page load and shows it visitors' IP addresses; serving them from `wwwroot`
     removes both ([PRD 09](09-visual-design.md)).
-12. **Settings the deploy needs.** Five; three of them stop the app starting:
+12. **Settings the deploy needs.** Six; three of them stop the app starting:
 
     | Setting | Required | If it's wrong |
     |---|---|---|
@@ -162,6 +162,7 @@ destroy every puzzle, statistic and subscriber.
     | `CloudflareLock__Secret` | **Yes** — a secret, at least 32 characters, the same value as Cloudflare's header rule | **Refuses to start**, unless `CloudflareLock__Enabled` is false (requirement 14) |
     | `Proxy__Enabled` + a trusted source | Behind a proxy | **Refuses to start** if one is set without the other |
     | `Email__AppPassword` | For any email | No mail; the site is unaffected ([PRD 14](14-email-notifications.md)) |
+    | `Jev__ApiKey` | For Jev's second opinion | An OpenRouter key, a secret. Without it the checker alone decides; the site is unaffected ([PRD 02](02-answer-evaluation.md#the-second-opinion-jev)) |
     | `Site__BaseUrl` = `https://stumpty.com` | Yes | **Fails silently** — every link in every email is built from it, and so is the link preview's picture; it defaults to a local address ([PRD 15](15-email-subscriptions.md), [PRD 09](09-visual-design.md#the-link-preview)) |
 
     The refusals are deliberate: without the key the site would quietly store recoverable visitor

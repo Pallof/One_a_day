@@ -108,6 +108,7 @@ public class ScratchPadTests : BunitContext
         Services.AddDataProtection();
         Services.AddScoped<ProtectedLocalStorage>();
         Services.AddMetrics(_env);
+        Services.AddGrading(_env);
 
         var home = Render<Home>();
 
@@ -120,6 +121,7 @@ public class ScratchPadTests : BunitContext
         // Not the layout, which every page shares, and not Twenty Four, the other puzzle.
         Services.AddReportDialog(_env);
         Services.AddMetrics(_env);
+        Services.AddGrading(_env);
         SetRendererInfo(new RendererInfo("Server", isInteractive: true));
         Services.GetRequiredService<NavigationManager>().NavigateTo("yesterday");
 

@@ -110,9 +110,10 @@ First time:
    fly volumes create stumpty_data --size 1 --region ord --snapshot-retention 30
    ```
 3. Set the secrets. Make each key with `openssl rand -base64 32`; `CloudflareLock__Secret`
-   must match Cloudflare's header rule (PRD 11, requirement 14). Never put these in a file.
+   must match Cloudflare's header rule (PRD 11, requirement 14). `Jev__ApiKey` is an OpenRouter
+   key, from your OpenRouter account (PRD 02). Never put these in a file.
    ```bash
-   fly secrets set Privacy__IpHashKey=... CloudflareLock__Secret=... Email__AppPassword=...
+   fly secrets set Privacy__IpHashKey=... CloudflareLock__Secret=... Email__AppPassword=... Jev__ApiKey=...
    ```
 4. Deploy as one machine. Without `--ha=false`, Fly adds a spare, and the data files
    assume a single writer.

@@ -23,6 +23,7 @@ the author's copy of the data, not the live site's.
 | **Difficulty** | yes (default Medium) | Easy / Medium / Hard, shown to solvers as a pill with a green, gold or red dot ([PRD 09](09-visual-design.md)). |
 | **Question** | yes | The teaser text. |
 | **Answer** | yes | Accepted answers, separated by `;` ([PRD 02](02-answer-evaluation.md)). |
+| **Ruled wrong** | no | Answers the author has decided are wrong, separated by `;`. Jev is never asked about them, and they stay wrong whatever Jev said before ([PRD 02](02-answer-evaluation.md#the-second-opinion-jev)). Kept when the teaser is edited and saved. |
 | **Tags** | no | Labels for the author's own sorting. **Never shown to solvers.** |
 | **Support image** | no | A picture under the question: a diagram that helps people picture the puzzle, or just something to make them smile. Every question gets one, made and reviewed as [docs/brand/puzzle-pictures.md](../brand/puzzle-pictures.md) describes *(author's decision, 2026-10-23; from 2026-10-18 it was a nice-to-have)*. The field stays optional, so a question can go in before its picture is ready. |
 | **Picture description** | with a picture | What the picture shows, in words. Screen readers read it out, and email apps that hold pictures back show it instead. **Add teaser** stays disabled until it's written. |
@@ -77,6 +78,14 @@ The recycling box at a glance, without opening `rotation.json`:
 ### Review queues
 
 Suggestions and issue reports are reviewed here too ([PRD 06](06-community-feedback.md)).
+
+**Answers Jev judged** lists the answers the checker turned down and Jev then judged, newest
+first, leaving out any the author has already ruled on. Each shows what was typed, the question,
+Jev's chance and whether it counts as right at today's bar, with two buttons: **Add to accepted
+answers** and **Rule it wrong**.
+Either one saves to the teaser and the row goes. A `;` in what was typed becomes a `,`, so it stays
+one answer. The list is this Mac's copy: `deploy/pull-live-data.sh` fetches the live one
+([PRD 02](02-answer-evaluation.md#the-second-opinion-jev)).
 
 ## Non-goals
 

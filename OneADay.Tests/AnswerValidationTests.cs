@@ -186,4 +186,29 @@ public class AnswerValidationTests
     [InlineData("?!", "...")]
     public void Rejects(string storedAnswer, string submission) =>
         Assert.False(TeaserWithAnswer(storedAnswer).AcceptsAnswer(submission));
+
+    [Theory]
+    // A ratio or a time is matched part by part, spacing forgiven
+    [InlineData("2; 2:1; twice", "2:1")]
+    [InlineData("2:1", "2 : 1")]
+    [InlineData("3:15", "3:15")]
+    // A lead-in before the answer is looked past: the rest is checked on its own
+    [InlineData("9; nine", "The answer is 9")]
+    [InlineData("9", "I think it's 9")]
+    [InlineData("a keyboard", "It's a keyboard")]
+    [InlineData("a keyboard", "it’s a keyboard")]   // a phone's curly apostrophe
+    [InlineData("9", "answer: nine")]
+    [InlineData(Formula24, "the answer is (5-1/5)*5")]
+    public void Accepts_ratios_and_answers_after_a_lead_in(string storedAnswer, string submission) =>
+        Assert.True(TeaserWithAnswer(storedAnswer).AcceptsAnswer(submission));
+
+    [Theory]
+    // "2:1" stripped to its digits once read "21", so a typed "21" passed (found 2026-10-27)
+    [InlineData("2; 2:1; twice", "21")]
+    [InlineData("2:1", "1:2")]
+    [InlineData("3:15", "1:5")]
+    // Only whole words come off the front: "itself" doesn't lose its "its"
+    [InlineData("elf", "itself")]
+    public void Rejects_other_ratios_and_words_that_only_start_like_a_lead_in(string storedAnswer, string submission) =>
+        Assert.False(TeaserWithAnswer(storedAnswer).AcceptsAnswer(submission));
 }

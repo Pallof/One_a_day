@@ -9,6 +9,8 @@
 @inject ImageStore Images
 @inject IssueStore Issues
 @inject RotationStore Rotation
+@inject JudgedAnswerStore Judged
+@inject Microsoft.Extensions.Options.IOptions<JevOptions> JevSettings
 
 <PageTitle>Stumpty · Add a teaser</PageTitle>
 
@@ -47,6 +49,12 @@
             <label for="answer">Answer *</label>
             <input id="answer" type="text" placeholder="Accepted answer. Separate alternatives with ; (e.g. 9; nine)"
                    @bind="_form.Answer" />
+        </div>
+
+        <div class="oad-field">
+            <label for="not-accepted">Ruled wrong (optional)</label>
+            <input id="not-accepted" type="text" placeholder="Answers you've decided are wrong, separated with ;. Jev is never asked about them."
+                   @bind="_form.NotAccepted" />
         </div>
 
         <div class="oad-field">
@@ -379,6 +387,55 @@
             }
         </div>
     </details>
+
+    @* Jev's verdicts still waiting for the author's (PRD 02). Ruling on one writes it into the
+       question's answers in teasers.json, so it drops off this list and the checker decides it
+       from then on. *@
+    <details class="oad-admin-section">
+        <summary class="oad-banner">
+            <span>Answers Jev judged</span>
+            @if (_toReview.Count > 0)
+            {
+                <span class="oad-section-count">@_toReview.Count to review</span>
+            }
+            <span class="oad-chevron" aria-hidden="true"></span>
+        </summary>
+
+        <div class="oad-box">
+            <p class="oad-rotation-lead">
+                Answers the checker turned down and Jev then judged, newest first. This is this Mac's
+                copy: stop the site and run <code>sh deploy/pull-live-data.sh</code> for the live one.
+                Your rulings go into the question's answers, so publish teasers.json afterwards.
+            </p>
+
+            @if (_toReview.Count == 0)
+            {
+                <p>Nothing to review.</p>
+            }
+            else
+            {
+                @foreach (var (judged, teaser) in _toReview)
+                {
+                    <div class="oad-issue jv-judged" @key="(judged.TeaserId, judged.Submission)">
+                        <div class="oad-issue-meta">
+                            @{ var passes = JevSettings.Value.Passes(judged.Chance); }
+                            <span class="oad-issue-status jv-verdict @(passes ? "oad-status-solved" : "oad-status-wontsolve")">
+                                @(passes ? "Counts as right" : "Counts as wrong")
+                            </span>
+                            <span>Jev: @judged.Chance.ToString("0%", System.Globalization.CultureInfo.InvariantCulture) same answer</span>
+                            <span>@judged.JudgedAt.ToString("d MMM yyyy, h:mm tt") PT</span>
+                        </div>
+                        <p class="oad-issue-details jv-typed">@judged.Submission</p>
+                        <p class="oad-issue-context"><span>Question: <em>@Truncate(teaser.Question, 90)</em></span></p>
+                        <div class="oad-issue-actions">
+                            <button class="oad-btn-plain jv-accept" @onclick="() => AddToAccepted(judged)">Add to accepted answers</button>
+                            <button class="oad-btn-danger jv-rule-out" @onclick="() => RuleWrong(judged)">Rule it wrong</button>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </details>
 </div>
 
 @code {
@@ -406,6 +463,9 @@
     private int _issuesBlockedCount;
     private IReadOnlyList<DailyRun> _recentRuns = [];
     private IReadOnlyDictionary<Guid, int> _showCounts = new Dictionary<Guid, int>();
+
+    /// <summary>Jev's verdicts the author hasn't ruled on yet, each with its question.</summary>
+    private IReadOnlyList<(JudgedAnswer Judged, BrainTeaser Teaser)> _toReview = [];
 
     /// <summary>Times shown, and the draw weight that follows from it.</summary>
     private string ShowSummary(Guid teaserId)
@@ -449,7 +509,42 @@
         _showCounts = snapshot.ShowCounts;
         _bankSize = Store.ReleasedOn(_today).Count;
         _queueAhead = _all.Count(t => t.Date > _today);
+
+        _toReview = Judged.GetAll()
+            .Select(j => (Judged: j, Teaser: _all.FirstOrDefault(t => t.Id == j.TeaserId)))
+            .Where(r => r.Teaser is not null && !r.Teaser.AcceptsAnswer(r.Judged.Submission) && !r.Teaser.RulesOut(r.Judged.Submission))
+            .Select(r => (r.Judged, r.Teaser!))
+            .ToList();
     }
+
+    /// <summary>Makes the answer one of the question's accepted answers, for the checker to pass from now on.</summary>
+    private void AddToAccepted(JudgedAnswer judged) =>
+        Rule(judged, t => t.Answer = $"{t.Answer}; {AsOneAnswer(judged.Submission)}");
+
+    /// <summary>Rules the answer wrong, which beats Jev's verdict on it, whatever that was.</summary>
+    private void RuleWrong(JudgedAnswer judged) =>
+        Rule(judged, t => t.NotAccepted = string.IsNullOrWhiteSpace(t.NotAccepted)
+            ? AsOneAnswer(judged.Submission)
+            : $"{t.NotAccepted}; {AsOneAnswer(judged.Submission)}");
+
+    private void Rule(JudgedAnswer judged, Action<BrainTeaser> ruling)
+    {
+        if (Store.GetById(judged.TeaserId) is not { } teaser)
+        {
+            return;
+        }
+        ruling(teaser);
+        Store.Save(teaser);
+        // The same question open in the form would otherwise save its older answers back over this.
+        if (_editingId == teaser.Id)
+        {
+            ruling(_form);
+        }
+        Refresh();
+    }
+
+    /// <summary>What was typed, as one answer: a ';' in it would split it into several.</summary>
+    private static string AsOneAnswer(string typed) => typed.Replace(';', ',').Trim();
 
     private void ResetForm(bool discardStaged = true)
     {
@@ -488,6 +583,7 @@
             ImageAlt = teaser.ImageAlt,
             Question = teaser.Question,
             Answer = teaser.Answer,
+            NotAccepted = teaser.NotAccepted,
             Hint = teaser.Hint,
             Solution = teaser.Solution,
         };
@@ -513,6 +609,7 @@
         }
 
         _form.Tags = ParsedTags;
+        _form.NotAccepted = string.IsNullOrWhiteSpace(_form.NotAccepted) ? null : _form.NotAccepted.Trim();
         _form.ImageAlt = string.IsNullOrWhiteSpace(_form.ImageFileName)
             ? null
             : TextLimit.Clip(_form.ImageAlt, MaxImageAltLength);

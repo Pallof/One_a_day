@@ -26,6 +26,7 @@ public class NoHintTests : BunitContext
         Services.AddDataProtection();
         Services.AddScoped<ProtectedLocalStorage>();
         Services.AddMetrics(_env);
+        Services.AddGrading(_env);
     }
 
     private IRenderedComponent<ChallengeView> RenderPuzzle(bool canReveal = false) =>
