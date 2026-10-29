@@ -164,13 +164,25 @@ its full height even before it's revealed, and that one alone is taller than the
 | The solve dialog, at the top | Whole duck — it replaced 🎉, as the confetti already celebrates | 96px tall |
 | The not-found page | Whole duck — it replaced a 🐱 left from before the mascot (2026-10-15) | 96px tall |
 | The emails' header, beside the name | Whole duck, loaded from the site | 34px tall. Added 2026-10-18: the brain emoji had stayed there after the site dropped it |
-| Browser tab | The face, close up | 32px |
+| Browser tab, and beside the site in Google's results | The face, close up | 48, 96 and 192px; the browser shrinks the 48 for a tab |
+| `/favicon.ico`, for whatever asks for that address without reading the page | The face | 16, 32 and 48px in one file |
 | A phone's home screen | The face | 180px |
 
 It replaced the brain emoji, which looked different on every device, so the site's mark wasn't the
 same picture for everyone. It also replaced Blazor's own logo, which the tab had shown since the
-project was created. The tab icon goes through `Assets`, so its address changes with the file;
+project was created. The icons go through `Assets`, so their addresses change with the file;
 browsers hold on to an old tab icon otherwise.
+
+- **Google shows one icon beside the site in its results** *(added 2026-10-28)*. It takes it from
+  the home page's `<link rel="icon">`, and asks for a square of at least 48px (its older rule was
+  a multiple of 48). The first duck icon was 32px only, and Google was still showing Blazor's logo
+  two weeks after it went live, so nothing under 48px is linked now.
+- **Made by `docs/brand/icons.swift`** from `docs/brand/stumpty-face.png`. To change the icon,
+  change the face and run the script again (its first lines say how); don't edit the files by
+  hand.
+- **After a change, Google takes days to weeks** to fetch the new icon, as it does so only when it
+  next crawls the home page. In Google Search Console, *URL Inspection* on `https://stumpty.com/`,
+  then *Request indexing*, asks it to come sooner.
 
 - **Two sizes are served** from `wwwroot/img/`: 120px tall for the header and footer (18 KB) and
   400px for About and the dialog (121 KB). That way the header on every page doesn't load the

@@ -27,11 +27,16 @@
     <link rel="stylesheet" href="@Assets["OneADay.styles.css"]" />
     <ImportMap />
     @* The duck's face, close up (PRD 09) — the page itself shows the whole duck on its stump.
-       The 180px one is what a phone puts on its home screen. Through Assets so the address
-       changes with the file: browsers hold on to an old tab icon, and this one replaced
-       Blazor's own. *@
-    <link rel="icon" type="image/png" sizes="32x32" href="@Assets["favicon.png"]" />
-    <link rel="apple-touch-icon" href="@Assets["apple-touch-icon.png"]" />
+       Google shows one of these beside the site in its results and wants 48px or more, so
+       nothing smaller is offered: a browser shrinks the 48 for its tab. 192 is for Android;
+       the 180px one is what an iPhone puts on its home screen. favicon.ico isn't linked; it's
+       there for whatever asks for that address without reading the page. All of them come
+       from docs/brand/icons.swift. Through Assets so the address changes with the file:
+       browsers hold on to an old tab icon, and this one replaced Blazor's own. *@
+    <link rel="icon" type="image/png" sizes="48x48" href="@Assets["favicon-48.png"]" />
+    <link rel="icon" type="image/png" sizes="96x96" href="@Assets["favicon-96.png"]" />
+    <link rel="icon" type="image/png" sizes="192x192" href="@Assets["favicon-192.png"]" />
+    <link rel="apple-touch-icon" sizes="180x180" href="@Assets["apple-touch-icon.png"]" />
     <LinkPreview />
     <HeadOutlet @rendermode="InteractiveServer" />
 </head>
