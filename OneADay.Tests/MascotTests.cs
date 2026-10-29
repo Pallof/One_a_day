@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using Bunit;
 using Microsoft.AspNetCore.Components;
@@ -12,8 +13,9 @@ namespace OneADay.Tests;
 
 /// <summary>
 /// The mascot (PRD 09): the whole duck on its stump wherever the page shows it, and its face,
-/// close up, as the browser tab's icon (author's decision, 2026-10-14). Each picture must be a
-/// file the site actually serves, or the visitor gets a broken-image box.
+/// close up, as the site's icon in a browser tab and beside the site in Google's results
+/// (author's decision, 2026-10-14). Each picture must be a file the site actually serves, or
+/// the visitor gets a broken-image box.
 /// </summary>
 public class MascotTests : BunitContext
 {
@@ -98,19 +100,79 @@ public class MascotTests : BunitContext
         AssertMascot("img/stumpty.png", page.Find(".cv-solved img.cv-solved-mark").GetAttribute("src"));
     }
 
-    [Theory]
-    [InlineData("icon", "favicon.png", 32)]
-    [InlineData("apple-touch-icon", "apple-touch-icon.png", 180)]
-    public void The_tab_and_home_screen_icons_are_the_face_at_their_sizes(string rel, string file, int size)
-    {
-        // The page's <head> is App.razor, which only renders inside the running site. 32px is
-        // a tab on a sharp screen; 180px is what an iPhone puts on its home screen.
-        var app = RepoFiles.AppRazor();
-        var link = Regex.Match(app, $"""<link rel="{rel}"[^>]*href="@Assets\["([^"]+)"\]""");
+    /// <summary>
+    /// The page's icon links, from App.razor: the page's head, which only renders inside the
+    /// running site. Each address goes through Assets, or the href is null.
+    /// </summary>
+    private static List<(string Rel, string? Sizes, string? File)> IconLinks() =>
+        Regex.Matches(RepoFiles.AppRazor(), """<link rel="(icon|apple-touch-icon)"[^>]*>""")
+            .Select(link => (
+                link.Groups[1].Value,
+                Captured(link.Value, """sizes="([^"]+)"""),
+                Captured(link.Value, """href="@Assets\["([^"]+)""")))
+            .ToList();
 
-        Assert.True(link.Success, $"App.razor has no <link rel=\"{rel}\"> through Assets.");
-        Assert.Equal(file, link.Groups[1].Value);
+    private static string? Captured(string tag, string pattern) =>
+        Regex.Match(tag, pattern) is { Success: true } match ? match.Groups[1].Value : null;
+
+    [Theory]
+    [InlineData("icon", "favicon-48.png", 48)]
+    [InlineData("icon", "favicon-96.png", 96)]
+    [InlineData("icon", "favicon-192.png", 192)]
+    [InlineData("apple-touch-icon", "apple-touch-icon.png", 180)]
+    public void Each_icon_is_linked_at_the_size_the_file_really_is(string rel, string file, int size)
+    {
+        // A browser picks by the size the link declares, so a wrong one gets a blurry icon.
+        // 180px is what an iPhone puts on its home screen.
+        var link = Assert.Single(IconLinks(), l => l.Rel == rel && l.File == file);
+
+        Assert.Equal($"{size}x{size}", link.Sizes);
+        Assert.True(File.Exists(Path.Combine(RepoFiles.Wwwroot, file)),
+            $"'{file}' isn't in wwwroot, so the page would link an icon nobody can fetch.");
         Assert.Equal((size, size), RepoFiles.PngSize(Path.Combine(RepoFiles.Wwwroot, file)));
+    }
+
+    [Fact]
+    public void Google_is_offered_no_icon_smaller_than_48px()
+    {
+        // Google shows one icon beside the site in its results, picked from these links, and
+        // asks for a square of 48px or more (its older rule: a multiple of 48). A smaller one
+        // here is one it might pick and then not show. Browsers shrink the 48 for a tab.
+        var icons = IconLinks().Where(l => l.Rel == "icon").ToList();
+
+        Assert.NotEmpty(icons);
+        foreach (var icon in icons)
+        {
+            Assert.NotNull(icon.File);
+            var (width, height) = RepoFiles.PngSize(Path.Combine(RepoFiles.Wwwroot, icon.File));
+            Assert.True(width == height && width >= 48 && width % 48 == 0,
+                $"'{icon.File}' is {width} x {height}; Google wants a square, a multiple of 48px.");
+        }
+    }
+
+    [Fact]
+    public void Favicon_ico_holds_16_32_and_48px()
+    {
+        // Not linked from the page: it's for whatever asks for /favicon.ico without reading the
+        // page first. Without the file that address is the not-found page, which isn't an icon.
+        var ico = Path.Combine(RepoFiles.Wwwroot, "favicon.ico");
+
+        Assert.True(File.Exists(ico), "There's no favicon.ico in wwwroot, so /favicon.ico is a 404.");
+        Assert.Equal(new[] { 16, 32, 48 }, RepoFiles.IcoSizes(ico));
+    }
+
+    [Fact]
+    public void Blazors_own_icon_is_nowhere_in_wwwroot()
+    {
+        // The template's purple swirl, which the tab showed before the duck and which Google
+        // still had on 2026-10-28. Everything in wwwroot is served, under any name.
+        const string BlazorIcon = "e265ac0f2dda1e5dfa65b1adf330722bb3ef7789115283604d8cd19f098f1f08";
+
+        var copies = Directory.EnumerateFiles(RepoFiles.Wwwroot, "*", SearchOption.AllDirectories)
+            .Where(f => Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(f))) == BlazorIcon)
+            .Select(f => Path.GetRelativePath(RepoFiles.Wwwroot, f));
+
+        Assert.Empty(copies);
     }
 
     protected override void Dispose(bool disposing)
