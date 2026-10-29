@@ -128,9 +128,9 @@ public class LiveConnectionCapTests
     }
 
     [Fact]
-    public void Ten_per_address_is_the_default()
+    public void Thirty_per_address_is_the_default()
     {
-        Assert.Equal(10, new LiveConnectionOptions().MaxPerAddress);
+        Assert.Equal(30, new LiveConnectionOptions().MaxPerAddress);
     }
 
     // ---- against the real files ------------------------------------------------------------
@@ -138,7 +138,7 @@ public class LiveConnectionCapTests
     [Fact]
     public void The_cap_sits_after_the_proxy_headers_and_before_the_pages()
     {
-        // Above UseProxyHeaders every visitor has Cloudflare's address, and the eleventh visitor
+        // Above UseProxyHeaders every visitor has Cloudflare's address, and the thirty-first visitor
         // anywhere on the site would be turned away. Below MapRazorComponents it never runs.
         var program = File.ReadAllText(Path.Combine(FindRepoRoot(), "OneADay", "Program.cs"));
         var pipeline = Regex.Matches(program, @"^\s*app\.(?:Use|Map)\w*(?:<\w+>)?\(", RegexOptions.Multiline)
@@ -155,12 +155,12 @@ public class LiveConnectionCapTests
     }
 
     [Fact]
-    public void The_production_settings_cap_each_address_at_ten()
+    public void The_production_settings_cap_each_address_at_thirty()
     {
         using var doc = JsonDocument.Parse(
             File.ReadAllText(Path.Combine(FindRepoRoot(), "OneADay", "appsettings.json")));
 
-        Assert.Equal(10, doc.RootElement.GetProperty(LiveConnectionOptions.Section)
+        Assert.Equal(30, doc.RootElement.GetProperty(LiveConnectionOptions.Section)
             .GetProperty(nameof(LiveConnectionOptions.MaxPerAddress)).GetInt32());
     }
 

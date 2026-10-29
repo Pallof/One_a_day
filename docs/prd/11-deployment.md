@@ -239,18 +239,20 @@ destroy every puzzle, statistic and subscriber.
     subscriber without displaying it. A future page that echoes its address next to anything
     secret must be left out of compression.
 
-16. **Ten live connections per address.** ✅ **Built 2026-09-28**, after the security review. Every
+16. **Thirty live connections per address** (ten until 2026-10-28). ✅ **Built 2026-09-28**, after the security review. Every
     open page keeps a live connection, and fly.toml caps the machine at 300 at once so they can't
     run it out of memory. Cloudflare's rate limit only slows how fast connections are opened, not
     how many stay open, so one script could hold all 300 in about five minutes and lock every real
-    visitor out. Now one address may hold ten (`Services/LiveConnectionCap.cs`); an eleventh gets an
-    empty 429, while pages keep loading. Filling the machine takes thirty addresses.
+    visitor out. Now one address may hold thirty (`Services/LiveConnectionCap.cs`); a thirty-first gets
+    an empty 429, while pages keep loading. Filling the machine takes ten addresses.
 
     - **An IPv6 household counts as one address.** A home gets a whole /64 block and its devices
       pick addresses from it at will, so the cap counts the block.
     - **After the proxy headers**, or every visitor would share Cloudflare's address, and one cap.
-    - **Ten is ten tabs across a household.** A school or office behind one address could need more;
-      raise `LiveConnections__MaxPerAddress` if one ever does. Zero switches the cap off.
+    - **Thirty, up from ten** (author's decision, 2026-10-28), so a classroom, office or phone
+      network sharing one address isn't turned away at ten tabs. The cost: a script now needs ten
+      addresses rather than thirty to fill the machine. `LiveConnections__MaxPerAddress` sets it;
+      zero switches the cap off.
 
     The same review also put server-side limits on what visitors can store — field lengths, and
     ceilings on reports, suggestions and unconfirmed sign-ups ([PRD 06](06-community-feedback.md),

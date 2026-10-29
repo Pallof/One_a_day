@@ -150,7 +150,7 @@ app.UseTrafficCount();
 // HTTP and redirect to HTTPS forever. See ProxyOptions and PRD 11.
 app.UseProxyHeaders();
 
-// One address may hold at most ten live connections, so one script can't take all of the
+// One address may hold at most thirty live connections, so one script can't take all of the
 // machine's 300 and lock real visitors out. After the proxy headers, or every visitor would
 // share Cloudflare's address and one cap. See LiveConnectionCap and PRD 11.
 app.UseLiveConnectionCap();
