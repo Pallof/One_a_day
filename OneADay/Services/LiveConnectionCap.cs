@@ -63,7 +63,7 @@ public sealed class LiveConnectionCounter(int maxPerAddress)
 /// <para>Every open page keeps a live connection to the server, and the machine takes 300 at
 /// once (fly.toml). Cloudflare's rate limit only slows how fast connections are opened, not how
 /// many stay open, so one script could hold all 300 in about five minutes, and then no real
-/// visitor could get in. With ten per address, filling the machine takes thirty addresses.
+/// visitor could get in. With thirty per address, filling the machine takes ten addresses.
 /// Security review, 2026-09-28.</para>
 ///
 /// <para>A live connection is one long request to <see cref="HubPath"/> — the WebSocket, or a

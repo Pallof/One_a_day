@@ -6,8 +6,9 @@ namespace OneADay.Models;
 ///
 /// <para>Not locked: the caller holds one lock over both, so a slot is checked and spent in
 /// both at once. The day is passed in, like <see cref="DailySendBudget"/>, so tests don't wait
-/// for midnight. Addresses come from <see cref="VisitorAddress.Key"/>; an unknown one (null)
-/// has no share of its own and is held only by the site-wide budget.</para>
+/// for midnight. Addresses come from <see cref="VisitorAddress.Key"/>. Every unknown one (null)
+/// shares a single share: a page reached over a held poll instead of a WebSocket has no
+/// address by the time it's used, and a script can choose that on purpose (PR 74 review).</para>
 ///
 /// <para>Only addresses that spent something are tracked, so the table never holds more
 /// entries in a day than the site-wide budget allows.</para>
@@ -22,16 +23,14 @@ public sealed class DailyAddressAllowance(int maxPerDay)
     public bool HasRoom(string? address, DateOnly today)
     {
         Roll(today);
-        return address is null || _used.GetValueOrDefault(address) < MaxPerDay;
+        return _used.GetValueOrDefault(VisitorAddress.OrUnknown(address)) < MaxPerDay;
     }
 
     public void Record(string? address, DateOnly today)
     {
         Roll(today);
-        if (address is not null)
-        {
-            _used[address] = _used.GetValueOrDefault(address) + 1;
-        }
+        var key = VisitorAddress.OrUnknown(address);
+        _used[key] = _used.GetValueOrDefault(key) + 1;
     }
 
     /// <summary>Forward only, for the reason <see cref="DailySendBudget"/> gives.</summary>

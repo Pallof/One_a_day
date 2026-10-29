@@ -1,7 +1,7 @@
 # How Fly.io runs Stumpty. See PRD 11 and the README's "Deploying to Fly.io".
 #
-# Secrets are never in this file. Privacy__IpHashKey, CloudflareLock__Secret and
-# Email__AppPassword are set with `fly secrets set`.
+# Secrets are never in this file. Privacy__IpHashKey, CloudflareLock__Secret,
+# Email__AppPassword and Jev__ApiKey are set with `fly secrets set`.
 
 # The name must be unused across all of Fly. If "stumpty" is taken, change it here.
 app = "stumpty"

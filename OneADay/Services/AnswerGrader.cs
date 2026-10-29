@@ -19,7 +19,8 @@ public sealed class AnswerGrader(
     private DateOnly _warnedAddressOn;
 
     /// <param name="visitor">The visitor's address, from <see cref="VisitorAddress.Key"/>, for
-    /// their share of today's questions to Jev. Null when unknown.</param>
+    /// their share of today's questions to Jev. Null when unknown: every unknown visitor
+    /// shares one share.</param>
     public async Task<bool> IsCorrectAsync(
         BrainTeaser teaser, string submission, string? visitor = null, CancellationToken cancellationToken = default)
     {
@@ -61,14 +62,24 @@ public sealed class AnswerGrader(
             return false;
         }
 
-        judged.Add(new JudgedAnswer
+        try
         {
-            TeaserId = teaser.Id,
-            Submission = submission.Trim(),
-            Chance = verdict,
-            Against = teaser.Fingerprint(),
-            JudgedAt = AppTime.NowPacific,
-        });
+            judged.Add(new JudgedAnswer
+            {
+                TeaserId = teaser.Id,
+                Submission = submission.Trim(),
+                Chance = verdict,
+                Against = teaser.Fingerprint(),
+                JudgedAt = AppTime.NowPacific,
+            });
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // A full disk, say. Paid for and answered, so the visitor still gets the verdict: a
+            // second opinion must never break the page (PR 74 review). It's held in memory, so
+            // it's reused until the next restart. Not which answer: the log is no place for it.
+            log.LogWarning("Couldn't save a verdict of Jev's ({Error}). It's kept until the next restart.", e.GetType().Name);
+        }
         return settings.Passes(verdict);
     }
 

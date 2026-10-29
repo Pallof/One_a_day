@@ -78,7 +78,9 @@ One line of text. **Alternative accepted answers are separated by `;`** — e.g.
 8. **Blank answers are always rejected.**
 9. **A ratio or a time is matched part by part:** `2:1` accepts `2 : 1`, but not `1:2`, and `3:15`
    doesn't accept `1:5`. Left to rule 1 it lost its colon, so `2:1` read as `21` and accepted a
-   typed `21` *(found 2026-10-27, on the train-in-the-tunnel question)*.
+   typed `21` *(found 2026-10-27, on the train-in-the-tunnel question)*. The other way round too:
+   a stored number isn't matched by a sum or ratio that comes to something else, so `21` doesn't
+   accept `2:1`, `2-1` or `2+1`, nor `2.5` a `2/5` *(PR 74 review)*.
 10. **A lead-in before the answer is looked past.** If what was typed doesn't match, it's tried
     again without a lead-in at its start, one at a time: "the answer is", "my answer is",
     "answer:", "I think (that)", "I believe (that)", "I'd say", "it's", "it is". So
@@ -107,12 +109,17 @@ so there's no text to parse and nothing it can be talked into saying.
      key is the emergency switch, so it stops Jev's earlier yeses too, not just new questions.
    - **The question isn't a formula question.** The checker works formulas out (rule 7), so it's
      right by definition, and the make-24 puzzles stay as hard as they are.
-   - **Where the accepted answers include a number, a number typed must be one of them.** "It's
-     48" can go to Jev; "50" can't. Where every accepted answer is a number, the answer must give
-     one. So Jev can never turn a wrong number into a right one. The cost: a right answer worded
-     with another number ("one behind the leader") stays wrong without Jev being asked. On a
-     question whose answers are all words, there's no number to hold a typed one to, so "1st
-     place" is asked about, and Jev says no (0.04 to 0.06 in the trial).
+   - **Where the accepted answers include a number, every number typed must be one accepted
+     answer's, in its order.** Numbers inside an answer count: the 3 of `3rd floor`, both parts
+     of `2:1` or `3:15`. "It's 48" can go to Jev; "50" and "50 or 48" can't. For `2:1`, "2 to 1"
+     can, but "21" and "1:2" can't. Where every accepted answer is a number, the answer must give
+     one. So Jev can never turn a wrong number into a right one. A lone "one" counts only where an
+     accepted answer has a 1 in it: elsewhere it's far likelier "the one on the left". The cost: a
+     right answer worded with another number ("48 mph over 2 hours") stays wrong without Jev
+     being asked. On a question whose answers are all words, there's no number to hold a typed one
+     to, so "1st place" is asked about, and Jev says no (0.04 to 0.06 in the trial). *(At first
+     only whole-number answers were read, and one right number let wrong ones through beside it.
+     PR 74 review.)*
    - **The answer has a letter or a digit.** "?", "..." or an emoji alone is wrong without asking.
 4. **An earlier verdict.** Every answer Jev judges is kept, so the same answer to the same
    question, however it's typed, gets the same verdict without asking again. "However it's typed"
@@ -131,7 +138,10 @@ so there's no text to parse and nothing it can be talked into saying.
      (author's decision, 2026-10-28).
    - **30 a day for each visitor address**, so one script can't spend everyone's. Thirty, not
      fewer, because a home or office network is one address (author's decision, 2026-10-28). An
-     earlier verdict reused costs nothing, so a player typing normally uses one or two.
+     earlier verdict reused costs nothing, so a player typing normally uses one or two. Visitors
+     whose address is unknown share one share of 30: a page connected by polling instead of a
+     WebSocket has no address when it asks, and a script can connect that way on purpose, so
+     letting them past the share let one machine spend the whole day (PR 74 review).
 
    Past either, the checker alone decides until midnight Pacific. At 10,000 kept verdicts, each
    new one pushes out the oldest, so a full file never switches Jev off.
@@ -140,7 +150,9 @@ so there's no text to parse and nothing it can be talked into saying.
    put every wrong one at 0.49 or less and every right one at 0.73 or more; ninety would have
    failed 8 of the 27 right ones, among them `a beach towel` and `right behind the leader`.
    If Jev doesn't answer within **5 seconds**, or fails, the answer is wrong and nothing is kept,
-   so it's asked about again next time. The answer button reads "Checking…" while it waits.
+   so it's asked about again next time. The answer button reads "Checking…" while it waits. A
+   verdict that can't be saved (a full disk, say) still counts, and is held in memory until the
+   next restart *(PR 74 review: it used to end the visitor's page)*.
 
 **What Jev is sent:** the question, the author's accepted answers, and what was typed. No
 address, no visitor id. (The address counts the visitor's share of the day, in memory only, and
@@ -150,12 +162,14 @@ anything, which is why the request names asking to be marked correct as a "no".
 
 **The author reviews Jev's verdicts in admin** ([PRD 05](05-authoring-and-admin.md)). The live
 site keeps them in `judged-answers.json`; `deploy/pull-live-data.sh` copies it down
-([PRD 10](10-admin-authentication.md)). Each verdict still in force and not yet dealt with has two
+([PRD 10](10-admin-authentication.md)), over the copy the Mac's own site keeps when testing. Each verdict still in force and not yet dealt with has two
 buttons:
 - **Agree with Jev** clears the row and changes nothing else. Which rows were cleared is kept in
   `agreed-verdicts.json` on the author's Mac, which is never uploaded.
 - **Rule it wrong**, shown only where the answer counts as right, adds what was typed to the
-  teaser's *Ruled wrong* list in `teasers.json`, so publishing the bank puts it live. A `;` in it becomes a `,`, so it stays one ruling.
+  teaser's *Ruled wrong* list in `teasers.json`, so publishing the bank puts it live. A `;` in it
+  becomes a `,` and brackets become spaces, so it stays one ruling: kept as typed, `second place
+  (or third)` would also have ruled out a bare `second place` *(PR 74 review)*.
 
 **Nothing a visitor typed becomes an accepted answer** (author's decision, 2026-10-28). The
 accepted answers stay in the author's own words. To pass an answer Jev turned down, the author

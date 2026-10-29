@@ -138,6 +138,22 @@ public class SolvedAnswerTests : BunitContext
         Assert.Equal(new StatsSnapshot(TotalSubmissions: 1, SuccessfulSubmissions: 1), _stats.Get(Teaser.Id));
     }
 
+    [Fact]
+    public void A_page_without_an_address_shares_one_share_of_Jev()
+    {
+        // Here, as on a page connected by polling instead of a WebSocket, the page has no
+        // address to give (PR 74 review). Unknown visitors share one share, so it runs out.
+        var jev = Services.AddGrading(_env, GradingTestServices.On(maxPerAddressPerDay: 1));
+        jev.Chance = _ => 0.05;
+        var cut = RenderPuzzle();
+
+        Answer(cut, "the letter after z");
+        Answer(cut, "whatever comes before b");
+
+        Assert.Equal(["the letter after z"], jev.Asked);
+        Assert.Equal(new StatsSnapshot(TotalSubmissions: 2, SuccessfulSubmissions: 0), _stats.Get(Teaser.Id));
+    }
+
     protected override void Dispose(bool disposing)
     {
         _env.Dispose();

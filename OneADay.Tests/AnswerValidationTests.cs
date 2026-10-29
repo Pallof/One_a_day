@@ -210,6 +210,14 @@ public class AnswerValidationTests
     // A part too big to read is just wrong. It used to throw, which ended the visitor's page
     [InlineData("2; 2:1; twice", "2:999999999999999999999999999999")]
     [InlineData("2:1", "999999999999999999999999999999:1")]
+    // And the other way round: a number isn't a sum or ratio with its digits (PR 74 review)
+    [InlineData("21", "2:1")]
+    [InlineData("21", "2-1")]
+    [InlineData("21", "2+1")]
+    [InlineData("21", "2/1")]
+    [InlineData("90", "9-0")]
+    [InlineData("315", "3:15")]
+    [InlineData("2.5", "2/5")]
     // Only whole words come off the front: "itself" doesn't lose its "its"
     [InlineData("elf", "itself")]
     public void Rejects_other_ratios_and_words_that_only_start_like_a_lead_in(string storedAnswer, string submission) =>

@@ -36,9 +36,11 @@ public sealed class JudgedAnswer
 /// admin.
 /// </summary>
 /// <remarks>
-/// Written by the live site only. The author copies it down with deploy/pull-live-data.sh and
-/// rules on it in admin; those rulings go into teasers.json, never back into this file, so
-/// every file still has one writer (PRD 10).
+/// Written by whichever site grades answers: the live one. The author copies it down with
+/// deploy/pull-live-data.sh and rules on it in admin; those rulings go into teasers.json, never
+/// back into this file, so every file still has one writer (PRD 10). The site on the author's
+/// Mac writes its own copy too, empty at startup and with verdicts when it has a key; the next
+/// pull replaces it, so nothing of it reaches the live site.
 /// </remarks>
 public sealed class JudgedAnswerStore
 {

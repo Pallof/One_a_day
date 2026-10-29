@@ -66,8 +66,10 @@ what a hostile script would aim at:
 | Unconfirmed sign-ups deleted after 7 days | There was never consent to keep them |
 
 A per-address limit alone can't protect the account — addresses change, and on a live connection
-are sometimes unknown, so an unknown one is let through — which is why the fixed daily total stays
-the backstop. The per-address limit stops one script spending that total by itself and leaving
+are sometimes unknown — which is why the fixed daily total stays the backstop. Unknown addresses
+share one allowance of three: a connection held open by polling instead of a WebSocket has none,
+and a script can choose to connect that way, so letting them through let one machine spend the
+whole total (PR 74 review, 2026-10-29). A real visitor without an address is rare. The per-address limit stops one script spending that total by itself and leaving
 every real sign-up that day with nothing. *(Both added after the security review, 2026-09-28.)*
 
 **A confirmation that never went out reopens its sign-up at once**: dropped over the daily total,
@@ -245,7 +247,7 @@ touch storage, scheduling or wording.
 From the security review of 2026-09-28.
 
 - [x] Three a day per address and no more; other addresses unaffected; a new day starts afresh; an
-      unknown address is left to the global cap
+      unknown addresses share one allowance (they were let through until the PR 74 review)
 - [x] Past 10,000 addresses in a day, new ones wait for tomorrow while known ones keep their
       allowance
 - [x] At 500 unconfirmed sign-ups a new address is neither stored nor sent anything; one under still

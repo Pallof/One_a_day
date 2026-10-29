@@ -55,14 +55,19 @@ public class SignUpLimitTests
     }
 
     [Fact]
-    public void An_unknown_address_is_left_to_the_global_cap()
+    public void Unknown_addresses_share_one_allowance()
     {
-        // The address isn't always known on a live connection. Refusing those would turn real
-        // people away; the 50-a-day cap still stands behind them.
-        var limit = Limit(perDay: 1);
+        // PR 74 review: a page connected by polling has no address, and a script can connect
+        // that way on purpose. Let through, unknown addresses let one machine spend every
+        // confirmation of the day.
+        var limit = Limit(perDay: 2);
 
         Assert.True(limit.TryTake(null, Day));
         Assert.True(limit.TryTake(null, Day));
+        Assert.False(limit.TryTake(null, Day));
+
+        // Known addresses keep their own
+        Assert.True(limit.TryTake("203.0.113.7", Day));
     }
 
     [Fact]

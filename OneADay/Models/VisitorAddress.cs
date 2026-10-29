@@ -15,8 +15,19 @@ namespace OneADay.Models;
 public static class VisitorAddress
 {
     /// <summary>
-    /// The address as text, or for IPv6 its /64 block. Null when there is no address, which
-    /// callers read as "no per-address limit for this one".
+    /// What every visitor with no known address counts under, so together they share one
+    /// allowance. A live connection held open by polling instead of a WebSocket has no address
+    /// when the page asks for it, and a script can choose to connect that way (PR 74 review).
+    /// Not an address, so it can't be mistaken for one.
+    /// </summary>
+    public const string Unknown = "unknown";
+
+    /// <summary>The key a per-address limit counts <paramref name="key"/> under.</summary>
+    public static string OrUnknown(string? key) => key ?? Unknown;
+
+    /// <summary>
+    /// The address as text, or for IPv6 its /64 block. Null when there is no address; limits
+    /// count those together under <see cref="Unknown"/>.
     /// </summary>
     public static string? Key(IPAddress? address)
     {

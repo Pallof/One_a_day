@@ -30,14 +30,12 @@ public sealed class SignUpLimit(IOptions<SubscriptionOptions> options)
     private DateOnly _day;
 
     /// <summary>Spends one of today's sign-ups for this address. False when none are left.</summary>
-    /// <param name="address">From <see cref="VisitorAddress.Key"/>. An unknown address is always
-    /// allowed: the global cap still stands behind it.</param>
+    /// <param name="address">From <see cref="VisitorAddress.Key"/>. Every unknown address shares
+    /// one allowance: let through, they let one script spend the day's confirmations from a
+    /// single machine (PR 74 review). A real visitor without one is rare.</param>
     public bool TryTake(string? address, DateOnly today)
     {
-        if (address is null)
-        {
-            return true;
-        }
+        address = VisitorAddress.OrUnknown(address);
 
         lock (_gate)
         {

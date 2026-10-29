@@ -23,6 +23,9 @@ public sealed class AnswerGraderTests : IDisposable
         answer: "2; 2:1; twice; 2 to 1");
     private static readonly BrainTeaser Hours = TeaserFactory.On("2026-08-16", "How long does it take?", answer: "2.5 hours; two and a half hours");
     private static readonly BrainTeaser Keyboard = TeaserFactory.On("2026-08-17", "What has keys but opens no locks?", answer: "a keyboard; keyboard");
+    private static readonly BrainTeaser Ratio = TeaserFactory.On("2026-08-18", "Fast to slow, as a ratio?", answer: "2:1");
+    private static readonly BrainTeaser Clock = TeaserFactory.On("2026-08-19", "What time does the clock show?", answer: "3:15");
+    private static readonly BrainTeaser Floor = TeaserFactory.On("2026-08-20", "Which floor is the office on?", answer: "3rd floor");
 
     private AnswerGrader Grader(JevOptions? options = null) =>
         new(_jev, new JudgedAnswerStore(_env), Options.Create(options ?? GradingTestServices.On()), NullLogger<AnswerGrader>.Instance);
@@ -140,6 +143,35 @@ public sealed class AnswerGraderTests : IDisposable
         Assert.Equal(asked, _jev.Asked.Count == 1);
     }
 
+    [Theory]
+    // PR 74 review: numbers inside an answer count too, and must come in its order...
+    [InlineData("ratio", "21", false)]
+    [InlineData("ratio", "1:2", false)]
+    [InlineData("ratio", "3:1", false)]
+    [InlineData("ratio", "2 to 1", true)]
+    [InlineData("ratio", "two for every one", true)]
+    [InlineData("ratio", "two to 1", true)]       // read in the order written, words or digits
+    [InlineData("ratio", "twice as many", true)]
+    [InlineData("clock", "3:51", false)]
+    [InlineData("clock", "quarter past three", true)]
+    [InlineData("floor", "4th floor", false)]
+    [InlineData("floor", "7", false)]
+    [InlineData("floor", "third floor", true)]
+    [InlineData("floor", "the 3rd one up", true)]   // "one" here isn't a number
+    // ...and naming a wrong number beside the right one doesn't get past
+    [InlineData("speed", "50 or 48", false)]
+    [InlineData("speed", "not 48, 50", false)]
+    [InlineData("speed", "48 (forty-eight)", true)]
+    public async Task Every_number_typed_must_be_one_answers_numbers_in_its_order(string question, string typed, bool asked)
+    {
+        _jev.Chance = _ => 0.99;
+        var teaser = question switch { "ratio" => Ratio, "clock" => Clock, "floor" => Floor, _ => Speed };
+
+        await Grader().IsCorrectAsync(teaser, typed);
+
+        Assert.Equal(asked, _jev.Asked.Count == 1);
+    }
+
     [Fact]
     public async Task Where_every_answer_is_words_a_number_can_still_be_asked_about()
     {
@@ -252,6 +284,22 @@ public sealed class AnswerGraderTests : IDisposable
     }
 
     [Fact]
+    public async Task Visitors_with_no_known_address_share_one_share()
+    {
+        // PR 74 review: a page connected by polling has no address, and a script can connect
+        // that way on purpose. Without a share of their own, one machine could spend the day.
+        _jev.Chance = _ => 0.95;
+        var grader = Grader(GradingTestServices.On(maxPerDay: 10, maxPerAddressPerDay: 2));
+
+        Assert.True(await grader.IsCorrectAsync(Place, "right behind the leader", visitor: null));
+        Assert.True(await grader.IsCorrectAsync(Place, "just behind first", visitor: null));
+        Assert.False(await grader.IsCorrectAsync(Place, "behind the front runner", visitor: null));
+
+        Assert.True(await grader.IsCorrectAsync(Place, "behind the front runner", "203.0.113.7"));
+        Assert.Equal(3, _jev.Asked.Count);
+    }
+
+    [Fact]
     public async Task A_kept_verdict_spends_none_of_the_share()
     {
         _jev.Chance = _ => 0.95;
@@ -263,6 +311,24 @@ public sealed class AnswerGraderTests : IDisposable
 
         Assert.True(await grader.IsCorrectAsync(Place, "just behind first", "203.0.113.7"));
         Assert.Equal(2, _jev.Asked.Count);
+    }
+
+    [Fact]
+    public async Task A_verdict_that_cant_be_saved_still_counts()
+    {
+        // PR 74 review: the failed save used to end the visitor's page, after the call was paid for.
+        _jev.Chance = _ => 0.95;
+        var grader = Grader();
+        // Where the file goes is now a file, not a folder, so the save fails as on a full disk.
+        var dataDir = Path.Combine(_env.ContentRootPath, "App_Data");
+        Directory.Delete(dataDir, recursive: true);
+        File.WriteAllText(dataDir, "");
+
+        Assert.True(await grader.IsCorrectAsync(Place, "right behind the leader"));
+
+        // Held in memory, so it isn't paid for twice before a restart
+        Assert.True(await grader.IsCorrectAsync(Place, "Right behind the leader!"));
+        Assert.Single(_jev.Asked);
     }
 
     [Fact]
