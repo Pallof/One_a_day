@@ -47,7 +47,7 @@ public sealed class JudgedAnswerStore
     /// <summary>
     /// The most verdicts kept. Past it each new verdict pushes out the oldest, so Jev is never
     /// switched off for good by a full file. Real use takes years to get here; the daily caps
-    /// keep a flood from getting here in less than a month.
+    /// keep a flood from getting here in less than ten days.
     /// </summary>
     public const int MaxAnswers = 10_000;
 

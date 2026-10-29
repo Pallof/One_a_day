@@ -50,7 +50,7 @@ public static class GradingTestServices
     }
 
     /// <summary>Jev switched on with a made-up key, as the tests need it.</summary>
-    public static JevOptions On(double threshold = 0.7, int maxPerDay = 300, int maxPerAddressPerDay = 30) => new()
+    public static JevOptions On(double threshold = 0.7, int maxPerDay = 1000, int maxPerAddressPerDay = 30) => new()
     {
         Enabled = true,
         ApiKey = "test-key-not-real",

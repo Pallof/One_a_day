@@ -24,7 +24,7 @@ public sealed class JudgedAnswerStoreTests : IDisposable
     public void A_full_store_drops_its_oldest_verdict_to_make_room()
     {
         // It used to stop taking verdicts, which switched Jev off for good: nothing else ever
-        // empties the file, and a flood could fill it in about a month.
+        // empties the file, and a flood could fill it in ten days.
         var store = new JudgedAnswerStore(_env, capacity: 3);
         foreach (var (typed, minute) in new[] { ("one", 1), ("two", 2), ("three", 3), ("four", 4) })
         {

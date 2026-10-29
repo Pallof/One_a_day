@@ -126,7 +126,9 @@ so there's no text to parse and nothing it can be talked into saying.
    or the rulings changes nothing.
 5. **Jev**, if there's room in today's caps, counted whether Jev answers or not and restarted with
    the app:
-   - **300 questions a Pacific day** for the whole site, the ceiling on the bill.
+   - **1,000 questions a Pacific day** for the whole site, the ceiling on the bill: about 50
+     cents for a full month. Up from 300, so a busy day doesn't run out by the afternoon
+     (author's decision, 2026-10-28).
    - **30 a day for each visitor address**, so one script can't spend everyone's. Thirty, not
      fewer, because a home or office network is one address (author's decision, 2026-10-28). An
      earlier verdict reused costs nothing, so a player typing normally uses one or two.
@@ -166,7 +168,7 @@ Rulings never go back into the verdicts file, which keeps one writer per file.
 (the `21` that rule 9 then fixed).
 
 **Settings** (`Jev` in appsettings.json): `Enabled`, `Model` (pinned at `typesafe/jev-1.14`, so a
-newer model can't quietly move the line), `Threshold` (0.7: author's decision, 2026-10-28, from the trial in step 6), `MaxPerDay` (300),
+newer model can't quietly move the line), `Threshold` (0.7: author's decision, 2026-10-28, from the trial in step 6), `MaxPerDay` (1000),
 `MaxPerAddressPerDay` (30), `TimeoutSeconds`
 (5: two was the first choice, raised so a slow network doesn't mark a right answer wrong;
 author's decision, 2026-10-27), `Endpoint`. The key goes in user-secrets locally and `Jev__ApiKey` on the server

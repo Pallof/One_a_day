@@ -37,9 +37,11 @@ public sealed class JevOptions
 
     /// <summary>
     /// Most questions sent to Jev in one Pacific day. Past it the checker alone decides until
-    /// midnight, so someone typing nonsense all day can't run up the bill.
+    /// midnight, so someone typing nonsense all day can't run up the bill. A thousand, up from
+    /// 300, so a busy day doesn't run out by the afternoon (author's decision, 2026-10-28): at
+    /// about $0.000017 a question, a full month is about 50 cents.
     /// </summary>
-    public int MaxPerDay { get; set; } = 300;
+    public int MaxPerDay { get; set; } = 1000;
 
     /// <summary>
     /// Most of those one visitor address may use in a Pacific day, so one script can't spend
