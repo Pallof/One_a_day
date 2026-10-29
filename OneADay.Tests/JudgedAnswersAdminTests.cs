@@ -175,6 +175,22 @@ public class JudgedAnswersAdminTests : BunitContext
     }
 
     [Fact]
+    public void Brackets_in_what_was_typed_dont_rule_out_each_side_on_its_own()
+    {
+        // PR 74 review: ruled as typed, "second place (or third)" also ruled out a bare
+        // "second place", a right answer, and "or third".
+        _env.WriteDataFile(JudgedAnswerStore.FileName, JsonSerializer.Serialize(new[] { Judged("second place (or third)", 0.95) }));
+        Services.AddSingleton(new JudgedAnswerStore(_env));
+        var page = Render<Admin>();
+
+        Press(page, 0, "jv-rule-out");
+
+        Assert.True(Saved().RulesOut("second place (or third)"));
+        Assert.False(Saved().RulesOut("second place"));
+        Assert.False(Saved().RulesOut("or third"));
+    }
+
+    [Fact]
     public void Editing_and_saving_a_question_keeps_the_answers_ruled_wrong()
     {
         // Edit copies the question into the form field by field; a field left out of the copy

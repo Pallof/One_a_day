@@ -75,8 +75,10 @@ public class BrainTeaser
     /// Whether Jev may give a second opinion on <paramref name="submission"/> (PRD 02).
     /// <list type="bullet">
     /// <item>Never on a formula question: the checker works formulas out, so it is right by definition.</item>
-    /// <item>A submission that names a number must name an accepted one: "it's 48" can be asked
-    /// about, "50" can't, so Jev never turns a wrong number into a right one.</item>
+    /// <item>A submission that names numbers must name only one accepted answer's numbers, in
+    /// its order: "it's 48" can be asked about, "50" and "50 or 48" can't, and for "2:1"
+    /// neither "21" nor "1:2" can. So Jev never turns a wrong number into a right one. Numbers
+    /// inside an answer count too: the 3 of "3rd floor", both parts of "3:15".</item>
     /// <item>Where every accepted answer is a number, the submission must name one.</item>
     /// <item>Never on a submission with no letters or digits ("?", "...", an emoji). Its
     /// <see cref="AnswerKey"/> would be empty, the same for every such submission, so one
@@ -96,18 +98,43 @@ public class BrainTeaser
             return false;
         }
 
-        var acceptedNumbers = accepted.Select(NumberIn).OfType<decimal>().ToList();
+        var acceptedNumbers = accepted.Select(a => NumbersIn(a)).Where(n => n.Count > 0).ToList();
         if (acceptedNumbers.Count == 0)
         {
             return true;
         }
 
-        var typedNumbers = NumbersIn(submission).ToList();
+        // A lone "one" is far likelier "the one on the left" than a number, so it counts only
+        // where an accepted answer has a 1 in it.
+        var oneCounts = acceptedNumbers.Any(n => n.Contains(1));
+        var typedNumbers = NumbersIn(submission, loneOneCounts: oneCounts).Distinct().ToList();
         if (typedNumbers.Count == 0)
         {
             return accepted.Any(a => NumberIn(a) is null);
         }
-        return typedNumbers.Any(t => acceptedNumbers.Any(a => Arithmetic.ValuesClose(a, t)));
+        return acceptedNumbers.Any(numbers => InOrderWithin(typedNumbers, numbers));
+    }
+
+    /// <summary>
+    /// Whether every one of <paramref name="typed"/> is one of <paramref name="accepted"/>, in
+    /// the same order: "2 to 1" for "2:1", "three" for "3:15", but not "1:2".
+    /// </summary>
+    private static bool InOrderWithin(IReadOnlyList<decimal> typed, IReadOnlyList<decimal> accepted)
+    {
+        var next = 0;
+        foreach (var number in typed)
+        {
+            while (next < accepted.Count && !Arithmetic.ValuesClose(accepted[next], number))
+            {
+                next++;
+            }
+            if (next == accepted.Count)
+            {
+                return false;
+            }
+            next++;
+        }
+        return true;
     }
 
     /// <summary>The number an accepted answer gives, as "48" or "48 mph" does; null for a word answer.</summary>
@@ -116,31 +143,40 @@ public class BrainTeaser
             ? value
             : null;
 
-    /// <summary>Every number in free text, in digits ("48", "1,000", the 2 of "2nd") or in words ("forty-eight").</summary>
-    private static IEnumerable<decimal> NumbersIn(string text)
+    /// <summary>
+    /// Every number in free text, in the order written: in digits ("48", "1,000", the 2 of
+    /// "2nd", both parts of "2:1") or in words ("forty-eight").
+    /// </summary>
+    private static List<decimal> NumbersIn(string text, bool loneOneCounts = true)
     {
+        var found = new List<(int At, decimal Value)>();
         foreach (Match digits in Regex.Matches(text, @"\d[\d,]*(?:\.\d+)?"))
         {
             if (decimal.TryParse(digits.Value.Replace(",", ""), NumberStyles.Number, CultureInfo.InvariantCulture, out var value))
             {
-                yield return value;
+                found.Add((digits.Index, value));
             }
         }
 
-        var run = new List<string>();
-        foreach (var word in Regex.Matches(text.ToLowerInvariant(), "[a-z]+").Select(m => m.Value).Append(""))
+        var run = new List<Match>();
+        foreach (var word in Regex.Matches(text.ToLowerInvariant(), "[a-z]+").Append(null))
         {
-            if (SmallNumberWords.ContainsKey(word) || MultiplierWords.ContainsKey(word) || (run.Count > 0 && word == "and"))
+            if (word is not null &&
+                (SmallNumberWords.ContainsKey(word.Value) || MultiplierWords.ContainsKey(word.Value) || (run.Count > 0 && word.Value == "and")))
             {
                 run.Add(word);
                 continue;
             }
-            if (run.Count > 0 && TryParseNumberWords(string.Join(' ', run), out var value))
+            var loneOne = run is [{ Value: "one" }];
+            if (run.Count > 0 && (loneOneCounts || !loneOne) &&
+                TryParseNumberWords(string.Join(' ', run.Select(w => w.Value)), out var value))
             {
-                yield return value;
+                found.Add((run[0].Index, value));
             }
             run.Clear();
         }
+
+        return found.OrderBy(f => f.At).Select(f => f.Value).ToList();
     }
 
     /// <summary>Whether <paramref name="submission"/> matches one of the ';'-separated <paramref name="answers"/>.</summary>
@@ -269,6 +305,15 @@ public class BrainTeaser
             {
                 return true;
             }
+        }
+
+        // Nor is a plain-number answer matched by a sum or ratio that comes to something else,
+        // just because their digits run together once the symbols go: "2:1", "2-1" or "2+1"
+        // for "21", "2/5" for "2.5" (PR 74 review). The other way round is rule 9.
+        if (TryParseNumber(accepted, out _) &&
+            (ColonPair.IsMatch(submission) || Arithmetic.TryEvaluate(submission, out _)))
+        {
+            return false;
         }
 
         // A formula answer is judged by the arithmetic above and nothing else. The checks

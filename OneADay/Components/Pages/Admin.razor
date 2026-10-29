@@ -561,8 +561,13 @@
         Refresh();
     }
 
-    /// <summary>What was typed, as one answer: a ';' in it would split it into several.</summary>
-    private static string AsOneAnswer(string typed) => typed.Replace(';', ',').Trim();
+    /// <summary>
+    /// What was typed, as one answer. A ';' in it would split it into several, and one pair of
+    /// brackets would rule out each side on its own too: "second place (or third)" would rule
+    /// out a bare "second place" (PR 74 review). Matching ignores the punctuation either way.
+    /// </summary>
+    private static string AsOneAnswer(string typed) =>
+        typed.Replace(';', ',').Replace('(', ' ').Replace(')', ' ').Trim();
 
     private void ResetForm(bool discardStaged = true)
     {

@@ -143,7 +143,7 @@
         // Past this address's sign-ups for today: the same screen, and nothing stored or sent,
         // so one script can't spend the day's confirmations for everyone. After the bot check,
         // so a caught bot never uses up a household's allowance. The address is read the way
-        // Contact reads it (PRD 06, "Known limitations"); an unknown one is let through.
+        // Contact reads it (PRD 06, "Known limitations"); unknown ones share one allowance.
         var visitor = VisitorAddress.Key(HttpAccessor.HttpContext?.Connection.RemoteIpAddress);
         if (!SignUps.TryTake(visitor, AppTime.Today))
         {
