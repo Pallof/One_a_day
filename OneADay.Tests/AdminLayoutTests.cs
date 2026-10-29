@@ -31,6 +31,8 @@ public class AdminLayoutTests : BunitContext
         Services.AddSingleton(_env.NewIssueStore());
         Services.AddSingleton(_env.NewRotationStore());
         Services.AddSingleton(_env.NewMetricsStore());
+        Services.AddSingleton(new JudgedAnswerStore(_env));
+        Services.AddSingleton(new AgreedVerdictStore(_env));
     }
 
     [Fact]
@@ -41,7 +43,7 @@ public class AdminLayoutTests : BunitContext
         var sections = page.FindAll("details.oad-admin-section");
 
         Assert.Equal(
-            new[] { "Scheduled & past teasers", "Visitor suggestions", "Recycling box", "Site metrics", "Reported issues" },
+            new[] { "Scheduled & past teasers", "Visitor suggestions", "Recycling box", "Site metrics", "Reported issues", "Answers Jev judged" },
             sections.Select(s => s.QuerySelector("summary > span")!.TextContent.Trim()));
         Assert.All(sections, s => Assert.False(s.HasAttribute("open")));
     }

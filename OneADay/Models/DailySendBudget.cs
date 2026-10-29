@@ -1,17 +1,19 @@
 namespace OneADay.Models;
 
 /// <summary>
-/// How many notification emails may still go out today.
+/// How many of something counted per day may still go out today: notification emails, or
+/// questions to Jev (<c>AnswerGrader</c>).
 ///
 /// <para>Pulled out of the sender so it can be tested without an SMTP server and
 /// without waiting for midnight: the day is passed in rather than read from a clock,
 /// the same way <c>TeaserRotation</c> takes its randomness as a parameter.</para>
 ///
-/// <para><b>It counts deliveries, not attempts.</b> A slot is only spent once a send
-/// actually succeeds. Counting attempts would mean an SMTP outage burns the whole
+/// <para><b>The caller decides what counts.</b> The email senders spend a slot only once a
+/// send actually succeeds. Counting attempts would mean an SMTP outage burns the whole
 /// day's budget on mail that never arrived — and when service came back the cap would
 /// already be exhausted, so the first working notifications of the day would be the
-/// ones dropped.</para>
+/// ones dropped. <c>AnswerGrader</c> spends one for every question sent to Jev, answered or
+/// not, since a call that times out may still be billed.</para>
 /// </summary>
 public sealed class DailySendBudget(int maxPerDay)
 {
@@ -33,7 +35,7 @@ public sealed class DailySendBudget(int maxPerDay)
         return _sent < MaxPerDay;
     }
 
-    /// <summary>Spends a slot. Call this only after a send has actually succeeded.</summary>
+    /// <summary>Spends a slot, at whatever point the caller counts it (see the class summary).</summary>
     public void RecordSent(DateOnly today)
     {
         Roll(today);

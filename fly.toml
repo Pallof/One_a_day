@@ -40,7 +40,7 @@ primary_region = "ord"
 
   # Turn new connections away before they can run the machine out of memory. Each visitor on
   # the site uses about 0.6 MB, so 300 at once is roughly 290 MB of the 512. One address may
-  # hold 10 of them (LiveConnections:MaxPerAddress), so filling all 300 takes 30 addresses.
+  # hold 30 of them (LiveConnections:MaxPerAddress), so filling all 300 takes 10 addresses.
   [http_service.concurrency]
     type = "connections"
     soft_limit = 250

@@ -31,6 +31,7 @@ public class SolvedAnswerTests : BunitContext
         Services.AddDataProtection();
         Services.AddScoped<ProtectedLocalStorage>();
         Services.AddMetrics(_env);
+        Services.AddGrading(_env);
     }
 
     private IRenderedComponent<ChallengeView> RenderPuzzle(bool canReveal = false) =>
@@ -99,6 +100,42 @@ public class SolvedAnswerTests : BunitContext
         Answer(RenderPuzzle(), "a");
 
         Assert.Equal(new StatsSnapshot(2, 2), _stats.Get(Teaser.Id));
+    }
+
+    [Fact]
+    public void An_answer_Jev_passes_solves_the_puzzle_and_counts_as_correct()
+    {
+        // Registered again, switched on: the last registration wins (PRD 02).
+        var jev = Services.AddGrading(_env, GradingTestServices.On());
+        jev.Chance = typed => typed == "the letter after z" ? 0.95 : 0.05;
+        var cut = RenderPuzzle();
+
+        Answer(cut, "the letter after z");
+
+        Assert.Contains("Correct!", cut.Find(".cv-feedback").TextContent);
+        Assert.Equal(new StatsSnapshot(TotalSubmissions: 1, SuccessfulSubmissions: 1), _stats.Get(Teaser.Id));
+    }
+
+    [Fact]
+    public async Task While_Jev_thinks_the_button_waits_and_a_second_press_counts_for_nothing()
+    {
+        var jev = Services.AddGrading(_env, GradingTestServices.On());
+        jev.Chance = _ => 0.95;
+        jev.Hold = new TaskCompletionSource();
+        var cut = RenderPuzzle();
+
+        Answer(cut, "the letter after z");
+        var button = cut.Find("button.oad-btn-green");
+        Assert.Equal("Checking…", button.TextContent.Trim());
+        Assert.True(button.HasAttribute("disabled"));
+        var secondPress = SubmitAnyway(cut);   // a client ignoring the disabled button
+
+        jev.Hold.SetResult();
+        await secondPress;
+
+        cut.WaitForAssertion(() => Assert.Contains("Correct!", cut.Find(".cv-feedback").TextContent));
+        Assert.Single(jev.Asked);
+        Assert.Equal(new StatsSnapshot(TotalSubmissions: 1, SuccessfulSubmissions: 1), _stats.Get(Teaser.Id));
     }
 
     protected override void Dispose(bool disposing)

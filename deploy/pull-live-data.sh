@@ -1,6 +1,7 @@
 #!/bin/sh
 # Copies the live site's counting files down to this machine, for admin's "Site metrics"
-# section (PRD 16). Run from the repo folder:
+# section (PRD 16), and Jev's verdicts on answers, for "Answers Jev judged" (PRD 02). Run
+# from the repo folder:
 #
 #     sh deploy/pull-live-data.sh
 #
@@ -17,7 +18,7 @@
 # over the download. So the script refuses while it's running (DeployFilesTests checks).
 set -eu
 
-FILES="metrics.json stats.json rotation.json"
+FILES="metrics.json stats.json rotation.json judged-answers.json"
 
 if [ ! -f fly.toml ]; then
     echo "Run this from the repo folder, where fly.toml is." >&2
@@ -52,4 +53,4 @@ for name in $FILES; do
     mv "$tmp/$name" "OneADay/App_Data/$name"
 done
 
-echo "Copied $FILES from the live site. Start the site, open /admin and expand Site metrics."
+echo "Copied $FILES from the live site. Start the site and open /admin: Site metrics and Answers Jev judged."

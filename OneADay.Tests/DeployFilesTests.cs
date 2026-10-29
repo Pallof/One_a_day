@@ -1,3 +1,5 @@
+using OneADay.Services;
+
 namespace OneADay.Tests;
 
 /// <summary>
@@ -66,9 +68,36 @@ public class DeployFilesTests
 
         Assert.Equal(0, exit);
         Assert.Equal(
-            new[] { "/app/App_Data/metrics.json", "/app/App_Data/stats.json", "/app/App_Data/rotation.json" },
+            new[]
+            {
+                "/app/App_Data/metrics.json", "/app/App_Data/stats.json", "/app/App_Data/rotation.json",
+                "/app/App_Data/judged-answers.json",
+            },
             run.Requested());
-        Assert.Equal(new[] { "metrics.json", "rotation.json", "stats.json" }, run.Landed());
+        Assert.Equal(new[] { "judged-answers.json", "metrics.json", "rotation.json", "stats.json" }, run.Landed());
+    }
+
+    [Fact]
+    public void A_site_where_Jev_has_judged_nothing_yet_still_has_a_verdicts_file_to_download()
+    {
+        // One missing file stops the whole download (set -e), and until Jev's first verdict the
+        // live site had none.
+        using var env = new TestEnvironment();
+
+        _ = new JudgedAnswerStore(env);
+
+        Assert.Equal("[]", env.ReadDataFile(JudgedAnswerStore.FileName));
+    }
+
+    [Fact]
+    public void The_verdicts_file_is_written_at_startup_not_on_the_first_visit()
+    {
+        // Made on first use, a download run right after a deploy, before any visitor, found no
+        // file and stopped (PR 74 review). Startup creates the store, which writes it.
+        var program = File.ReadAllText(Path.Combine(FindRepoRoot(), "OneADay", "Program.cs"));
+        var startup = program[program.IndexOf("var app = builder.Build();", StringComparison.Ordinal)..];
+
+        Assert.Contains("app.Services.GetRequiredService<JudgedAnswerStore>();", startup);
     }
 
     [Fact]

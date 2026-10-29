@@ -5,6 +5,8 @@
 @inject IJSRuntime JS
 @inject CurrentTeaserContext TeaserContext
 @inject MetricsCounter Metrics
+@inject AnswerGrader Grader
+@inject IHttpContextAccessor HttpAccessor
 @implements IDisposable
 
 <div class="cv">
@@ -43,8 +45,8 @@
 
         <div class="cv-submit-row">
             <button class="oad-btn-green" @onclick="CheckAnswer"
-                    disabled="@(_solved || _revealed || string.IsNullOrWhiteSpace(_submission))">
-                Submit answer
+                    disabled="@(_solved || _revealed || _checking || string.IsNullOrWhiteSpace(_submission))">
+                @(_checking ? "Checking…" : "Submit answer")
             </button>
 
             @* Solutions unlock the day after a challenge runs — never while it's live. *@
@@ -203,6 +205,9 @@
     private bool _solved;
     private bool _revealed;
     private int _attempts;
+
+    /// <summary>While an answer is with the grader, which can wait up to five seconds on Jev (PRD 02).</summary>
+    private bool _checking;
     private StatsSnapshot? _stats;
     private Timer? _countdownTimer;
     private DateOnly _solvedOn;
@@ -364,7 +369,8 @@
         // browser. A client driving the live connection can still call this, and every call
         // would count as another correct answer in everyone's statistics. Re-solving still
         // works the intended way: come back to the page and start fresh.
-        if (_solved || _revealed || string.IsNullOrWhiteSpace(_submission))
+        // _checking too: an answer waiting on Jev must not be counted twice by a second click.
+        if (_solved || _revealed || _checking || string.IsNullOrWhiteSpace(_submission))
         {
             return;
         }
@@ -377,7 +383,21 @@
         }
 
         _attempts++;
-        if (Teaser.AcceptsAnswer(_submission))
+        bool correct;
+        _checking = true;
+        try
+        {
+            // What was sent, even if they carry on typing while it's checked. The address is
+            // for this visitor's share of today's questions to Jev.
+            correct = await Grader.IsCorrectAsync(Teaser, _submission,
+                VisitorAddress.Key(HttpAccessor.HttpContext?.Connection.RemoteIpAddress));
+        }
+        finally
+        {
+            _checking = false;
+        }
+
+        if (correct)
         {
             _solved = true;
             _feedback = $"Correct! Solved in {_attempts} {Wording.Plural(_attempts, "attempt")}.";

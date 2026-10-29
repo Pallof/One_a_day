@@ -158,13 +158,14 @@ The existing per-puzzle stats (every answer submitted, and how many were right) 
 ### The download command
 
 19. `sh deploy/pull-live-data.sh`, run from the repo folder, copies `metrics.json`, `stats.json`
-    and `rotation.json` from the live site into the Mac's `App_Data/`, overwriting the Mac's test
-    copies of those files only. All three arrive before any is swapped in, so a failed download
-    never leaves a mix of live and local files.
+    and `rotation.json` from the live site into the Mac's `App_Data/`, and since 2026-10-27 Jev's
+    verdicts, `judged-answers.json` ([PRD 02](02-answer-evaluation.md#the-second-opinion-jev)),
+    overwriting the Mac's test copies of those files only. All four arrive before any is swapped
+    in, so a failed download never leaves a mix of live and local files.
 20. **It refuses while the site is running on the Mac** (a process named `OneADay`): the running
     site holds `stats.json` and `rotation.json` in memory and would save its old copies over the
     download. Stop the site, download, start it again.
-21. A test runs the script against a stand-in for Fly and checks it asks for exactly these three
+21. A test runs the script against a stand-in for Fly and checks it asks for exactly these four
     files, so adding one is a deliberate edit to both; the script itself also refuses
     `subscribers.json`, anything in `keys/`, and any path.
 
@@ -275,8 +276,8 @@ no hints at all ([PRD 03](03-hints-and-solutions.md)).
       buttons were only disabled in the browser (mutation-verified)
 - [x] Admin shows each percentage with its count, marks small ones on the figure itself, and says
       so when there's nothing yet (mutation-verified)
-- [x] The download script, run against a stand-in for Fly, asks for exactly the three files and
-      lands them; an extra copy line or a fourth file fails it (mutation-verified — the first
+- [x] The download script, run against a stand-in for Fly, asks for exactly the four files and
+      lands them; an extra copy line or a fifth file fails it (mutation-verified — the first
       version of this test read the script's text and missed an extra copy line)
 - [x] It refuses while the site runs on the Mac, before asking Fly for anything (mutation-verified;
       also by hand: with the local site running, the real script found it and stopped)

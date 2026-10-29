@@ -26,6 +26,7 @@ public class CopyProtectionTests : BunitContext
         Services.AddScoped<ProtectedLocalStorage>();
         Services.AddSingleton(_env.NewStatsStore());
         Services.AddMetrics(_env);
+        Services.AddGrading(_env);
         Services.AddReportDialog(_env);
     }
 

@@ -24,6 +24,7 @@ public class MetricsPageTests : BunitContext
         Services.AddDataProtection();
         Services.AddScoped<ProtectedLocalStorage>();
         _metrics = Services.AddMetrics(_env);
+        Services.AddGrading(_env);
     }
 
     private DayMetrics? Today => _metrics.Read().Days.GetValueOrDefault(MetricsData.Key(AppTime.Today));

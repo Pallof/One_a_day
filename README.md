@@ -110,9 +110,15 @@ First time:
    fly volumes create stumpty_data --size 1 --region ord --snapshot-retention 30
    ```
 3. Set the secrets. Make each key with `openssl rand -base64 32`; `CloudflareLock__Secret`
-   must match Cloudflare's header rule (PRD 11, requirement 14). Never put these in a file.
+   must match Cloudflare's header rule (PRD 11, requirement 14). `Jev__ApiKey` is an OpenRouter
+   key, from your OpenRouter account (PRD 02). Never put these in a file.
    ```bash
-   fly secrets set Privacy__IpHashKey=... CloudflareLock__Secret=... Email__AppPassword=...
+   fly secrets set Privacy__IpHashKey=... CloudflareLock__Secret=... Email__AppPassword=... Jev__ApiKey=...
+   ```
+   To add the Jev key to a site that's already running, without the key landing in your shell
+   history or on screen, paste it at the prompt instead. It takes effect at the next deploy:
+   ```bash
+   read -s "KEY?Paste your OpenRouter key: " && fly secrets set --stage Jev__ApiKey="$KEY" && unset KEY
    ```
 4. Deploy as one machine. Without `--ha=false`, Fly adds a spare, and the data files
    assume a single writer.
@@ -150,6 +156,36 @@ sh deploy/pull-live-data.sh
 ```
 
 Start the site again and open `/admin` → **Site metrics** ([PRD 16](docs/prd/16-site-metrics.md)).
+
+**If the site gets busy.** The machine holds 300 open tabs at once (`hard_limit` in
+`fly.toml`). Visitors past that find the page won't load until someone leaves, while the site
+stays up for everyone already on it. When a spike is coming or happening (a streamer, a big
+post), make the machine bigger:
+
+1. In `fly.toml`, change `memory` under `[[vm]]` and both limits under
+   `[http_service.concurrency]`:
+
+   | `memory`        | `soft_limit` | `hard_limit` |
+   |-----------------|--------------|--------------|
+   | `"512mb"` (now) | 250          | 300          |
+   | `"1024mb"`      | 600          | 750          |
+   | `"2048mb"`      | 1300         | 1600         |
+
+   Each open tab uses about 0.6 MB on top of the app's 110 MB, and each row leaves about as
+   much memory to spare as 300 does on 512 MB.
+2. If pages load but answers are slow to come back, the processor is the limit, not memory:
+   also change `size` to `"shared-cpu-2x"`. Memory was measured under load; the processor
+   wasn't.
+3. Deploy. The machine restarts, so everyone on the site reconnects once:
+   ```bash
+   fly deploy --ha=false
+   ```
+4. When it's quiet again, put the numbers back and deploy again. Fly bills by the second, so a
+   bigger machine for a day or two costs cents. If you keep the bigger size, commit the
+   `fly.toml` change, or the next deploy from another branch puts the old size back.
+
+Don't add a second machine instead: the data files assume one writer. On a very busy day Jev's
+1,000 questions may run out too; after that the checker alone grades until midnight Pacific.
 
 ---
 

@@ -27,6 +27,7 @@ public class MascotTests : BunitContext
         Services.AddDataProtection();
         Services.AddScoped<ProtectedLocalStorage>();
         Services.AddMetrics(_env);
+        Services.AddGrading(_env);
 
         // Last: it reads the services, and bUnit locks them on the first read.
         SetRendererInfo(new RendererInfo("Server", isInteractive: true));

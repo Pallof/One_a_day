@@ -81,8 +81,8 @@ The design stays simple because **every file has exactly one writer**:
 
 | Written by | Files |
 |---|---|
-| The author's Mac, through `/admin` | `teasers.json`, `teaser-images/` |
-| The live site, through visitors | `stats.json`, `rotation.json`, `suggestions.json`, `issues.json`, `subscribers.json`, `metrics.json` |
+| The author's Mac, through `/admin` | `teasers.json`, `teaser-images/`, and `agreed-verdicts.json` (which of Jev's verdicts admin has cleared; never uploaded) |
+| The live site, through visitors | `stats.json`, `rotation.json`, `suggestions.json`, `issues.json`, `subscribers.json`, `metrics.json`, `judged-answers.json` (Jev's verdicts, [PRD 02](02-answer-evaluation.md#the-second-opinion-jev)) |
 | The live site, on its own | `weekly-summary.json` — which week's summary went out ([PRD 16](16-site-metrics.md)) |
 
 Nothing on the live site changes a teaser, so publishing is copying, never merging. **To publish:**
@@ -111,7 +111,9 @@ deploy, not a visitor's page.
   ([PRD 14](14-email-notifications.md)).
 - **The rotation panel and statistics show the Mac's data** unless the live files are copied down.
   `sh deploy/pull-live-data.sh` copies the counting files — `metrics.json`, `stats.json`,
-  `rotation.json` — and nothing else ([PRD 16](16-site-metrics.md)). Stop the site here first:
+  `rotation.json` — and Jev's verdicts, `judged-answers.json`, for admin to review, and nothing
+  else ([PRD 16](16-site-metrics.md), [PRD 02](02-answer-evaluation.md#the-second-opinion-jev)).
+  The author's rulings on those verdicts go into `teasers.json`, never back into the verdicts. Stop the site here first:
   it holds stats and rotation in memory and would save its old copies over the download; the
   script refuses while it runs. The Mac itself never counts visitors. Never copy
   **`subscribers.json`**: the Mac holds the real Gmail password, so a copy of the real list could

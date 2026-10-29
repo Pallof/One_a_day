@@ -111,6 +111,15 @@ builder.Services.AddScoped<IBrowserNoteStorage, ProtectedBrowserNoteStorage>();
 builder.Services.AddScoped<MetricsCounter>();
 builder.Services.AddHostedService<MetricsFlusher>();
 
+// A second opinion from Jev on answers the checker turns down (PRD 02). Nothing is sent
+// without Jev__ApiKey; judged-answers.json remembers each verdict for admin to review.
+builder.Services.Configure<JevOptions>(builder.Configuration.GetSection(JevOptions.Section));
+builder.Services.AddHttpClient(JevClient.HttpClientName);
+builder.Services.AddSingleton<IAnswerJudge, JevClient>();
+builder.Services.AddSingleton<JudgedAnswerStore>();
+builder.Services.AddSingleton<AgreedVerdictStore>();
+builder.Services.AddSingleton<AnswerGrader>();
+
 // Every Monday from 7am Pacific the live site emails the author last week's numbers, so they
 // needn't download anything to see them. Totals and puzzle questions only. Off in Development.
 builder.Services.AddHostedService<WeeklySummaryService>();
@@ -121,6 +130,10 @@ var app = builder.Build();
 // teasers.json should stop a deploy at startup, loudly, rather than show an error page to
 // whoever happens to arrive first (PRD 10).
 app.Services.GetRequiredService<TeaserStore>();
+
+// Jev's verdicts too, so judged-answers.json exists from the first minute after a deploy:
+// deploy/pull-live-data.sh stops at a missing file, and the store writes an empty one.
+app.Services.GetRequiredService<JudgedAnswerStore>();
 
 // Turn away anything that didn't come through Cloudflare — first, so nothing else runs for a
 // request the lock refuses. Below the static files, the biggest files would go out before the
@@ -137,7 +150,7 @@ app.UseTrafficCount();
 // HTTP and redirect to HTTPS forever. See ProxyOptions and PRD 11.
 app.UseProxyHeaders();
 
-// One address may hold at most ten live connections, so one script can't take all of the
+// One address may hold at most thirty live connections, so one script can't take all of the
 // machine's 300 and lock real visitors out. After the proxy headers, or every visitor would
 // share Cloudflare's address and one cap. See LiveConnectionCap and PRD 11.
 app.UseLiveConnectionCap();

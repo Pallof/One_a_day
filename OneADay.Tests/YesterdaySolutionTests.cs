@@ -54,6 +54,7 @@ public class YesterdaySolutionTests : BunitContext
         Services.AddDataProtection();
         Services.AddScoped<ProtectedLocalStorage>();
         Services.AddMetrics(_env);
+        Services.AddGrading(_env);
         return schedule;
     }
 

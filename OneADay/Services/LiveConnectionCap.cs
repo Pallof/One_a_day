@@ -12,11 +12,11 @@ public sealed class LiveConnectionOptions
     /// Open live connections allowed per address. Zero or less switches the cap off.
     /// </summary>
     /// <remarks>
-    /// Every open page holds one for as long as its tab stays open, so ten is ten tabs across a
-    /// household. A school or office behind one address could need more; raise it if one ever
-    /// does. Behind the whole site sits fly.toml's limit of 300.
+    /// Every open page holds one for as long as its tab stays open. Thirty, up from ten, so a
+    /// classroom, office or phone network sharing one address isn't turned away at ten tabs
+    /// (author's decision, 2026-10-28). Behind the whole site sits fly.toml's limit of 300.
     /// </remarks>
-    public int MaxPerAddress { get; set; } = 10;
+    public int MaxPerAddress { get; set; } = 30;
 }
 
 /// <summary>Counts each address's open live connections.</summary>
