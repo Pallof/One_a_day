@@ -10,6 +10,7 @@
 @inject IssueStore Issues
 @inject RotationStore Rotation
 @inject JudgedAnswerStore Judged
+@inject AgreedVerdictStore Agreed
 @inject Microsoft.Extensions.Options.IOptions<JevOptions> JevSettings
 
 <PageTitle>Stumpty · Add a teaser</PageTitle>
@@ -396,7 +397,7 @@
             <span>Answers Jev judged</span>
             @if (_toReview.Count > 0)
             {
-                <span class="oad-section-count">@_toReview.Count to review</span>
+                <span class="oad-section-count">@_toReview.Count new from Jev</span>
             }
             <span class="oad-chevron" aria-hidden="true"></span>
         </summary>
@@ -405,20 +406,22 @@
             <p class="oad-rotation-lead">
                 Answers the checker turned down and Jev then judged, newest first. This is this Mac's
                 copy: stop the site and run <code>sh deploy/pull-live-data.sh</code> for the live one.
-                Your rulings go into the question's answers, so publish teasers.json afterwards.
+                Agreeing with Jev clears a row here and changes nothing else. Ruling an answer wrong
+                goes into the question, so publish teasers.json afterwards. To pass an answer Jev
+                turned down, add it in your own words with Edit.
             </p>
 
             @if (_toReview.Count == 0)
             {
-                <p>Nothing to review.</p>
+                <p>Nothing new from Jev.</p>
             }
             else
             {
                 @foreach (var (judged, teaser) in _toReview)
                 {
+                    var passes = JevSettings.Value.Passes(judged.Chance);
                     <div class="oad-issue jv-judged" @key="(judged.TeaserId, judged.Submission)">
                         <div class="oad-issue-meta">
-                            @{ var passes = JevSettings.Value.Passes(judged.Chance); }
                             <span class="oad-issue-status jv-verdict @(passes ? "oad-status-solved" : "oad-status-wontsolve")">
                                 @(passes ? "Counts as right" : "Counts as wrong")
                             </span>
@@ -428,8 +431,12 @@
                         <p class="oad-issue-details jv-typed">@judged.Submission</p>
                         <p class="oad-issue-context"><span>Question: <em>@Truncate(teaser.Question, 90)</em></span></p>
                         <div class="oad-issue-actions">
-                            <button class="oad-btn-plain jv-accept" @onclick="() => AddToAccepted(judged)">Add to accepted answers</button>
-                            <button class="oad-btn-danger jv-rule-out" @onclick="() => RuleWrong(judged)">Rule it wrong</button>
+                            <button class="oad-btn-plain jv-agree" @onclick="() => AgreeWithJev(judged)">Agree with Jev</button>
+                            @* Only where it counts as right: an answer already wrong needs no ruling. *@
+                            @if (passes)
+                            {
+                                <button class="oad-btn-danger jv-rule-out" @onclick="() => RuleWrong(judged)">Rule it wrong</button>
+                            }
                         </div>
                     </div>
                 }
@@ -464,7 +471,11 @@
     private IReadOnlyList<DailyRun> _recentRuns = [];
     private IReadOnlyDictionary<Guid, int> _showCounts = new Dictionary<Guid, int>();
 
-    /// <summary>Jev's verdicts the author hasn't ruled on yet, each with its question.</summary>
+    /// <summary>
+    /// Jev's verdicts still in force that the author hasn't agreed with or ruled on, each with
+    /// its question. One made before the question was last edited no longer counts, so it isn't
+    /// listed.
+    /// </summary>
     private IReadOnlyList<(JudgedAnswer Judged, BrainTeaser Teaser)> _toReview = [];
 
     /// <summary>Times shown, and the draw weight that follows from it.</summary>
@@ -512,14 +523,21 @@
 
         _toReview = Judged.GetAll()
             .Select(j => (Judged: j, Teaser: _all.FirstOrDefault(t => t.Id == j.TeaserId)))
-            .Where(r => r.Teaser is not null && !r.Teaser.AcceptsAnswer(r.Judged.Submission) && !r.Teaser.RulesOut(r.Judged.Submission))
+            .Where(r => r.Teaser is not null && r.Judged.StillStandsFor(r.Teaser) && !Agreed.Contains(r.Judged) &&
+                        !r.Teaser.AcceptsAnswer(r.Judged.Submission) && !r.Teaser.RulesOut(r.Judged.Submission))
             .Select(r => (r.Judged, r.Teaser!))
             .ToList();
     }
 
-    /// <summary>Makes the answer one of the question's accepted answers, for the checker to pass from now on.</summary>
-    private void AddToAccepted(JudgedAnswer judged) =>
-        Rule(judged, t => t.Answer = $"{t.Answer}; {AsOneAnswer(judged.Submission)}");
+    /// <summary>
+    /// Clears the row, remembered on this Mac only. What a visitor typed never goes into the
+    /// accepted answers: the author adds those in their own words (PRD 02).
+    /// </summary>
+    private void AgreeWithJev(JudgedAnswer judged)
+    {
+        Agreed.Add(judged);
+        Refresh();
+    }
 
     /// <summary>Rules the answer wrong, which beats Jev's verdict on it, whatever that was.</summary>
     private void RuleWrong(JudgedAnswer judged) =>

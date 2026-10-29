@@ -115,6 +115,11 @@ First time:
    ```bash
    fly secrets set Privacy__IpHashKey=... CloudflareLock__Secret=... Email__AppPassword=... Jev__ApiKey=...
    ```
+   To add the Jev key to a site that's already running, without the key landing in your shell
+   history or on screen, paste it at the prompt instead. It takes effect at the next deploy:
+   ```bash
+   read -s "KEY?Paste your OpenRouter key: " && fly secrets set --stage Jev__ApiKey="$KEY" && unset KEY
+   ```
 4. Deploy as one machine. Without `--ha=false`, Fly adds a spare, and the data files
    assume a single writer.
    ```bash

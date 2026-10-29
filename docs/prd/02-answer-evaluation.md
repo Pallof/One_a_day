@@ -73,7 +73,8 @@ One line of text. **Alternative accepted answers are separated by `;`** — e.g.
      even — the same reason a stored `0.333` accepts `1/3`.
    - A **plain-number** answer skips the check, so someone showing their working (`500*10` for
      `5000`) is still credited.
-   - Broken input (`5*(5-`, `((((`, `1/0`) is rejected, never crashes.
+   - Broken input (`5*(5-`, `((((`, `1/0`, or a ratio part too big to read like `2:` and thirty
+     nines) is rejected, never crashes.
 8. **Blank answers are always rejected.**
 9. **A ratio or a time is matched part by part:** `2:1` accepts `2 : 1`, but not `1:2`, and `3:15`
    doesn't accept `1:5`. Left to rule 1 it lost its colon, so `2:1` read as `21` and accepted a
@@ -100,23 +101,39 @@ so there's no text to parse and nothing it can be talked into saying.
 1. **The checker** (the rules above). If it says right, Jev is never asked.
 2. **The author's rulings.** Each teaser has a *Ruled wrong* list, `;`-separated like its
    answers. An answer on it is wrong, whatever Jev said before.
-3. **An earlier verdict.** Every answer Jev judges is kept, so the same answer to the same
-   question, however it's typed, gets the same verdict without asking again. What's kept is Jev's
-   chance, not a yes or no, and it's held against today's bar: moving the bar regrades every kept
-   answer at once, without asking Jev again.
-4. **Jev**, if all of these hold:
-   - It's switched on and has a key (`Jev:Enabled`, and the secret `Jev:ApiKey`).
+3. **Whether Jev may be asked at all.** If not, the answer is wrong, and an earlier verdict on it
+   isn't used either:
+   - **It's switched on and has a key** (`Jev:Enabled`, and the secret `Jev:ApiKey`). Removing the
+     key is the emergency switch, so it stops Jev's earlier yeses too, not just new questions.
    - **The question isn't a formula question.** The checker works formulas out (rule 7), so it's
      right by definition, and the make-24 puzzles stay as hard as they are.
-   - **A number in the answer is an accepted number.** "It's 48" can go to Jev; "50" can't. And
-     where every accepted answer is a number, the answer must give one. So Jev can never turn a
-     wrong number into a right one. The cost: on a question with word answers too, a right answer
-     worded with another number ("one behind the leader") stays wrong without Jev being asked.
-   - Today's cap isn't used up: **300 questions a Pacific day**, counted whether Jev answers or not.
-     Past it the checker alone decides until midnight. The count restarts with the app.
-   - Fewer than 10,000 verdicts are kept. Past that, one more couldn't be remembered and would be
-     paid for on every try.
-5. **The answer counts as right if Jev's chance is 70% or more.** The chance is kept either way.
+   - **Where the accepted answers include a number, a number typed must be one of them.** "It's
+     48" can go to Jev; "50" can't. Where every accepted answer is a number, the answer must give
+     one. So Jev can never turn a wrong number into a right one. The cost: a right answer worded
+     with another number ("one behind the leader") stays wrong without Jev being asked. On a
+     question whose answers are all words, there's no number to hold a typed one to, so "1st
+     place" is asked about, and Jev says no (0.04 to 0.06 in the trial).
+   - **The answer has a letter or a digit.** "?", "..." or an emoji alone is wrong without asking.
+4. **An earlier verdict.** Every answer Jev judges is kept, so the same answer to the same
+   question, however it's typed, gets the same verdict without asking again. "However it's typed"
+   means case, spacing and punctuation, but never the symbols or spaces inside a number: `2-1`,
+   `2 1` and `21` are three answers, as are `2.5` and `25`. (Kept as one, Jev's yes to `2-1` once
+   made a typed `21` right. PR 74 review.) What's kept is Jev's chance, not a yes or no, and it's
+   held against today's bar: moving the bar regrades every kept answer at once, without asking
+   Jev again. A verdict also records the question and accepted answers Jev saw. **Edit either and
+   that question's verdicts no longer count**: each answer is asked about again the next time
+   it's typed, and the new verdict replaces the old. Editing the picture, the solution, the date
+   or the rulings changes nothing.
+5. **Jev**, if there's room in today's caps, counted whether Jev answers or not and restarted with
+   the app:
+   - **300 questions a Pacific day** for the whole site, the ceiling on the bill.
+   - **30 a day for each visitor address**, so one script can't spend everyone's. Thirty, not
+     fewer, because a home or office network is one address (author's decision, 2026-10-28). An
+     earlier verdict reused costs nothing, so a player typing normally uses one or two.
+
+   Past either, the checker alone decides until midnight Pacific. At 10,000 kept verdicts, each
+   new one pushes out the oldest, so a full file never switches Jev off.
+6. **The answer counts as right if Jev's chance is 70% or more.** The chance is kept either way.
    Ninety was the first choice. On 2026-10-28, 47 trial answers to 17 questions, each sent twice,
    put every wrong one at 0.49 or less and every right one at 0.73 or more; ninety would have
    failed 8 of the 27 right ones, among them `a beach towel` and `right behind the leader`.
@@ -124,23 +141,33 @@ so there's no text to parse and nothing it can be talked into saying.
    so it's asked about again next time. The answer button reads "Checking…" while it waits.
 
 **What Jev is sent:** the question, the author's accepted answers, and what was typed. No
-address, no visitor id. The author agreed to this on 2026-10-27, knowing TypeSafe says requests
+address, no visitor id. (The address counts the visitor's share of the day, in memory only, and
+is never sent, stored or logged.) The author agreed to this on 2026-10-27, knowing TypeSafe says requests
 aren't used for training and keeps data "as long as reasonably necessary". What was typed can be
 anything, which is why the request names asking to be marked correct as a "no".
 
 **The author reviews Jev's verdicts in admin** ([PRD 05](05-authoring-and-admin.md)). The live
 site keeps them in `judged-answers.json`; `deploy/pull-live-data.sh` copies it down
-([PRD 10](10-admin-authentication.md)). Each verdict not yet ruled on has two buttons: **Add to
-accepted answers**, after which the checker passes it, and **Rule it wrong**. Both write to the
-teaser in `teasers.json`, so publishing the bank puts them live. Rulings never go back into the
-verdicts file, which keeps one writer per file.
+([PRD 10](10-admin-authentication.md)). Each verdict still in force and not yet dealt with has two
+buttons:
+- **Agree with Jev** clears the row and changes nothing else. Which rows were cleared is kept in
+  `agreed-verdicts.json` on the author's Mac, which is never uploaded.
+- **Rule it wrong**, shown only where the answer counts as right, adds what was typed to the
+  teaser's *Ruled wrong* list in `teasers.json`, so publishing the bank puts it live. A `;` in it becomes a `,`, so it stays one ruling.
+
+**Nothing a visitor typed becomes an accepted answer** (author's decision, 2026-10-28). The
+accepted answers stay in the author's own words. To pass an answer Jev turned down, the author
+adds it with Edit. (An *Add to accepted answers* button existed briefly: it took the visitor's
+text literally, so a typed `second (i think)` would have made `i think` right on its own.)
+Rulings never go back into the verdicts file, which keeps one writer per file.
 
 **Writing more accepted answers keeps Jev rare.** On 2026-10-27 the bank gained 92 more, such as
 `second place` and `16th day`. Tried on 123 typical answers, wrong verdicts went from 54 to one
 (the `21` that rule 9 then fixed).
 
 **Settings** (`Jev` in appsettings.json): `Enabled`, `Model` (pinned at `typesafe/jev-1.14`, so a
-newer model can't quietly move the line), `Threshold` (0.7: author's decision, 2026-10-28, from the trial in rule 5), `MaxPerDay` (300), `TimeoutSeconds`
+newer model can't quietly move the line), `Threshold` (0.7: author's decision, 2026-10-28, from the trial in step 6), `MaxPerDay` (300),
+`MaxPerAddressPerDay` (30), `TimeoutSeconds`
 (5: two was the first choice, raised so a slow network doesn't mark a right answer wrong;
 author's decision, 2026-10-27), `Endpoint`. The key goes in user-secrets locally and `Jev__ApiKey` on the server
 ([PRD 11](11-deployment.md)).
@@ -178,6 +205,15 @@ cases:
       `JevClientTests.cs` (the request, and no verdict from an error, an odd reply or a slow one),
       `JudgedAnswersAdminTests.cs` (the review list and both rulings), and
       `SolvedAnswerTests.cs` (an answer Jev passes solves the puzzle)
+- [x] **The PR 74 review fixes**, each mutation-verified on 2026-10-28:
+      `AnswerGraderTests.cs` (no verdict reused across numbers or where Jev couldn't be asked,
+      symbol-only answers, the switch stopping kept verdicts, edits re-asking, the per-address
+      share), `AnswerValidationTests.cs` (answer keys, the oversized ratio),
+      `JudgedAnswerStoreTests.cs` (making room when full, replacing a verdict after an edit,
+      answers saved as typed), `JudgedAnswersAdminTests.cs` (no way to add a visitor's text to
+      the accepted answers, Agree with Jev, a ruling while the form is open),
+      `SolvedAnswerTests.cs` (one press counts while Jev is asked), and `DeployFilesTests.cs`
+      (the verdicts file exists from startup)
 - [x] **The request shape**, confirmed with a real key on 2026-10-28: `instructions` alone is
       enough (no `criteria`), the chance comes back at `answers.same_answer.noul`, and replies
       took 130 to 340 ms, well inside the 5 second wait

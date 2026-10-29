@@ -117,6 +117,7 @@ builder.Services.Configure<JevOptions>(builder.Configuration.GetSection(JevOptio
 builder.Services.AddHttpClient(JevClient.HttpClientName);
 builder.Services.AddSingleton<IAnswerJudge, JevClient>();
 builder.Services.AddSingleton<JudgedAnswerStore>();
+builder.Services.AddSingleton<AgreedVerdictStore>();
 builder.Services.AddSingleton<AnswerGrader>();
 
 // Every Monday from 7am Pacific the live site emails the author last week's numbers, so they
@@ -129,6 +130,10 @@ var app = builder.Build();
 // teasers.json should stop a deploy at startup, loudly, rather than show an error page to
 // whoever happens to arrive first (PRD 10).
 app.Services.GetRequiredService<TeaserStore>();
+
+// Jev's verdicts too, so judged-answers.json exists from the first minute after a deploy:
+// deploy/pull-live-data.sh stops at a missing file, and the store writes an empty one.
+app.Services.GetRequiredService<JudgedAnswerStore>();
 
 // Turn away anything that didn't come through Cloudflare — first, so nothing else runs for a
 // request the lock refuses. Below the static files, the biggest files would go out before the

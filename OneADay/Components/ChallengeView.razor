@@ -6,6 +6,7 @@
 @inject CurrentTeaserContext TeaserContext
 @inject MetricsCounter Metrics
 @inject AnswerGrader Grader
+@inject IHttpContextAccessor HttpAccessor
 @implements IDisposable
 
 <div class="cv">
@@ -386,8 +387,10 @@
         _checking = true;
         try
         {
-            // What was sent, even if they carry on typing while it's checked.
-            correct = await Grader.IsCorrectAsync(Teaser, _submission);
+            // What was sent, even if they carry on typing while it's checked. The address is
+            // for this visitor's share of today's questions to Jev.
+            correct = await Grader.IsCorrectAsync(Teaser, _submission,
+                VisitorAddress.Key(HttpAccessor.HttpContext?.Connection.RemoteIpAddress));
         }
         finally
         {

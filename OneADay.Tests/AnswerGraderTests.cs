@@ -19,6 +19,10 @@ public sealed class AnswerGraderTests : IDisposable
         answer: "second; 2nd; 2");
     private static readonly BrainTeaser Speed = TeaserFactory.On("2026-08-13", "What's the average speed?", answer: "48; 48 mph");
     private static readonly BrainTeaser Formula = TeaserFactory.On("2026-08-14", "Make 24 from 5, 5, 5 and 1.", answer: "5*(5-(1/5))");
+    private static readonly BrainTeaser Train = TeaserFactory.On("2026-08-15", "How many times faster is the train?",
+        answer: "2; 2:1; twice; 2 to 1");
+    private static readonly BrainTeaser Hours = TeaserFactory.On("2026-08-16", "How long does it take?", answer: "2.5 hours; two and a half hours");
+    private static readonly BrainTeaser Keyboard = TeaserFactory.On("2026-08-17", "What has keys but opens no locks?", answer: "a keyboard; keyboard");
 
     private AnswerGrader Grader(JevOptions? options = null) =>
         new(_jev, new JudgedAnswerStore(_env), Options.Create(options ?? GradingTestServices.On()), NullLogger<AnswerGrader>.Instance);
@@ -123,17 +127,142 @@ public sealed class AnswerGraderTests : IDisposable
     }
 
     [Theory]
-    // Where some accepted answers are words, wording without a number can be asked about,
+    // Where the accepted answers include a number, wording without one can be asked about,
     // but a wrong number still can't
     [InlineData("right behind the leader", true)]
     [InlineData("1st place", false)]
-    public async Task On_a_word_question_a_wrong_number_still_never_reaches_Jev(string typed, bool asked)
+    public async Task Where_the_answers_include_a_number_a_wrong_number_never_reaches_Jev(string typed, bool asked)
     {
         _jev.Chance = _ => 0.99;
 
         await Grader().IsCorrectAsync(Place, typed);
 
         Assert.Equal(asked, _jev.Asked.Count == 1);
+    }
+
+    [Fact]
+    public async Task Where_every_answer_is_words_a_number_can_still_be_asked_about()
+    {
+        // No accepted number to hold it to. Jev itself says no: "1st place" scored 0.04 to 0.06
+        // in the trial of 2026-10-28.
+        var wordsOnly = TeaserFactory.On("2026-08-12", Place.Question, answer: "second; second place");
+
+        await Grader().IsCorrectAsync(wordsOnly, "1st place");
+
+        Assert.Single(_jev.Asked);
+    }
+
+    [Fact]
+    public async Task A_verdict_on_one_number_is_never_reused_for_another()
+    {
+        // PR 74 review: "2-1" and "21" once shared a key, so Jev's yes to one passed the other.
+        _jev.Chance = typed => typed is "2-1" or "2.5 hrs" ? 0.95 : 0.05;
+        var grader = Grader();
+
+        Assert.True(await grader.IsCorrectAsync(Train, "2-1"));
+        Assert.True(await grader.IsCorrectAsync(Hours, "2.5 hrs"));
+
+        Assert.False(await grader.IsCorrectAsync(Train, "21"));
+        Assert.False(await grader.IsCorrectAsync(Hours, "25 hrs"));
+        Assert.Equal(["2-1", "2.5 hrs"], _jev.Asked);
+    }
+
+    [Fact]
+    public async Task A_kept_verdict_is_reused_only_where_Jev_could_be_asked()
+    {
+        // As if kept under a key that let "21" share "2-1"'s verdict, the way they once did.
+        _env.WriteDataFile(JudgedAnswerStore.FileName, JsonSerializer.Serialize(new[]
+        {
+            new JudgedAnswer { TeaserId = Train.Id, Submission = "21", Chance = 0.95, Against = Train.Fingerprint() },
+        }));
+
+        Assert.False(await Grader().IsCorrectAsync(Train, "21"));
+        Assert.Empty(_jev.Asked);
+    }
+
+    [Theory]
+    [InlineData("⌨️")]
+    [InlineData("?")]
+    [InlineData("...")]
+    public async Task An_answer_with_no_letters_or_digits_is_wrong_and_never_sent(string typed)
+    {
+        // Each would have had the same empty key, so one yes would have passed them all.
+        _jev.Chance = _ => 0.99;
+
+        Assert.False(await Grader().IsCorrectAsync(Keyboard, typed));
+        Assert.Empty(_jev.Asked);
+    }
+
+    [Fact]
+    public async Task Switched_off_Jevs_earlier_verdicts_go_too()
+    {
+        // Removing the key is the emergency switch, so it must stop the kept yeses as well.
+        _jev.Chance = _ => 0.95;
+        Assert.True(await Grader().IsCorrectAsync(Place, "right behind the leader"));
+
+        Assert.False(await Grader(new JevOptions { Enabled = false, ApiKey = "test-key-not-real" }).IsCorrectAsync(Place, "right behind the leader"));
+        Assert.False(await Grader(new JevOptions { Enabled = true, ApiKey = "" }).IsCorrectAsync(Place, "right behind the leader"));
+    }
+
+    [Fact]
+    public async Task Editing_the_question_or_its_answers_means_Jev_is_asked_again()
+    {
+        var before = TeaserFactory.On("2026-08-12", Place.Question, answer: "third; 3rd");   // a mistake
+        _jev.Chance = _ => 0.95;
+        Assert.True(await Grader().IsCorrectAsync(before, "in front of the runner I passed"));
+
+        var fixedUp = TeaserFactory.On("2026-08-12", Place.Question, answer: Place.Answer);
+        fixedUp.Id = before.Id;
+        _jev.Chance = _ => 0.05;
+
+        Assert.False(await Grader().IsCorrectAsync(fixedUp, "in front of the runner I passed"));
+        Assert.False(await Grader().IsCorrectAsync(fixedUp, "in front of the runner I passed"));   // the new verdict is kept
+        Assert.Equal(2, _jev.Asked.Count);
+    }
+
+    [Fact]
+    public async Task Editing_the_solution_or_picture_keeps_the_verdicts()
+    {
+        _jev.Chance = _ => 0.95;
+        var teaser = TeaserFactory.On("2026-08-12", Place.Question, answer: Place.Answer);
+        Assert.True(await Grader().IsCorrectAsync(teaser, "right behind the leader"));
+
+        teaser.Solution = "You take their place, not the leader's.";
+        teaser.ImageFileName = "race.png";
+        teaser.NotAccepted = "first";
+
+        Assert.True(await Grader().IsCorrectAsync(teaser, "right behind the leader"));
+        Assert.Single(_jev.Asked);
+    }
+
+    [Fact]
+    public async Task Each_address_has_its_own_share_of_the_day()
+    {
+        _jev.Chance = _ => 0.95;
+        var grader = Grader(GradingTestServices.On(maxPerDay: 10, maxPerAddressPerDay: 2));
+
+        Assert.True(await grader.IsCorrectAsync(Place, "right behind the leader", "203.0.113.7"));
+        Assert.True(await grader.IsCorrectAsync(Place, "just behind first", "203.0.113.7"));
+        Assert.False(await grader.IsCorrectAsync(Place, "behind the front runner", "203.0.113.7"));
+
+        // Someone else's share is untouched, and the same answer from them is now kept
+        Assert.True(await grader.IsCorrectAsync(Place, "behind the front runner", "198.51.100.4"));
+        Assert.True(await grader.IsCorrectAsync(Place, "behind the front runner", "203.0.113.7"));
+        Assert.Equal(3, _jev.Asked.Count);
+    }
+
+    [Fact]
+    public async Task A_kept_verdict_spends_none_of_the_share()
+    {
+        _jev.Chance = _ => 0.95;
+        var grader = Grader(GradingTestServices.On(maxPerAddressPerDay: 2));
+
+        await grader.IsCorrectAsync(Place, "right behind the leader", "203.0.113.7");
+        await grader.IsCorrectAsync(Place, "right behind the leader", "203.0.113.7");
+        await grader.IsCorrectAsync(Place, "Right behind the leader!", "203.0.113.7");
+
+        Assert.True(await grader.IsCorrectAsync(Place, "just behind first", "203.0.113.7"));
+        Assert.Equal(2, _jev.Asked.Count);
     }
 
     [Fact]

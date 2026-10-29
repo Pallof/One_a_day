@@ -1,3 +1,4 @@
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using OneADay.Models;
 
@@ -17,7 +18,16 @@ public sealed class JudgedAnswer
     /// </summary>
     public double Chance { get; set; }
 
+    /// <summary>
+    /// What Jev was shown, as <see cref="BrainTeaser.Fingerprint"/>. The verdict stands only
+    /// while the question and its accepted answers are unchanged.
+    /// </summary>
+    public string? Against { get; set; }
+
     public DateTime JudgedAt { get; set; }
+
+    /// <summary>Whether this verdict was made against the question as it is now.</summary>
+    public bool StillStandsFor(BrainTeaser teaser) => teaser.Id == TeaserId && Against == teaser.Fingerprint();
 }
 
 /// <summary>
@@ -35,21 +45,37 @@ public sealed class JudgedAnswerStore
     public const string FileName = "judged-answers.json";
 
     /// <summary>
-    /// The most verdicts kept. Past it Jev isn't asked any more, since a verdict that can't be
-    /// remembered would be paid for again on every try. Real use takes years to get here; the
-    /// daily cap keeps a flood from getting here in less than a month.
+    /// The most verdicts kept. Past it each new verdict pushes out the oldest, so Jev is never
+    /// switched off for good by a full file. Real use takes years to get here; the daily caps
+    /// keep a flood from getting here in less than a month.
     /// </summary>
     public const int MaxAnswers = 10_000;
 
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = true,
+        // Typed answers are kept as typed. The default escapes every non-ASCII character as
+        // \uXXXX, which made a full file of other scripts four times the size.
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
 
     private readonly string _filePath;
+    private readonly int _capacity;
     private readonly object _lock = new();
-    private readonly List<JudgedAnswer> _answers;
+
+    /// <summary>In the order they were judged, oldest first.</summary>
+    private readonly List<JudgedAnswer> _answers = [];
+
     private readonly Dictionary<(Guid, string), JudgedAnswer> _byAnswer = [];
 
-    public JudgedAnswerStore(IWebHostEnvironment env)
+    public JudgedAnswerStore(IWebHostEnvironment env) : this(env, MaxAnswers)
     {
+    }
+
+    /// <summary>With a smaller <paramref name="capacity"/>, so tests can fill it.</summary>
+    public JudgedAnswerStore(IWebHostEnvironment env, int capacity)
+    {
+        _capacity = capacity;
         var dataDir = Path.Combine(env.ContentRootPath, "App_Data");
         Directory.CreateDirectory(dataDir);
         _filePath = Path.Combine(dataDir, FileName);
@@ -59,14 +85,20 @@ public sealed class JudgedAnswerStore
             // judged anything yet: one missing file there stops the whole download.
             AtomicFile.WriteAllText(_filePath, "[]");
         }
-        _answers = JsonSerializer.Deserialize<List<JudgedAnswer>>(File.ReadAllText(_filePath), JsonOptions) ?? [];
-        foreach (var answer in _answers)
+        foreach (var answer in JsonSerializer.Deserialize<List<JudgedAnswer>>(File.ReadAllText(_filePath), JsonOptions) ?? [])
         {
-            _byAnswer.TryAdd(Key(answer.TeaserId, answer.Submission), answer);
+            var key = Key(answer.TeaserId, answer.Submission);
+            if (key.Item2.Length > 0 && _byAnswer.TryAdd(key, answer))
+            {
+                _answers.Add(answer);
+            }
         }
     }
 
-    /// <summary>The earlier verdict on this answer to this question, ignoring case, spacing and punctuation.</summary>
+    /// <summary>
+    /// The earlier verdict on this answer to this question, ignoring case, spacing and punctuation
+    /// outside numbers. The caller checks it <see cref="JudgedAnswer.StillStandsFor"/> the question.
+    /// </summary>
     public JudgedAnswer? Find(Guid teaserId, string submission)
     {
         lock (_lock)
@@ -75,21 +107,44 @@ public sealed class JudgedAnswerStore
         }
     }
 
-    public bool IsFull
+    public int Count
     {
-        get { lock (_lock) { return _answers.Count >= MaxAnswers; } }
+        get { lock (_lock) { return _answers.Count; } }
     }
 
-    /// <summary>Remembers a verdict. One already held for the same answer is kept, and so is a full store.</summary>
+    /// <summary>
+    /// Remembers a verdict. One already held for the same answer, against the same question, is
+    /// kept: two visitors sent it at once. One made against the question before it was edited is
+    /// replaced. A full store drops its oldest verdict to make room. An answer with no letters or
+    /// digits is never kept, since its key would be shared by all of them.
+    /// </summary>
     public void Add(JudgedAnswer answer)
     {
+        var key = Key(answer.TeaserId, answer.Submission);
+        if (key.Item2.Length == 0)
+        {
+            return;
+        }
+
         lock (_lock)
         {
-            if (_answers.Count >= MaxAnswers || !_byAnswer.TryAdd(Key(answer.TeaserId, answer.Submission), answer))
+            if (_byAnswer.TryGetValue(key, out var held))
             {
-                return;
+                if (held.Against == answer.Against)
+                {
+                    return;
+                }
+                _answers.Remove(held);
             }
+            else if (_answers.Count >= _capacity)
+            {
+                var oldest = _answers[0];
+                _answers.RemoveAt(0);
+                _byAnswer.Remove(Key(oldest.TeaserId, oldest.Submission));
+            }
+
             _answers.Add(answer);
+            _byAnswer[key] = answer;
             AtomicFile.WriteAllText(_filePath, JsonSerializer.Serialize(_answers, JsonOptions));
         }
     }

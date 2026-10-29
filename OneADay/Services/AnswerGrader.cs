@@ -12,11 +12,16 @@ public sealed class AnswerGrader(
 {
     private readonly object _budgetLock = new();
     private readonly DailySendBudget _budget = new(options.Value.MaxPerDay);
+    private readonly DailyAddressAllowance _perAddress = new(options.Value.MaxPerAddressPerDay);
 
-    /// <summary>The day the cap was last reached and logged, so the warning comes once a day.</summary>
+    /// <summary>The days the caps were last reached and logged, so each warning comes once a day.</summary>
     private DateOnly _warnedFullOn;
+    private DateOnly _warnedAddressOn;
 
-    public async Task<bool> IsCorrectAsync(BrainTeaser teaser, string submission, CancellationToken cancellationToken = default)
+    /// <param name="visitor">The visitor's address, from <see cref="VisitorAddress.Key"/>, for
+    /// their share of today's questions to Jev. Null when unknown.</param>
+    public async Task<bool> IsCorrectAsync(
+        BrainTeaser teaser, string submission, string? visitor = null, CancellationToken cancellationToken = default)
     {
         if (teaser.AcceptsAnswer(submission))
         {
@@ -28,14 +33,23 @@ public sealed class AnswerGrader(
         {
             return false;
         }
+
+        // Switched off, Jev's earlier verdicts go too: the checker alone decides. And the rules
+        // on what may be asked apply to an earlier verdict as much as to a new question, so a
+        // verdict kept for one answer can never be reused for one Jev couldn't be asked about.
         var settings = options.Value;
-        if (judged.Find(teaser.Id, submission) is { } earlier)
+        if (!settings.IsOn || !teaser.AllowsSecondOpinion(submission))
+        {
+            return false;
+        }
+
+        if (judged.Find(teaser.Id, submission) is { } earlier && earlier.StillStandsFor(teaser))
         {
             // Judged against today's bar, not the one in force when Jev was asked.
             return settings.Passes(earlier.Chance);
         }
 
-        if (!settings.IsOn || !teaser.AllowsSecondOpinion(submission) || judged.IsFull || !TakeTodaysSlot())
+        if (!TakeTodaysSlot(visitor))
         {
             return false;
         }
@@ -52,16 +66,18 @@ public sealed class AnswerGrader(
             TeaserId = teaser.Id,
             Submission = submission.Trim(),
             Chance = verdict,
+            Against = teaser.Fingerprint(),
             JudgedAt = AppTime.NowPacific,
         });
         return settings.Passes(verdict);
     }
 
     /// <summary>
-    /// Spends one of today's questions to Jev. Every question sent counts, answered or not: a
-    /// timeout may still be billed. The count is in memory, so a restart starts the day afresh.
+    /// Spends one of today's questions to Jev, from the site's budget and the visitor's own
+    /// share of it at once. Every question sent counts, answered or not: a timeout may still be
+    /// billed. The counts are in memory, so a restart starts the day afresh.
     /// </summary>
-    private bool TakeTodaysSlot()
+    private bool TakeTodaysSlot(string? visitor)
     {
         lock (_budgetLock)
         {
@@ -76,7 +92,19 @@ public sealed class AnswerGrader(
                 }
                 return false;
             }
+            if (!_perAddress.HasRoom(visitor, today))
+            {
+                if (_warnedAddressOn != today)
+                {
+                    // Not which address: the log is no place to keep one.
+                    _warnedAddressOn = today;
+                    log.LogWarning("A visitor address has asked Jev {Max} times today, its share. Its answers " +
+                                   "go to the checker alone until midnight Pacific.", _perAddress.MaxPerDay);
+                }
+                return false;
+            }
             _budget.RecordSent(today);
+            _perAddress.Record(visitor, today);
             return true;
         }
     }

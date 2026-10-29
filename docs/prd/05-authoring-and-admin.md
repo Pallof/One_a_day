@@ -79,13 +79,21 @@ The recycling box at a glance, without opening `rotation.json`:
 
 Suggestions and issue reports are reviewed here too ([PRD 06](06-community-feedback.md)).
 
-**Answers Jev judged** lists the answers the checker turned down and Jev then judged, newest
-first, leaving out any the author has already ruled on. Each shows what was typed, the question,
-Jev's chance and whether it counts as right at today's bar, with two buttons: **Add to accepted
-answers** and **Rule it wrong**.
-Either one saves to the teaser and the row goes. A `;` in what was typed becomes a `,`, so it stays
-one answer. The list is this Mac's copy: `deploy/pull-live-data.sh` fetches the live one
-([PRD 02](02-answer-evaluation.md#the-second-opinion-jev)).
+**Answers Jev judged** is optional reading: Jev's verdicts take effect as soon as they're made,
+and nothing here waits on the author. Its header counts them as "3 new from Jev", not as a to-do
+(author's decision, 2026-10-28). It lists the answers the checker turned down and Jev then judged, newest
+first, leaving out any the author has already dealt with and any made before the question was
+last edited. Each shows what was typed, the question, Jev's chance and whether it counts as right
+at today's bar, with two buttons:
+- **Agree with Jev** clears the row and changes nothing else. It's remembered in
+  `agreed-verdicts.json` on this Mac only.
+- **Rule it wrong**, shown only where the answer counts as right, adds what was typed to the
+  teaser's *Ruled wrong* list. A `;` in it becomes a
+  `,`, so it stays one ruling.
+
+Nothing a visitor typed can be made an accepted answer from here: to pass an answer Jev turned
+down, add it in your own words with Edit. The list is this Mac's copy: `deploy/pull-live-data.sh`
+fetches the live one ([PRD 02](02-answer-evaluation.md#the-second-opinion-jev)).
 
 ## Non-goals
 

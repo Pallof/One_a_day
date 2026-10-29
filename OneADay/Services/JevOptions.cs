@@ -6,8 +6,8 @@ namespace OneADay.Services;
 ///
 /// Everything here except <see cref="ApiKey"/> is safe to commit. The key is an OpenRouter key
 /// and comes from user-secrets locally or the <c>Jev__ApiKey</c> environment variable on the
-/// server. It must never appear in appsettings.json. Without it nothing is ever sent, and the
-/// checker alone decides.
+/// server. It must never appear in appsettings.json. Without it, or switched off, nothing is
+/// ever sent and the checker alone decides: Jev's earlier verdicts aren't used either.
 /// </summary>
 public sealed class JevOptions
 {
@@ -40,6 +40,13 @@ public sealed class JevOptions
     /// midnight, so someone typing nonsense all day can't run up the bill.
     /// </summary>
     public int MaxPerDay { get; set; } = 300;
+
+    /// <summary>
+    /// Most of those one visitor address may use in a Pacific day, so one script can't spend
+    /// everyone's. Thirty, since a home or office network counts as one address (author's
+    /// decision, 2026-10-28); a player typing normally needs one or two.
+    /// </summary>
+    public int MaxPerAddressPerDay { get; set; } = 30;
 
     /// <summary>
     /// How long a visitor waits for Jev before the checker's "not quite" stands. Five, not two

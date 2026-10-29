@@ -90,6 +90,17 @@ public class DeployFilesTests
     }
 
     [Fact]
+    public void The_verdicts_file_is_written_at_startup_not_on_the_first_visit()
+    {
+        // Made on first use, a download run right after a deploy, before any visitor, found no
+        // file and stopped (PR 74 review). Startup creates the store, which writes it.
+        var program = File.ReadAllText(Path.Combine(FindRepoRoot(), "OneADay", "Program.cs"));
+        var startup = program[program.IndexOf("var app = builder.Build();", StringComparison.Ordinal)..];
+
+        Assert.Contains("app.Services.GetRequiredService<JudgedAnswerStore>();", startup);
+    }
+
+    [Fact]
     public void The_live_data_download_refuses_while_the_site_runs_here()
     {
         // The running site holds stats and rotation in memory; its next save would write those

@@ -116,6 +116,28 @@ public class SolvedAnswerTests : BunitContext
         Assert.Equal(new StatsSnapshot(TotalSubmissions: 1, SuccessfulSubmissions: 1), _stats.Get(Teaser.Id));
     }
 
+    [Fact]
+    public async Task While_Jev_thinks_the_button_waits_and_a_second_press_counts_for_nothing()
+    {
+        var jev = Services.AddGrading(_env, GradingTestServices.On());
+        jev.Chance = _ => 0.95;
+        jev.Hold = new TaskCompletionSource();
+        var cut = RenderPuzzle();
+
+        Answer(cut, "the letter after z");
+        var button = cut.Find("button.oad-btn-green");
+        Assert.Equal("Checking…", button.TextContent.Trim());
+        Assert.True(button.HasAttribute("disabled"));
+        var secondPress = SubmitAnyway(cut);   // a client ignoring the disabled button
+
+        jev.Hold.SetResult();
+        await secondPress;
+
+        cut.WaitForAssertion(() => Assert.Contains("Correct!", cut.Find(".cv-feedback").TextContent));
+        Assert.Single(jev.Asked);
+        Assert.Equal(new StatsSnapshot(TotalSubmissions: 1, SuccessfulSubmissions: 1), _stats.Get(Teaser.Id));
+    }
+
     protected override void Dispose(bool disposing)
     {
         _env.Dispose();

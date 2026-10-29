@@ -15,12 +15,19 @@ public sealed class FakeJudge : IAnswerJudge
     /// <summary>The accepted answers it was shown on the last question.</summary>
     public IReadOnlyList<string>? LastAccepted { get; private set; }
 
-    public Task<double?> ChanceSameAnswerAsync(
+    /// <summary>When set, every verdict waits for it, as a visitor waits while Jev thinks.</summary>
+    public TaskCompletionSource? Hold { get; set; }
+
+    public async Task<double?> ChanceSameAnswerAsync(
         string question, IReadOnlyList<string> accepted, string submission, CancellationToken cancellationToken)
     {
         Asked.Add(submission);
         LastAccepted = accepted;
-        return Task.FromResult(Chance(submission));
+        if (Hold is { } hold)
+        {
+            await hold.Task;
+        }
+        return Chance(submission);
     }
 }
 
@@ -34,6 +41,7 @@ public static class GradingTestServices
     {
         var judge = new FakeJudge();
         services.AddLogging();
+        services.AddHttpContextAccessor();   // the page reads the visitor's address; none in a test
         services.AddSingleton<IAnswerJudge>(judge);
         services.AddSingleton(new JudgedAnswerStore(env));
         services.AddSingleton(Options.Create(options ?? new JevOptions()));
@@ -42,11 +50,12 @@ public static class GradingTestServices
     }
 
     /// <summary>Jev switched on with a made-up key, as the tests need it.</summary>
-    public static JevOptions On(double threshold = 0.7, int maxPerDay = 300) => new()
+    public static JevOptions On(double threshold = 0.7, int maxPerDay = 300, int maxPerAddressPerDay = 30) => new()
     {
         Enabled = true,
         ApiKey = "test-key-not-real",
         Threshold = threshold,
         MaxPerDay = maxPerDay,
+        MaxPerAddressPerDay = maxPerAddressPerDay,
     };
 }

@@ -207,8 +207,31 @@ public class AnswerValidationTests
     [InlineData("2; 2:1; twice", "21")]
     [InlineData("2:1", "1:2")]
     [InlineData("3:15", "1:5")]
+    // A part too big to read is just wrong. It used to throw, which ended the visitor's page
+    [InlineData("2; 2:1; twice", "2:999999999999999999999999999999")]
+    [InlineData("2:1", "999999999999999999999999999999:1")]
     // Only whole words come off the front: "itself" doesn't lose its "its"
     [InlineData("elf", "itself")]
     public void Rejects_other_ratios_and_words_that_only_start_like_a_lead_in(string storedAnswer, string submission) =>
         Assert.False(TeaserWithAnswer(storedAnswer).AcceptsAnswer(submission));
+
+    [Theory]
+    // Two typings of one answer share a key, so Jev is asked about it once...
+    [InlineData("Right behind the leader!", "right behind the leader")]
+    [InlineData("2 - 1", "2-1")]
+    [InlineData("I'm in 2nd", "im in 2nd")]
+    public void Typings_of_one_answer_share_a_key(string one, string other) =>
+        Assert.Equal(BrainTeaser.AnswerKey(one), BrainTeaser.AnswerKey(other));
+
+    [Theory]
+    // ...but different numbers never do, or a verdict on one would be reused for the other
+    // (PR 74 review: "2-1" passed by Jev once made a typed "21" right)
+    [InlineData("2-1", "21")]
+    [InlineData("2:1", "21")]
+    [InlineData("2.5 hrs", "25 hrs")]
+    [InlineData("1/2", "12")]
+    [InlineData("2 1", "21")]
+    [InlineData("-3", "3")]
+    public void Different_numbers_never_share_a_key(string one, string other) =>
+        Assert.NotEqual(BrainTeaser.AnswerKey(one), BrainTeaser.AnswerKey(other));
 }

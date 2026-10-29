@@ -147,6 +147,7 @@ public class AdminRoutingTests : BunitContext
         Services.AddSingleton(_env.NewRotationStore());
         Services.AddSingleton(_env.NewMetricsStore());
         Services.AddSingleton(new JudgedAnswerStore(_env));
+        Services.AddSingleton(new AgreedVerdictStore(_env));
 
         var page = NavigateInApp("admin");
 

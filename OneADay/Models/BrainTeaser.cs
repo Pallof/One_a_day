@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace OneADay.Models;
@@ -61,16 +63,33 @@ public class BrainTeaser
         Answer.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
     /// <summary>
+    /// A short fingerprint of what Jev is shown: the question and its accepted answers. A kept
+    /// verdict stands only while this is unchanged, so editing either means Jev is asked again
+    /// (PRD 02). The picture, solution, date and rulings don't count.
+    /// </summary>
+    public string Fingerprint() =>
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
+            Question + "\n" + string.Join("\n", AcceptedAnswers()))))[..16];
+
+    /// <summary>
     /// Whether Jev may give a second opinion on <paramref name="submission"/> (PRD 02).
     /// <list type="bullet">
     /// <item>Never on a formula question: the checker works formulas out, so it is right by definition.</item>
     /// <item>A submission that names a number must name an accepted one: "it's 48" can be asked
     /// about, "50" can't, so Jev never turns a wrong number into a right one.</item>
     /// <item>Where every accepted answer is a number, the submission must name one.</item>
+    /// <item>Never on a submission with no letters or digits ("?", "...", an emoji). Its
+    /// <see cref="AnswerKey"/> would be empty, the same for every such submission, so one
+    /// verdict would answer for them all.</item>
     /// </list>
     /// </summary>
     public bool AllowsSecondOpinion(string submission)
     {
+        if (!submission.Any(char.IsLetterOrDigit))
+        {
+            return false;
+        }
+
         var accepted = AcceptedAnswers().SelectMany(Variants).ToList();
         if (accepted.Any(a => Arithmetic.TryEvaluate(a, out _) && !TryParseNumber(a, out _)))
         {
@@ -172,14 +191,19 @@ public class BrainTeaser
     /// </summary>
     private static readonly Regex ColonPair = new(@"^\s*(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)\s*$");
 
-    /// <summary>"2:1" against "2 : 1", part by part, so "1:2" or "1:5" for "3:15" don't pass.</summary>
+    /// <summary>
+    /// "2:1" against "2 : 1", part by part, so "1:2" or "1:5" for "3:15" don't pass. A part too
+    /// big to read, thirty nines say, is simply no match: a parse that threw would end the
+    /// visitor's page (PR 74 review).
+    /// </summary>
     private static bool SameColonPair(Match accepted, string submission)
     {
         var typed = ColonPair.Match(submission);
         return typed.Success &&
                Enumerable.Range(1, 2).All(g =>
-                   decimal.Parse(accepted.Groups[g].Value, CultureInfo.InvariantCulture) ==
-                   decimal.Parse(typed.Groups[g].Value, CultureInfo.InvariantCulture));
+                   decimal.TryParse(accepted.Groups[g].Value, NumberStyles.Number, CultureInfo.InvariantCulture, out var want) &&
+                   decimal.TryParse(typed.Groups[g].Value, NumberStyles.Number, CultureInfo.InvariantCulture, out var got) &&
+                   want == got);
     }
 
     /// <summary>
@@ -388,8 +412,45 @@ public class BrainTeaser
         return true;
     }
 
-    /// <summary>An answer reduced to its letters and digits, lower case, for telling two typings of it apart.</summary>
-    public static string AnswerKey(string text) => Normalize(text);
+    /// <summary>
+    /// An answer reduced for telling two typings of it apart: lower case, letters and digits, and
+    /// what is part of a number: the symbols in "2.5", "2:1", "2-1", "-3" or "1/2", and the
+    /// space in "2 1". So "Right behind the leader!" and "right behind the leader" share a key,
+    /// but "2-1" and "21" don't: stripped like the rest, they would, and a verdict on one would
+    /// be reused for the other (PR 74 review).
+    /// </summary>
+    public static string AnswerKey(string text)
+    {
+        var compact = new StringBuilder(text.Length);
+        var afterSpace = false;
+        foreach (var c in text.ToLowerInvariant())
+        {
+            if (char.IsWhiteSpace(c))
+            {
+                afterSpace = true;
+                continue;
+            }
+            if (afterSpace && compact.Length > 0 && char.IsDigit(compact[^1]) && char.IsDigit(c))
+            {
+                compact.Append(' ');
+            }
+            afterSpace = false;
+            compact.Append(c);
+        }
+
+        var key = new StringBuilder(compact.Length);
+        for (var i = 0; i < compact.Length; i++)
+        {
+            var c = compact[i];
+            var startsOrJoinsNumber = i + 1 < compact.Length && char.IsDigit(compact[i + 1]) &&
+                                      (i == 0 || !char.IsLetter(compact[i - 1]));
+            if (char.IsLetterOrDigit(c) || startsOrJoinsNumber)
+            {
+                key.Append(c);
+            }
+        }
+        return key.ToString();
+    }
 
     private static string Normalize(string text) =>
         new(text.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
