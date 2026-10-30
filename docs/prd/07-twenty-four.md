@@ -146,55 +146,14 @@ there is. It shows what to type and reveals no method. Before adding or changing
     file that can't be read is set aside as `twentyfour-board.unreadable-<time>.json`, logged as
     an error, and the board starts empty: better than the game down for everyone.
 
-### Answers faster than anyone types: a shadow ban
-
-18. **Three answers in a row under 2 seconds** mark a script. Each is timed on the server, from
-    the deal to the answer, so a script can't claim it took longer; the time a hand takes to reach
-    the browser only adds to a person's time. The timer is the server's steady one, not the wall
-    clock, which can jump back and make a slow answer look fast. Reading four cards, working it out and typing even
-    `6+6+6+6` takes a fast player about 1.5 to 2 seconds, so one quick answer is a person on an
-    easy hand, and three in a row is not.
-19. **Only answers that add to the run are timed:** a correct answer and a right Impossible call.
-    One slower answer starts the count again. A Pass or a wrong answer doesn't, so a script can't
-    reset it by passing.
-20. **A caught player is shadow-banned** *(author's decision, 2026-10-29)*: kept off the board for
-    good, and **never told**. Their rows leave both lists, and from then on their runs never reach
-    them, so they take no more places (someone they pushed off earlier doesn't come back). Only
-    they still see their own runs on the board, ranked where they'd be, and every message, the
-    run and the confetti go on as before, so nothing looks different to them, until the site next
-    restarts (requirement 21). Once caught, the visit stays caught, however slowly it plays after.
-21. **What's stored:** `App_Data/twentyfour-hidden.jsonl` on the live site, **one hidden player per
-    line**: their id, and when they were hidden; no names. Hiding someone adds a line rather than
-    rewriting the file, so it stays cheap while every visitor's page waits on the board, however
-    long the list grows. A line that can't be read is skipped and logged, never a reason for the
-    game to stop; the file is tidied at the next start. At most 10,000 players are kept hidden;
-    past that, the longest-hidden one is let back on. Their own runs are kept in memory only, so
-    after a restart they start again from nothing, and could notice their old rows gone. The site
-    logs each one hidden, by name and the start of their id, which is what the hidden list holds:
-    *"Kept Otter 17 (3d5c78c1) off the Twenty Four board: their answers came faster than anyone
-    types."*
-22. <a id="ban-by-hand"></a>**Banning or letting back on by hand** is one line in that file, then
-    a restart. A line may be the id alone. A line the site adds in the meantime doesn't undo the
-    edit, and a ban added by hand takes the player's rows off the board at the start.
-    - **To let someone back on** (a real person caught by mistake): find the line with the id
-      from the log, delete it, restart. Their runs from while they were hidden don't come back.
-    - **To ban someone you spot on the board** (a patient script): the board file has each name
-      with its id just above it. Find the name, add its id as a line, restart:
-
-      ```bash
-      fly ssh console -C "grep -B2 '\"Otter 17\"' /app/App_Data/twentyfour-board.json"
-      fly ssh console -C "sh -c 'echo <id> >> /app/App_Data/twentyfour-hidden.jsonl'"
-      fly apps restart stumpty
-      ```
-
 ### Showing the hand
 
-23. The numbers are drawn as **playing cards** — corner ranks, a centre symbol, red and black
+18. The numbers are drawn as **playing cards** — corner ranks, a centre symbol, red and black
    suits — because the hand *is* a deal.
-24. **Suits are decoration, assigned by position**; nothing reads them. They let **duplicates be
+19. **Suits are decoration, assigned by position**; nothing reads them. They let **duplicates be
     told apart**, which the next rule needs: with a pair of 9s, "one is dimmed" is ambiguous, while
     "9♠ is dimmed and 9♣ isn't" is not.
-25. <a id="spent-cards"></a>A card **dims once its number is typed** and **lights up again the moment
+20. <a id="spent-cards"></a>A card **dims once its number is typed** and **lights up again the moment
     it's deleted**. Duplicates are used left to right: typing one 9 dims the first 9 only.
 
 > **Why dimming doesn't break the never-shows-how rule:** it's **bookkeeping, not insight.** A dimmed card
@@ -219,25 +178,25 @@ for nearly every key *(visitor feedback, 2026-10-07)*. So under the answer box t
 [  ( ][  ) ][    ⌫     ]
 ```
 
-26. **Touch screens only.** It's hidden where the device reports a mouse, and so has a keyboard;
+21. **Touch screens only.** It's hidden where the device reports a mouse, and so has a keyboard;
     a device that reports neither gets the keypad. The *"or press the space bar"* line under
     **Deal a new hand** follows the same rule the other way round — a phone has no space bar.
-27. **A tap adds to the end of the answer, spaced as it would be written**: no space after `(`
+22. **A tap adds to the end of the answer, spaced as it would be written**: no space after `(`
     or before `)`, one everywhere else. Two numbers tapped in a row stay apart — `3 8`, not
     `38` — so the check names the real mistake (a missing symbol) rather than a number the
     player never tapped. The symbols are the rules' own `− × ÷`, which the check reads as
     `- * /`. Nothing is added past the 120-character limit.
-28. **⌫ takes back one tap**: the last number or symbol, so a `10` goes in one press.
-29. **A number button goes out with its card**: it's disabled while its card is dimmed and comes
+23. **⌫ takes back one tap**: the last number or symbol, so a `10` goes in one press.
+24. **A number button goes out with its card**: it's disabled while its card is dimmed and comes
     back with it, from the same reading of the text — so it follows typing too. That makes
     duplicates spend left to right here as well: tapping the second 3 can fade the first 3's
     button. Harmless, as the two are the same number; for that reason the buttons are plain ink,
     not the cards' suit colours, which would make the swap look like a mistake.
-30. **It only types.** Every answer goes through the same check, and the keypad knows nothing
+25. **It only types.** Every answer goes through the same check, and the keypad knows nothing
     about which symbols could help — the same line as the cards: bookkeeping, not insight. Once a
     hand is solved every button is disabled, and a tap or ⌫ sent over the live connection anyway
     changes nothing.
-31. **Tapping a button never focuses the answer box**, which would raise the phone's keyboard over
+26. **Tapping a button never focuses the answer box**, which would raise the phone's keyboard over
     the keypad. The box still takes typing for anyone who wants it.
 
 ### Judging an answer
@@ -270,16 +229,26 @@ Checked in this order, each failure naming what went wrong:
 
 ## Risks
 
-- **A patient script still gets through.** Twenty Four is easy for a program to solve, and the
-  shadow ban only catches one that answers in under 2 seconds, three times in a row. A script
-  that waits a few seconds a hand looks like a person, and so does one that answers fast, fast,
-  then once at 2 seconds, as any slower answer starts the count again. A script can also drop its
-  id and get a new one. If one turns up on the board, [ban it by hand](#ban-by-hand), and then
-  decide whether the board needs more: "3 of the last 5 under 2 seconds" would close the
-  fast-fast-slow gap (suggested in review, 2026-10-29; the author asked for three in a row).
-- **A very fast person could be caught.** Three easy hands in a row, each read, worked out and
-  typed in under 2 seconds, is unlikely but possible. They'd never know, and would simply be
-  missing from everyone else's board. Requirement 22 says how to let them back on.
+- **A script can play.** Twenty Four is easy for a program to solve, so a script driving a browser
+  could put any run it likes on the board, and nothing here stops it. That's a problem for when
+  someone actually does it *(author's decision, 2026-10-30)*. Until then, a row that shouldn't be
+  there can be taken off by hand: stop the site from writing over the edit by restarting it
+  straight after.
+  - **A shadow ban was built and taken out (2026-10-29 to 30).** Three typed answers in a row
+    under 2 seconds, timed on the server, kept a player off everyone else's board without telling
+    them. A cold review found what to get right if it comes back:
+    - **Count per run, typed answers only.** Counted across a whole visit, with one-click
+      Impossible calls included, it caught strong players who pass hard hands and snap up easy
+      ones. A Pass ends the run anyway, so a per-run count gives a script nothing.
+    - **Make the hiding last as long as the ban.** The banned player's own rows were kept in
+      memory, so every restart, including the one that applies a hand edit, showed them they were
+      banned.
+    - **Keep evidence and a way back.** The list held only ids; names and the answer times lived
+      in a log that Fly doesn't keep for long, and an unban was undone at the player's next fast
+      visit. A "cleared" list would make an unban stick.
+    - **It's hidden only from people who don't look.** A private window shows the real board,
+      and a script can check that way and start again under a new name. Consider hiding just the
+      run rather than banning the player, or being open about the rule.
 - **A wrong call is a hint.** "It could be done" tells the player the hand they gave up on was
   possible. That's the trade the author chose: the run is the price of finding out.
 
@@ -339,29 +308,11 @@ Checked in this order, each failure naming what went wrong:
 - [x] Impossible calls count the player in the site metrics, right and wrong kept apart; the
       report adds them up and the weekly email lists them
 
-### The shadow ban — `AnswerPaceTests`, `TwentyFourBoardTests`, `TwentyFourPageTests`, each mutation-verified
-
-- [x] Three answers in a row under 2 seconds are caught; exactly 2 seconds is a person's pace; one
-      slower answer starts the count again; once caught, the visit stays caught
-- [x] On the page: three fast solves keep the player off everyone's board, with the same message,
-      run and own row as ever; a slower hand in between keeps them on; a Pass doesn't reset the
-      count, and right Impossible calls count toward it; a visit caught before the browser says
-      who it is is hidden once it does
-- [x] On the board: a hidden player's rows leave both lists, and the saved file, but stay in their
-      own view; later runs reach only their view, ranked where they'd be, taking no place from
-      anyone; their today ends at midnight; hiding twice changes nothing; they stay hidden after a
-      restart; past the cap, the longest-hidden is let back on; the hidden list holds ids and times
-      only
-
 ### Review fixes, 2026-10-29 — each mutation-verified
 
 - [x] Deal a new hand sent while a hand is in play deals nothing
 - [x] A browser that reads but won't save its id plays on, off the board
-- [x] Hiding adds a line and leaves an edit made since the start alone; a ban by hand (the id
-      alone) takes the player's rows off at the start; unreadable lines are skipped, repeats
-      dropped and the file tidied; the log gives the id's start beside the name
 - [x] An unreadable board file is set aside, logged, and the game goes on with an empty board
-- [x] Answers are timed by the steady timer, not the wall clock
 - [x] A remembered verdict belongs to all four cards: pairs one card apart, lowest or highest,
       keep their own
 
@@ -395,7 +346,4 @@ is the page. The arithmetic and its rounding are shared with teaser answers in
   and their files, numbers included, **`Models/PlayerName.cs`** the player and their name, and
   **`Services/TwentyFourPlayerStorage.cs`** the browser's player (`oad-24-player`). A browser
   holding an id from before numbers (2026-10-29) reads as having none.
-- **`Models/AnswerPace.cs`** spots the script; `TwentyFourBoard.Hide` and the `…AsSeenBy` lists
-  do the shadow ban. The page times answers with `TimeProvider.GetTimestamp`, the steady timer,
-  so tests can set the pace.
 - The board lives only on the live site: nothing copies it down or up, and admin doesn't show it.

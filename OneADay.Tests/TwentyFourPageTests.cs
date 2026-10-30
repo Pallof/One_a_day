@@ -18,7 +18,6 @@ public class TwentyFourPageTests : BunitContext
 {
     private readonly TestEnvironment _env = new();
     private readonly InMemoryPlayerStorage _player = new();
-    private readonly SteppingClock _clock = new();
     private readonly TwentyFourBoard _board;
 
     public TwentyFourPageTests()
@@ -26,7 +25,7 @@ public class TwentyFourPageTests : BunitContext
         JSInterop.Mode = JSRuntimeMode.Loose;
         Services.AddMetrics(_env);
         Services.AddScoped<CurrentTeaserContext>();
-        _board = Services.AddTwentyFour(_env, _player, _clock);
+        _board = Services.AddTwentyFour(_env, _player);
     }
 
     private IRenderedComponent<TwentyFour> Dealt(params int[] hand)
@@ -412,7 +411,7 @@ public class TwentyFourPageTests : BunitContext
         Assert.Equal($"You play as {me.Name}.", Note(page));
 
         page.Find("button.tf-next").Click();
-        SolveIn(page, 5);
+        SolveAndDeal(page);
         Assert.Equal(me, _player.Player);
         Assert.Equal(2, _board.NewPlayer()!.Number);   // one number used, not one per hand
     }
@@ -471,91 +470,30 @@ public class TwentyFourPageTests : BunitContext
         Assert.Empty(page.FindAll(".tf-board-note"));
     }
 
-    // ---- answers faster than anyone types ---------------------------------------------
-
-    /// <summary>Solves 6 6 6 6, answered this long after the deal, and deals the next hand.</summary>
-    private void SolveIn(IRenderedComponent<TwentyFour> page, double seconds)
+    /// <summary>Solves 6 6 6 6 and deals the next hand.</summary>
+    private static void SolveAndDeal(IRenderedComponent<TwentyFour> page)
     {
         Deal(page, 6, 6, 6, 6);
-        _clock.Step = TimeSpan.FromSeconds(seconds);
         Solve(page, "6 + 6 + 6 + 6");
         page.Find("button.tf-next").Click();
     }
 
     [Fact]
-    public void Three_answers_faster_than_anyone_types_keep_the_player_off_the_board_without_a_word()
+    public async Task A_returning_player_who_scores_before_the_browser_answers_keeps_their_name()
     {
-        // The author's decision, 2026-10-29: a shadow ban. Everyone else's board goes on without
-        // them; their own page looks exactly as it would have.
-        var me = new TwentyFourPlayer(Guid.NewGuid(), 1);
-        _player.Player = me;
-        var page = Render<TwentyFour>();
-
-        SolveIn(page, 1);
-        SolveIn(page, 1);
-        Deal(page, 6, 6, 6, 6);
-        _clock.Step = TimeSpan.FromSeconds(1);
-        Solve(page, "6 + 6 + 6 + 6");
-
-        Assert.Empty(_board.Today);
-        Assert.Empty(_board.AllTime);
-        Assert.Equal("Correct! 6 + 6 + 6 + 6 = 24. That's 3 in a row.", Message(page));
-        Assert.Equal("3", Run(page));
-        Assert.Equal($"1 {me.Name} (you) 3",
-            Regex.Replace(page.FindAll(".tf-board-list")[1].QuerySelector("li")!.TextContent, @"\s+", " ").Trim());
-    }
-
-    [Fact]
-    public void A_person_who_takes_their_time_on_one_hand_stays_on_the_board()
-    {
-        var me = new TwentyFourPlayer(Guid.NewGuid(), 1);
-        _player.Player = me;
-        var page = Render<TwentyFour>();
-
-        SolveIn(page, 1);
-        SolveIn(page, 1);
-        SolveIn(page, 4);   // one slower answer starts the count again
-        SolveIn(page, 1);
-        SolveIn(page, 1);
-
-        Assert.Equal((me, 5), (_board.AllTime[0].Player, _board.AllTime[0].Run));
-    }
-
-    [Fact]
-    public void Passing_doesnt_reset_the_count_and_right_calls_count_toward_it()
-    {
-        var me = new TwentyFourPlayer(Guid.NewGuid(), 1);
-        _player.Player = me;
-        var page = Render<TwentyFour>();
-
-        SolveIn(page, 1);
-        page.Find("button.tf-pass").Click();          // a script can't pass its way out
-        Deal(page, 1, 1, 1, 1);
-        _clock.Step = TimeSpan.FromSeconds(1);
-        page.Find("button.tf-call").Click();          // right, and too quick
-        page.Find("button.tf-next").Click();
-        SolveIn(page, 1);
-
-        Assert.Empty(_board.AllTime);
-        Assert.Equal(me, _board.AllTimeAsSeenBy(me.Id)[0].Player);
-    }
-
-    [Fact]
-    public async Task A_visit_caught_before_the_browser_says_who_it_is_is_hidden_once_it_does()
-    {
+        // No new player is made while the browser is still saying whether it has one: that would
+        // replace the player it has.
         var me = new TwentyFourPlayer(Guid.NewGuid(), 4);
         _player.Player = me;
         _player.Hold = new TaskCompletionSource();
         var page = Render<TwentyFour>();
 
-        SolveIn(page, 1);
-        SolveIn(page, 1);
-        SolveIn(page, 1);
+        SolveAndDeal(page);
+        SolveAndDeal(page);
         await page.InvokeAsync(() => _player.Hold.SetResult());
 
-        Assert.Equal(me, _player.Player);   // no new player made while the browser was answering
-        Assert.Empty(_board.AllTime);
-        Assert.Equal((me, 3), (_board.AllTimeAsSeenBy(me.Id)[0].Player, _board.AllTimeAsSeenBy(me.Id)[0].Run));
+        Assert.Equal(me, _player.Player);
+        Assert.Equal((me, 2), (_board.AllTime[0].Player, _board.AllTime[0].Run));
     }
 
     [Fact]
@@ -564,7 +502,7 @@ public class TwentyFourPageTests : BunitContext
         _player.Hold = new TaskCompletionSource();
         var page = Render<TwentyFour>();
 
-        SolveIn(page, 5);
+        SolveAndDeal(page);
         Assert.Null(_player.Player);   // not yet: the browser may have one already
         await page.InvokeAsync(() => _player.Hold.SetResult());
 
@@ -584,7 +522,7 @@ public class TwentyFourPageTests : BunitContext
 
         page.Find("button.tf-call").Click();
         page.Find("button.tf-next").Click();
-        SolveIn(page, 5);
+        SolveAndDeal(page);
 
         Assert.Equal("2", Run(page));
         Assert.Empty(_board.AllTime);

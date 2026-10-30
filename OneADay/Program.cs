@@ -124,7 +124,6 @@ builder.Services.AddSingleton<AnswerGrader>();
 // an animal and the number they were given in order. Their browser keeps their id and number
 // encrypted; twentyfour-players.txt holds the last number given.
 builder.Services.AddSingleton<TwentyFourBoard>();
-builder.Services.AddSingleton(TimeProvider.System);   // times each hand, to spot a script (AnswerPace)
 builder.Services.AddScoped<ITwentyFourPlayerStorage, ProtectedTwentyFourPlayerStorage>();
 
 // Every Monday from 7am Pacific the live site emails the author last week's numbers, so they

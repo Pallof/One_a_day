@@ -8,7 +8,6 @@
 @inject CurrentTeaserContext OnScreen
 @inject TwentyFourBoard Board
 @inject ITwentyFourPlayerStorage PlayerIds
-@inject TimeProvider Time
 @implements IAsyncDisposable
 
 <PageTitle>Stumpty · 24</PageTitle>
@@ -150,8 +149,8 @@
         <div class="tf-board-lists">
             @foreach (var (title, runs, empty) in new[]
             {
-                ("Today", Board.TodayAsSeenBy(_player?.Id), "No runs yet today. Solve a hand to get on the board."),
-                ("All time", Board.AllTimeAsSeenBy(_player?.Id), "No runs yet."),
+                ("Today", Board.Today, "No runs yet today. Solve a hand to get on the board."),
+                ("All time", Board.AllTime, "No runs yet."),
             })
             {
                 <div class="tf-board-list">
@@ -212,18 +211,6 @@
 
     /// <summary>A new player was asked for this visit. Once, whether or not the browser kept it.</summary>
     private bool _triedJoining;
-
-    /// <summary>
-    /// When the hand on the table was dealt, by the server's steady timer: unlike the wall
-    /// clock, it never jumps back, which would make a slow answer look fast.
-    /// </summary>
-    private long _dealtAt;
-
-    /// <summary>
-    /// Answers faster than anyone types. Once caught, the board shadow-bans the player: their
-    /// runs stay off it for everyone else, and nothing on this page changes (PRD 07).
-    /// </summary>
-    private readonly AnswerPace _pace = new();
 
     private bool RoundOver => _state is RoundState.Solved or RoundState.CalledRight or RoundState.CalledWrong;
 
@@ -387,16 +374,9 @@
         {
             await JoinAsync();
         }
-        if (_player is { } player)
+        if (_player is { } player && _run > 0)
         {
-            if (_pace.Caught)
-            {
-                Board.Hide(player);
-            }
-            if (_run > 0)
-            {
-                Board.Record(player, _run);
-            }
+            Board.Record(player, _run);
         }
     }
 
@@ -431,7 +411,6 @@
         }
 
         _hand = TwentyFourGame.Deal(_random);
-        _dealtAt = Time.GetTimestamp();
         // Let "Report an issue" name the hand on screen — this one, not the first dealt.
         OnScreen.SetHand(_hand);
         _expression = string.Empty;
@@ -472,17 +451,12 @@
     private async Task<string> ExtendRunAsync()
     {
         _run++;
-        var caught = _pace.Answered(Time.GetElapsedTime(_dealtAt));
         if (_player is null)
         {
             await JoinAsync();
         }
         if (_player is { } player)
         {
-            if (caught)
-            {
-                Board.Hide(player);
-            }
             Board.Record(player, _run);
         }
         return _run == 1 ? "That starts a run." : $"That's {_run} in a row.";
