@@ -123,6 +123,21 @@ Measured over all 25 questions, with each one's own solution:
 The one that never fits is held up by its solution, not its picture: the blurred solution takes
 its full height even before it's revealed, and that one alone is taller than the window.
 
+**Twenty Four follows suit** *(author's decision, 2026-10-30)*. At 1512 × 860 it was 1,105px tall,
+and up to 1,634px with a full board after a hand. From 1100px wide the game sits on the left and
+the board on the right. The board alone wasn't enough: beside it, the rules wrapped onto more
+lines and the answer box fell below the fold. So on a laptop most of the rules fold under "How to
+play", and a finished hand is dealt from the answer box rather than a box of its own
+([PRD 07](07-twenty-four.md), "On a laptop"). At its tallest, a full board after a hand, the page
+is 850px:
+
+| Window | Fits without scrolling |
+|---|---|
+| 1512 × 860 (the target) | yes, with 10px to spare |
+| 1920 × 1000 | yes |
+| 1440 × 790 (15-inch MacBook Pro) | no, 60px over at most |
+| 1536 × 730 | no, 120px over at most |
+
 ## Navigation
 
 - **Wider than 900px:** sections in the header as pills, the current one filled. **900px and
@@ -305,9 +320,12 @@ exists, showing it again is nagging.
 - [x] **Today's challenge on a laptop**, checked by measurement on 2026-10-23: two columns from
       1100px with no sideways scroll; one column, at 680px, at 1024px and on a 375px phone; every
       question in the bank fits 1512 × 860 and 1440 × 790, the long ones with a smaller picture
+- [x] **Twenty Four on a laptop**, checked by measurement on 2026-10-30: two columns from 1100px
+      with no sideways scroll; one column at 1099px and on a 375px phone, as before; 850px at its
+      tallest, which fits 1512 × 860
 - [x] **What the two columns rely on** — `ChallengeLayoutTests`, each mutation-verified: the
       question's line count for its picture, 50 characters a line; the answer box and
-      yesterday's link in one column; only today's challenge widening the page
+      yesterday's link in one column; only the two-column pages widening the page
 - [x] Bootstrap is no longer loaded or shipped, and nothing regressed. Its address returns 404, and
       every route loads all of its files
 - [x] **The mascot** — `MascotTests`, each mutation-verified: the whole duck beside the name (with

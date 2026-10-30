@@ -17,11 +17,37 @@ window.oadTwentyFour = {
             if (tag === 'input' || tag === 'textarea' || (active && active.isContentEditable)) {
                 return;
             }
+            // Nor from a focused button, whose own press space is: "How to play" wouldn't open.
+            if (tag === 'button' && !active.disabled) {
+                return;
+            }
             // Space scrolls the page by default; the deal is the intent here.
             event.preventDefault();
             dotNetRef.invokeMethodAsync('DealFromSpaceBar');
         };
         document.addEventListener('keydown', this._handler);
+    },
+
+    // Whether this browser folded the board last time. Kept in localStorage, which can be
+    // switched off or full; then the board just starts open, and folding lasts the visit.
+    boardHidden: function () {
+        try {
+            return localStorage.getItem('oad-24-board-hidden') === 'yes';
+        } catch (e) {
+            return false;
+        }
+    },
+
+    setBoardHidden: function (hidden) {
+        try {
+            if (hidden) {
+                localStorage.setItem('oad-24-board-hidden', 'yes');
+            } else {
+                localStorage.removeItem('oad-24-board-hidden');
+            }
+        } catch (e) {
+            // Not remembered; nothing else depends on it.
+        }
     },
 
     unregister: function () {

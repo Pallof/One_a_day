@@ -119,16 +119,17 @@ public class ChallengeLayoutTests : BunitContext
     }
 
     /// <summary>
-    /// Only today's challenge and yesterday's solution widen for their two columns; every other
-    /// page keeps the reading column.
+    /// Only today's challenge, yesterday's solution and Twenty Four widen for their two columns;
+    /// every other page keeps the reading column. Twenty Four under its old address too.
     /// </summary>
     [Theory]
     [InlineData("", true)]
     [InlineData("yesterday", true)]
+    [InlineData("twentyfour", true)]
+    [InlineData("questions", true)]
     [InlineData("about", false)]
     [InlineData("contact", false)]
-    [InlineData("twentyfour", false)]
-    public void Only_the_challenge_and_yesterdays_solution_widen_for_two_columns(string path, bool widens)
+    public void Only_the_two_column_pages_widen(string path, bool widens)
     {
         Services.GetRequiredService<NavigationManager>().NavigateTo(path);
         var layout = Render<MainLayout>(p => p.Add(l => l.Body, (RenderFragment)(_ => { })));

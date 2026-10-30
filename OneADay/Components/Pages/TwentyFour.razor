@@ -21,12 +21,15 @@
 <div class="tf-page">
     <div class="oad-banner">Twenty Four</div>
 
-    <div class="oad-box">
+    @* On a laptop the board sits beside the game, and the rules marked tf-more fold away under
+       "How to play", so the page fits a laptop's window (PRD 09). The first line and "Not every
+       hand can make 24" always show. On a phone everything shows and the button is hidden. *@
+    <div class="oad-box tf-rules-box @(_rulesOpen ? "tf-rules-open" : "")">
         <p class="tf-lead">
             Make <strong>24</strong> from all four numbers, using only
             <strong>+ &minus; &times; &divide;</strong> and parentheses.
         </p>
-        <p class="tf-rules">
+        <p class="tf-rules tf-more">
             Each number must be used exactly once. Numbers run 1–10, like a deck of cards
             with the face cards counting as 10, so duplicates happen.
         </p>
@@ -36,7 +39,7 @@
         <p class="tf-rules tf-impossible">
             <strong>Not every hand can make 24.</strong> If you think yours can't, press Impossible.
         </p>
-        <p class="tf-rules tf-impossible">
+        <p class="tf-rules tf-impossible tf-more">
             Each hand you solve, or rightly call impossible, adds one to your run. Pass deals a
             fresh hand but ends your run, and so does calling a hand impossible when it can be done.
         </p>
@@ -50,10 +53,14 @@
                 dated 2026-07-27, so the example was publishing the answer to a real
                 Challenge of the day from a different page, permanently.
            6 6 6 6 breaks neither. Don't "improve" it into something clever. *@
-        <p class="tf-rules tf-example">
+        <p class="tf-rules tf-example tf-more">
             For example, dealt <strong>6 6 6 6</strong> your answer could be
             <span class="tf-eg">6 + 6 + 6 + 6</span>.
         </p>
+        <button type="button" class="tf-how" aria-expanded="@(_rulesOpen ? "true" : "false")"
+                @onclick="() => _rulesOpen = !_rulesOpen">
+            @(_rulesOpen ? "Show less" : "How to play")
+        </button>
     </div>
 
     <div class="oad-box tf-hand-box">
@@ -104,7 +111,10 @@
                     @onclick="DeleteLast">⌫</button>
         </div>
 
-        <div class="tf-buttons">
+        @* Once the hand is over, a laptop hides these three, all greyed out by then, and deals
+           the next hand from the button below, in their place. A phone keeps them, with the
+           next hand dealt from its own box under this one. *@
+        <div class="tf-buttons @(over ? "tf-buttons-over" : "")">
             <button class="oad-btn-green" @onclick="Submit"
                     disabled="@(over || string.IsNullOrWhiteSpace(_expression))">
                 Submit
@@ -117,6 +127,14 @@
             </button>
         </div>
 
+        @if (over)
+        {
+            <div class="tf-next-here">
+                <button class="tf-next" @onclick="() => NewHand()">Deal a new hand</button>
+                <p class="tf-next-hint">or press the space bar</p>
+            </div>
+        }
+
         @if (_message is not null)
         {
             <p class="tf-message @(_state switch {
@@ -127,6 +145,7 @@
 
     </div>
 
+    @* A phone's way to the next hand. A laptop hides it and uses the one in the box above. *@
     @if (over)
     {
         <div class="oad-box tf-next-box">
@@ -136,46 +155,55 @@
         </div>
     }
 
-    <section class="oad-box tf-board" aria-labelledby="tf-board-title">
-        <h2 id="tf-board-title">Longest runs</h2>
-        @if (_player is { } me)
-        {
-            <p class="tf-board-note">You play as <strong>@me.Name</strong>.</p>
-        }
-        else if (_browserAnswered && !_triedJoining)
-        {
-            <p class="tf-board-note">Get a hand right and you'll get a name on the board.</p>
-        }
-        <div class="tf-board-lists">
-            @foreach (var (title, runs, empty) in new[]
+    @* Folds to its title for a player who'd rather not see it while they play, and the browser
+       remembers which way it was left (PRD 07). Open until then. *@
+    <section class="oad-box tf-board @(_boardOpen ? "" : "tf-board-closed")" aria-labelledby="tf-board-title">
+        <h2 id="tf-board-title">
+            <button type="button" class="tf-board-toggle" aria-expanded="@(_boardOpen ? "true" : "false")"
+                    aria-controls="tf-board-body" @onclick="ToggleBoardAsync">
+                High scores<span class="tf-chevron" aria-hidden="true"></span>
+            </button>
+        </h2>
+        <div id="tf-board-body" hidden="@(!_boardOpen)">
+            @if (_player is { } me)
             {
-                ("Today", Board.Today, "No runs yet today. Solve a hand to get on the board."),
-                ("All time", Board.AllTime, "No runs yet."),
-            })
-            {
-                <div class="tf-board-list">
-                    <h3>@title</h3>
-                    @if (runs.Count == 0)
-                    {
-                        <p class="tf-board-empty">@empty</p>
-                    }
-                    else
-                    {
-                        <ol>
-                            @for (var place = 0; place < runs.Count; place++)
-                            {
-                                var row = runs[place];
-                                var mine = row.Player.Id == _player?.Id;
-                                <li class="tf-row @(mine ? "tf-row-you" : "")">
-                                    <span class="tf-place">@(place + 1)</span>
-                                    <span class="tf-name">@row.Player.Name@(mine ? " (you)" : "")</span>
-                                    <span class="tf-length">@row.Run</span>
-                                </li>
-                            }
-                        </ol>
-                    }
-                </div>
+                <p class="tf-board-note">You play as <strong>@me.Name</strong>.</p>
             }
+            else if (_browserAnswered && !_triedJoining)
+            {
+                <p class="tf-board-note">Get a hand right and you'll get a name on the board.</p>
+            }
+            <div class="tf-board-lists">
+                @foreach (var (title, runs, empty) in new[]
+                {
+                    ("Today", Board.Today, "No runs yet today. Solve a hand to get on the board."),
+                    ("All time", Board.AllTime, "No runs yet."),
+                })
+                {
+                    <div class="tf-board-list">
+                        <h3>@title</h3>
+                        @if (runs.Count == 0)
+                        {
+                            <p class="tf-board-empty">@empty</p>
+                        }
+                        else
+                        {
+                            <ol>
+                                @for (var place = 0; place < runs.Count; place++)
+                                {
+                                    var row = runs[place];
+                                    var mine = row.Player.Id == _player?.Id;
+                                    <li class="tf-row @(mine ? "tf-row-you" : "")">
+                                        <span class="tf-place">@(place + 1)</span>
+                                        <span class="tf-name">@row.Player.Name@(mine ? " (you)" : "")</span>
+                                        <span class="tf-length">@row.Run</span>
+                                    </li>
+                                }
+                            </ol>
+                        }
+                    </div>
+                }
+            </div>
         </div>
     </section>
 </div>
@@ -193,6 +221,12 @@
     private string? _message;
     private RoundState _state = RoundState.Playing;
     private DotNetObjectReference<TwentyFour>? _selfRef;
+
+    /// <summary>Whether "How to play" has opened the rest of the rules. Only a laptop folds them.</summary>
+    private bool _rulesOpen;
+
+    /// <summary>Whether the board is open: until the player folds it, in this browser.</summary>
+    private bool _boardOpen = true;
 
     /// <summary>
     /// Hands in a row solved or rightly called impossible (PRD 07). Kept for this visit only:
@@ -344,8 +378,38 @@
         {
             _selfRef = DotNetObjectReference.Create(this);
             await JS.InvokeVoidAsync("oadTwentyFour.register", _selfRef);
+            await LoadBoardFoldAsync();
             await LoadPlayerAsync();
             StateHasChanged();
+        }
+    }
+
+    /// <summary>
+    /// Folds the board if this browser left it folded. It's beside the game on a laptop and under
+    /// it on a phone, so folding once the page is live moves nothing the player is looking at.
+    /// </summary>
+    private async Task LoadBoardFoldAsync()
+    {
+        try
+        {
+            _boardOpen = !await JS.InvokeAsync<bool>("oadTwentyFour.boardHidden");
+        }
+        catch (Exception e) when (e is JSDisconnectedException or TaskCanceledException or JSException)
+        {
+            // Nothing to go on, so it stays open.
+        }
+    }
+
+    private async Task ToggleBoardAsync()
+    {
+        _boardOpen = !_boardOpen;
+        try
+        {
+            await JS.InvokeVoidAsync("oadTwentyFour.setBoardHidden", !_boardOpen);
+        }
+        catch (Exception e) when (e is JSDisconnectedException or TaskCanceledException or JSException)
+        {
+            // Not remembered, then: it stays this way for this visit only.
         }
     }
 

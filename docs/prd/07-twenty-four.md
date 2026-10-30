@@ -73,9 +73,10 @@ there is. It shows what to type and reveals no method. Before adding or changing
    as often as you like.
 7. After a **solve** or an **Impossible call** the round is over: the hand stays on screen with
    every card lit, the box and buttons lock, and a **Deal a new hand** button appears (or press the
-   space bar). Pass needs no such step — it has already moved on. The lock holds **on the server
-   too**: a Submit, Impossible, Pass or keypad tap sent over the live connection after the round is
-   over is ignored, so it can't inflate the run, the board or the site metrics
+   space bar, except in a box being typed in or on a focused button, which space presses). Pass
+   needs no such step — it has already moved on. The lock holds **on the server too**: a Submit,
+   Impossible, Pass or keypad tap sent over the live connection after the round is over is
+   ignored, so it can't inflate the run, the board or the site metrics
    ([PRD 16](16-site-metrics.md); until 2026-10-06 only the browser's buttons enforced it).
    The other way round too: **Deal a new hand** sent while a hand is in play is ignored. Blazor
    keeps a removed button's click alive until the browser confirms the redraw, so a quick double
@@ -110,11 +111,15 @@ there is. It shows what to type and reveals no method. Before adding or changing
     wrong answer doesn't.
 14. **A run lasts the visit.** Leaving or reloading the page ends it, the same as Pass, so a reload
     can't be used to escape a hard hand.
-15. **The board** lists the ten longest runs **today** (from midnight Pacific, like the daily
-    teaser) and of **all time**. One row per player, holding their best; longest first, and of
+15. **The board**, titled **High scores** *(author's decision, 2026-10-30; it was "Longest runs")*,
+    lists the ten longest runs **today** (from midnight Pacific, like the daily teaser) and of
+    **all time**. One row per player, holding their best; longest first, and of
     equal runs, whoever got there first. A run goes on the board as it grows, so a player who
     leaves mid-run keeps the place they'd reached. A run that spans midnight counts in full on the
-    new day's list.
+    new day's list. **It folds to its title** *(author's decision, 2026-10-30)*, for a player who'd
+    rather not see it while they play, and opens the same way. Open until folded; the browser
+    remembers which way it was left, in `localStorage` (a preference, nothing the server needs).
+    It's beside or under the game, so folding it once the page is live moves nothing in play.
 16. **Players can't choose a name, and no two share one** *(author's decisions, 2026-10-29)*. The
     first time a browser gets a hand right, the server makes it a player: a random id, and **the
     next number in line**, so the first player is number 1, the next number 2, and so on. Its name
@@ -198,6 +203,23 @@ for nearly every key *(visitor feedback, 2026-10-07)*. So under the answer box t
     changes nothing.
 26. **Tapping a button never focuses the answer box**, which would raise the phone's keyboard over
     the keypad. The box still takes typing for anyone who wants it.
+
+### On a laptop
+
+On a 14-inch laptop the page was 1,105px tall in an 860px window, and up to 1,634px with a full
+board after a hand. Moving the board beside the game wasn't enough on its own: the narrower
+column made the rules wrap onto more lines, and the answer box fell below the fold. So
+*(author's decision, 2026-10-30)*:
+
+27. **From 1100px wide, two columns**: the game on the left, the board on the right, Today beside
+    All time. Narrower than that, on phones and tablets, it's the single column as before.
+28. **The rules fold under "How to play"**, except the first line and "Not every hand can make
+    24", which always show (the second came from players' frustration, so it never folds).
+    "Show less" folds them again. Each visit starts folded.
+29. **A finished hand is dealt from the answer box**, in place of Submit, Impossible and Pass,
+    with "or press the space bar" beside it. A phone keeps its own box under the answer box.
+
+[PRD 09](09-visual-design.md), "Fitting on one screen", has the measurements.
 
 ### Judging an answer
 
@@ -327,6 +349,19 @@ Checked in this order, each failure naming what went wrong:
       typed text disables them too
 - [x] After a solve every button is disabled, and a forced tap or ⌫ leaves the answer alone
 - [x] A tap that would pass 120 characters adds nothing; the one that reaches exactly 120 is kept
+
+### The laptop layout — `TwentyFourPageTests` and `ChallengeLayoutTests`, each mutation-verified
+
+- [x] Folded, the rules still show the first line and "Not every hand can make 24"; exactly the
+      other three fold
+- [x] How to play opens them and Show less folds them, with `aria-expanded` to match
+- [x] Once a hand is over, the answer box holds Deal a new hand and the space-bar line, and marks
+      the three buttons for hiding; the phone's box is still there; dealing from it starts a hand
+- [x] The banner, the rules and the board are the page's own children, for the grid to place
+- [x] The page widens for two columns at both its addresses, `/twentyfour` and `/questions`
+- [x] The board folds to its title and opens again, with `aria-expanded` to match, and tells the
+      browser each time; a browser that folded it last time starts folded; one whose storage
+      fails starts open and still folds it
 
 **By hand, in a phone-sized browser with touch:** the keypad shows and the space-bar line doesn't;
 with a mouse it's the other way round; tapping keys never brings up the keyboard; quick double
