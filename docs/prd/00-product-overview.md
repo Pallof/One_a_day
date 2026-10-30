@@ -67,7 +67,8 @@ Shipped, and covered by the specs of record:
 - Generous answer checking — numbers, number words, formulas, alternatives ([02](02-answer-evaluation.md))
 - Solutions published the day after a challenge runs; no hints ([03](03-hints-and-solutions.md))
 - **No archive** — only today's puzzle can be reached ([04](04-archive-and-discovery.md))
-- **Twenty Four** — a game that makes its own puzzles, so it can't use up the teasers ([07](07-twenty-four.md))
+- **Twenty Four** — a game that makes its own puzzles, so it can't use up the teasers, with a
+  scoreboard of the longest runs ([07](07-twenty-four.md))
 - **Recycling** — past teasers come back when none is scheduled, so dry spells don't show and newcomers see the back catalogue ([08](08-recycling-rotation.md))
 - Authoring — scheduling, difficulty, private tags, pictures ([05](05-authoring-and-admin.md))
 - Suggestions and issue reports, screened for bots ([06](06-community-feedback.md)) and emailed to the author ([14](14-email-notifications.md))

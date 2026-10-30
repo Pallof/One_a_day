@@ -144,7 +144,8 @@ public static partial class WeeklySummaryMail
             {{Fact("Rotation", $"{report.RecycledDays.Part} of {report.RecycledDays.Whole}", "days recycled")}}
             {{list}}
             {{Fact("Twenty Four", $"{report.TwentyFourPlayers} players", "per day, added up",
-                   $"{report.HandsSolved} hands solved", $"{report.HandsPassed} passed")}}
+                   $"{report.HandsSolved} hands solved", $"{report.HandsPassed} passed",
+                   $"{report.ImpossibleRight} rightly called impossible", $"{report.ImpossibleWrong} wrongly")}}
             </tr></table>
             """;
     }

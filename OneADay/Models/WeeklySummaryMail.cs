@@ -64,6 +64,7 @@ public static partial class WeeklySummaryMail
         body.AppendLine("TWENTY FOUR");
         body.AppendLine($"  Players, per day, added up: {report.TwentyFourPlayers}");
         body.AppendLine($"  Hands solved: {report.HandsSolved} · passed: {report.HandsPassed}");
+        body.AppendLine($"  Called impossible: {report.ImpossibleRight} rightly · {report.ImpossibleWrong} wrongly");
         body.AppendLine();
 
         body.AppendLine("EACH PUZZLE, MOST RECENT FIRST");

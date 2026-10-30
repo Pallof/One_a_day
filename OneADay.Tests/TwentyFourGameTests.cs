@@ -186,8 +186,8 @@ public class TwentyFourGameTests
     [Fact]
     public void Dealing_does_not_screen_out_impossible_hands()
     {
-        // Not knowing whether a hand can be cracked is part of the game, so the
-        // deal must NOT quietly filter for solvability.
+        // Not knowing whether a hand can be cracked is part of the game, and the Impossible
+        // button needs impossible hands dealt, so the deal must NOT quietly filter for them.
         var random = new Random(2024);
         var sawImpossible = Enumerable.Range(0, 4000)
             .Select(_ => TwentyFourGame.Deal(random))
@@ -245,5 +245,64 @@ public class TwentyFourGameTests
     {
         Assert.Null(TwentyFourGame.FindSolution(hand));
         Assert.False(TwentyFourGame.HasSolution(hand));
+    }
+
+    [Fact]
+    public void Each_hand_is_ruled_out_once_however_often_it_is_asked()
+    {
+        // Ruling out 1 1 1 1 takes the solver about 18 ms, so a thousand searches would take
+        // 18 s. Remembered, a thousand asks are next to nothing.
+        TwentyFourGame.HasSolution([1, 1, 1, 1]);
+        var started = System.Diagnostics.Stopwatch.StartNew();
+        for (var i = 0; i < 1000; i++)
+        {
+            Assert.False(TwentyFourGame.HasSolution([1, 1, 1, 1]));
+        }
+        started.Stop();
+
+        Assert.True(started.ElapsedMilliseconds < 1000,
+            $"1,000 asks took {started.ElapsedMilliseconds}ms; is each one searching again?");
+    }
+
+    [Fact]
+    public void A_remembered_verdict_belongs_to_all_four_of_its_cards()
+    {
+        // Pairs one card apart with opposite verdicts, the highest card in one pair and the
+        // lowest in the other: a memory that missed any card would hand one hand's verdict to
+        // the other, whichever was asked first. The order the cards come in changes nothing.
+        Assert.False(TwentyFourGame.HasSolution([1, 1, 1, 1]));
+        Assert.True(TwentyFourGame.HasSolution([1, 1, 1, 8]));
+        Assert.False(TwentyFourGame.HasSolution([1, 2, 2, 3]));
+        Assert.True(TwentyFourGame.HasSolution([2, 2, 2, 3]));
+        Assert.True(TwentyFourGame.HasSolution([8, 1, 1, 1]));
+        Assert.False(TwentyFourGame.HasSolution([3, 2, 1, 2]));
+    }
+
+    [Fact]
+    public void The_solver_is_right_about_every_hand_there_is()
+    {
+        // The Impossible button's verdict is the solver's, so a hand it misjudges costs a player
+        // their run. Of the 715 different hands from 1 to 10, 566 can make 24 and 149 can't: the
+        // published count, and an exact-fraction search's (2026-10-29). A solver that lost
+        // division, or rounded a fraction answer away, would count differently.
+        var impossible = 0;
+        for (var a = 1; a <= 10; a++)
+        for (var b = a; b <= 10; b++)
+        for (var c = b; c <= 10; c++)
+        for (var d = c; d <= 10; d++)
+        {
+            int[] hand = [a, b, c, d];
+            if (TwentyFourGame.FindSolution(hand) is { } solution)
+            {
+                Assert.True(TwentyFourGame.Check(solution, hand).IsCorrect,
+                    $"solver produced '{solution}' for {string.Join(" ", hand)}, which the checker rejects");
+            }
+            else
+            {
+                impossible++;
+            }
+        }
+
+        Assert.Equal(149, impossible);
     }
 }

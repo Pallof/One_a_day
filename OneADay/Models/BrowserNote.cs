@@ -38,7 +38,7 @@ public sealed record BrowserNote
 
     public bool Solved { get; init; }
 
-    /// <summary>The last day this browser submitted a Twenty Four answer.</summary>
+    /// <summary>The last day this browser submitted a Twenty Four answer or called a hand impossible.</summary>
     public DateOnly? PlayedTwentyFour { get; init; }
 
     /// <summary>
@@ -90,7 +90,7 @@ public sealed record BrowserNote
         return (note with { SawPuzzle = true, Attempts = attempts, Solved = correct }, counted);
     }
 
-    /// <summary>The browser submitted a Twenty Four answer. True the first time today.</summary>
+    /// <summary>The browser submitted a Twenty Four answer or called a hand impossible. True the first time today.</summary>
     public (BrowserNote Note, bool Counted) PlayTwentyFour(DateOnly today) =>
         PlayedTwentyFour == today
             ? (this, false)

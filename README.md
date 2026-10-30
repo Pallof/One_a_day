@@ -31,6 +31,9 @@ Built with **C# / Blazor Server (.NET 10)**.
 - **Post-solve countdown** to the next challenge
 - **Community stats** — "342 out of 1,208 total submissions were correct", revealed only after you solve
 - **Suggest a teaser** — visitors can submit their own (rate-limited to one per day)
+- **Twenty Four** — make 24 from four dealt cards, as many hands as you like. Not every hand can:
+  press **Impossible** if you think yours can't. Hands solved in a row make a run, and the longest
+  runs go on a scoreboard, today's and of all time, under given names like *Otter 17*, numbered in the order players joined
 
 **For the author (`/admin`)**
 - Add, edit, delete, and schedule teasers; the date defaults to the next free day
@@ -212,7 +215,7 @@ OneADay.Tests/               xUnit tests for answer validation
 |---|---|
 | `/` | Challenge of the day |
 | `/yesterday` | Yesterday's solution: the question, with the answer behind a tap |
-| `/twentyfour` | Twenty Four — make 24 from four dealt cards |
+| `/twentyfour` | Twenty Four — make 24 from four dealt cards, with a scoreboard of the longest runs |
 | `/about` · `/contact` | About, and the suggest-a-teaser form |
 | `/admin` | Author tools |
 

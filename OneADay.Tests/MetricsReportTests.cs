@@ -162,4 +162,15 @@ public class MetricsReportTests
         Assert.Equal((9, 0, Today.AddDays(-1)), report.Subscribers);
         Assert.Equal((3, 1), (report.Confirmations, report.Unsubscribes));
     }
+
+    [Fact]
+    public void Impossible_calls_add_up_with_right_and_wrong_kept_apart()
+    {
+        On(Today.AddDays(-2)).TwentyFour = new TwentyFourCounts { ImpossibleRight = 2, ImpossibleWrong = 5 };
+        On(Today).TwentyFour = new TwentyFourCounts { ImpossibleRight = 1, ImpossibleWrong = 3 };
+
+        var report = Build();
+
+        Assert.Equal((3, 8), (report.ImpossibleRight, report.ImpossibleWrong));
+    }
 }

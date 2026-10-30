@@ -77,6 +77,8 @@ public sealed class MetricsReport
     public required int TwentyFourPlayers { get; init; }
     public required int HandsSolved { get; init; }
     public required int HandsPassed { get; init; }
+    public required int ImpossibleRight { get; init; }
+    public required int ImpossibleWrong { get; init; }
 
     public bool IsEmpty => SavedAtUtc is null && Habit.Count == 0;
 
@@ -224,6 +226,8 @@ public sealed class MetricsReport
             TwentyFourPlayers = inRange.Sum(d => d.Metrics.TwentyFour.Players),
             HandsSolved = inRange.Sum(d => d.Metrics.TwentyFour.HandsSolved),
             HandsPassed = inRange.Sum(d => d.Metrics.TwentyFour.HandsPassed),
+            ImpossibleRight = inRange.Sum(d => d.Metrics.TwentyFour.ImpossibleRight),
+            ImpossibleWrong = inRange.Sum(d => d.Metrics.TwentyFour.ImpossibleWrong),
         };
     }
 }

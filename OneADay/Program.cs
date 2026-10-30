@@ -120,6 +120,12 @@ builder.Services.AddSingleton<JudgedAnswerStore>();
 builder.Services.AddSingleton<AgreedVerdictStore>();
 builder.Services.AddSingleton<AnswerGrader>();
 
+// The Twenty Four scoreboard (PRD 07): each player's longest run, under a name no one else has,
+// an animal and the number they were given in order. Their browser keeps their id and number
+// encrypted; twentyfour-players.txt holds the last number given.
+builder.Services.AddSingleton<TwentyFourBoard>();
+builder.Services.AddScoped<ITwentyFourPlayerStorage, ProtectedTwentyFourPlayerStorage>();
+
 // Every Monday from 7am Pacific the live site emails the author last week's numbers, so they
 // needn't download anything to see them. Totals and puzzle questions only. Off in Development.
 builder.Services.AddHostedService<WeeklySummaryService>();

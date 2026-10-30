@@ -41,10 +41,16 @@ public sealed class PuzzleCounts
 
 public sealed class TwentyFourCounts
 {
-    /// <summary>Browsers that submitted at least one answer that day.</summary>
+    /// <summary>Browsers that submitted at least one answer, or called a hand impossible, that day.</summary>
     public int Players { get; set; }
     public int HandsSolved { get; set; }
     public int HandsPassed { get; set; }
+
+    /// <summary>Hands called impossible that couldn't be done.</summary>
+    public int ImpossibleRight { get; set; }
+
+    /// <summary>Hands called impossible that could.</summary>
+    public int ImpossibleWrong { get; set; }
 }
 
 public sealed class SubscriberCounts
@@ -156,6 +162,11 @@ public sealed class MetricsStore : IDisposable
     public void RecordTwentyFourHand(DateOnly day, bool solved) => Change(day, d =>
     {
         if (solved) { d.TwentyFour.HandsSolved++; } else { d.TwentyFour.HandsPassed++; }
+    });
+
+    public void RecordImpossibleCall(DateOnly day, bool right) => Change(day, d =>
+    {
+        if (right) { d.TwentyFour.ImpossibleRight++; } else { d.TwentyFour.ImpossibleWrong++; }
     });
 
     public void RecordConfirmation(DateOnly day) => Change(day, d => d.Subscribers.Confirmations++);

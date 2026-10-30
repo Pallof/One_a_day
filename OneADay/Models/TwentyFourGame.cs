@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+
 namespace OneADay.Models;
 
 /// <summary>Why a Twenty Four submission was accepted or turned down.</summary>
@@ -49,9 +51,9 @@ public static class TwentyFourGame
     /// </summary>
     /// <remarks>
     /// Hands are deliberately NOT screened for solvability. Not knowing whether a
-    /// hand can be cracked is part of the game, and screening would mean running the
-    /// full search on every deal just to throw hands away. The solver is only asked
-    /// a question when the player presses Pass.
+    /// hand can be cracked is part of the game, and the Impossible button needs
+    /// impossible hands to be dealt. The solver is only asked a question when the
+    /// player presses Impossible.
     /// </remarks>
     public static int[] Deal(Random random)
     {
@@ -64,15 +66,24 @@ public static class TwentyFourGame
     }
 
     /// <summary>
-    /// Whether a hand can reach 24 at all. Roughly 15% of random hands cannot.
+    /// Whether a hand can reach 24 at all. About one dealt hand in seven cannot.
     /// </summary>
     /// <remarks>
-    /// Nothing the player can see calls this. Dealing does not screen hands, and
-    /// Pass does not reveal answers — the solver exists so the tests can cross-check
-    /// the checker (every solution it finds is fed back through <see cref="Check"/>)
-    /// and so a future feature has it to hand. Keep it off the player-facing paths.
+    /// The Impossible button's verdict, and the only player-facing use of the solver:
+    /// it says whether the hand could be done, never how (author's decision,
+    /// 2026-10-29). Pass still asks nothing. <see cref="FindSolution"/> stays off the
+    /// page; the tests feed every solution it finds back through <see cref="Check"/>,
+    /// so the two can't disagree about what a valid answer is.
     /// </remarks>
-    public static bool HasSolution(IReadOnlyList<int> hand) => FindSolution(hand) is not null;
+    public static bool HasSolution(IReadOnlyList<int> hand) =>
+        Verdicts.GetOrAdd(string.Join(' ', hand.Order()), _ => FindSolution(hand) is not null);
+
+    /// <summary>
+    /// Each different hand's verdict, worked out once. Ruling a hand out is the solver's
+    /// slowest case, about 20 ms, as it tries everything; with only 715 different hands from
+    /// 1 to 10, remembering them bounds that work however often Impossible is pressed.
+    /// </summary>
+    private static readonly ConcurrentDictionary<string, bool> Verdicts = new();
 
     /// <summary>One worked expression that reaches 24, or null if the hand is impossible.</summary>
     public static string? FindSolution(IReadOnlyList<int> hand)

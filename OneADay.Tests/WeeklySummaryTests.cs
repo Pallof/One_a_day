@@ -244,6 +244,17 @@ public class WeeklySummaryTests : IDisposable
     }
 
     [Fact]
+    public async Task Twenty_four_shows_impossible_calls_right_and_wrong()
+    {
+        On(WeekTo).TwentyFour = new TwentyFourCounts { HandsSolved = 4, HandsPassed = 1, ImpossibleRight = 2, ImpossibleWrong = 3 };
+
+        var lines = (await SentBody()).Split('\n').Select(l => l.TrimEnd('\r')).ToList();
+
+        Assert.Contains("  Hands solved: 4 · passed: 1", lines);
+        Assert.Contains("  Called impossible: 2 rightly · 3 wrongly", lines);
+    }
+
+    [Fact]
     public async Task Each_puzzle_shows_how_it_ran_and_how_it_played()
     {
         var twice = Teaser("Which way does the wind blow?");
