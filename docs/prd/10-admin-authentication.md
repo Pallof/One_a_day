@@ -82,7 +82,7 @@ The design stays simple because **every file has exactly one writer**:
 | Written by | Files |
 |---|---|
 | The author's Mac, through `/admin` | `teasers.json`, `teaser-images/`, and `agreed-verdicts.json` (which of Jev's verdicts admin has cleared; never uploaded) |
-| The live site, through visitors | `stats.json`, `rotation.json`, `suggestions.json`, `issues.json`, `subscribers.json`, `metrics.json`, `judged-answers.json` (Jev's verdicts, [PRD 02](02-answer-evaluation.md#the-second-opinion-jev)) |
+| The live site, through visitors | `stats.json`, `rotation.json`, `suggestions.json`, `issues.json`, `subscribers.json`, `metrics.json`, `judged-answers.json` (Jev's verdicts, [PRD 02](02-answer-evaluation.md#the-second-opinion-jev)), `twentyfour-board.json`, `twentyfour-players.txt` and `twentyfour-hidden.jsonl` (the Twenty Four scoreboard, the last player number given, and the players shadow-banned from it, [PRD 07](07-twenty-four.md)) |
 | The live site, on its own | `weekly-summary.json` — which week's summary went out ([PRD 16](16-site-metrics.md)) |
 
 Nothing on the live site changes a teaser, so publishing is copying, never merging. **To publish:**

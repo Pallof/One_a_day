@@ -107,8 +107,8 @@ its data is. For the headline numbers, the Monday email (requirements 22–29) n
 
 ### What's counted per day
 
-6. **Visitors** — browsers that **opened today's challenge**, or **submitted a Twenty Four answer**,
-   counted once a day however many pages or reloads. Opening Twenty Four without submitting, and
+6. **Visitors** — browsers that **opened today's challenge**, or **submitted a Twenty Four answer**
+   or called a hand impossible, counted once a day however many pages or reloads. Opening Twenty Four without submitting, and
    the other pages on their own, don't count *(author's decision, 2026-10-06: a visitor is someone
    who engaged with a puzzle)*. Split by when the browser last counted: **new**, **back from
    yesterday**, **back within a week** (2–7 days), or **back after longer**.
@@ -124,8 +124,9 @@ its data is. For the headline numbers, the Monday email (requirements 22–29) n
    change, plus first-time confirmations and unsubscribes that day (both unsubscribe routes go
    through the same store, [PRD 15](15-email-subscriptions.md)). Totals only.
 10. **Twenty Four** ([PRD 07](07-twenty-four.md)) — **players** (browsers that submitted at least
-    one answer that day), **hands solved** and **hands passed**. Passing is a hand but not a
-    submission, so it makes no player and no visitor.
+    one answer, or called a hand impossible, that day), **hands solved**, **hands passed**, and hands
+    **called impossible**, rightly and wrongly apart (from 2026-10-29). Passing is a hand but not a
+    submission, so it makes no player and no visitor. A right call isn't counted as a hand solved.
 
 The existing per-puzzle stats (every answer submitted, and how many were right) stay as they are.
 
@@ -150,7 +151,8 @@ The existing per-puzzle stats (every answer submitted, and how many were right) 
     next-day rate is exact because "back from yesterday" can only mean yesterday's visitors.
 15. **Subscribers**: the latest list size and its date, and confirmations and unsubscribes in the
     range.
-16. **Twenty Four**: players (per day, added up), hands solved and passed in the range.
+16. **Twenty Four**: players (per day, added up), hands solved and passed, and hands called
+    impossible rightly and wrongly, in the range.
 17. **Every percentage shows its count beside it** (*"58% · 7 of 12"*). Below 20 browsers, a
     figure is marked **too few to judge** — at that size, one browser moves it by five points.
 18. Plain bars drawn with CSS, no chart library — the project keeps its no-packages rule.
@@ -241,6 +243,8 @@ no hints at all ([PRD 03](03-hints-and-solutions.md)).
 - [x] A puzzle replaced mid-day keeps its own numbers (mutation-verified)
 - [x] A failure to count never reaches the page (mutation-verified)
 - [x] Twenty Four counts a visitor and a player only on submitting; a pass counts a hand only
+- [x] An Impossible call counts a visitor and a player like an answer, right and wrong kept apart
+      (mutation-verified)
 
 ### Storage — `MetricsStoreTests`
 
@@ -272,8 +276,8 @@ no hints at all ([PRD 03](03-hints-and-solutions.md)).
 - [x] The daily challenge counts saw → tried → solved; any other challenge view counts nothing
       (mutation-verified)
 - [x] Opening Twenty Four counts nothing until an answer is submitted (mutation-verified)
-- [x] A solved Twenty Four hand can't be solved or passed again over the live connection — the
-      buttons were only disabled in the browser (mutation-verified)
+- [x] A solved Twenty Four hand can't be solved, passed or called impossible again over the live
+      connection — the buttons were only disabled in the browser (mutation-verified)
 - [x] Admin shows each percentage with its count, marks small ones on the figure itself, and says
       so when there's nothing yet (mutation-verified)
 - [x] The download script, run against a stand-in for Fly, asks for exactly the four files and

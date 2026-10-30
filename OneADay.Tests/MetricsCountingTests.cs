@@ -219,4 +219,18 @@ public class MetricsCountingTests : IDisposable
         Assert.Equal(1, On(Day).TwentyFour.Players);
         Assert.Equal(2, On(Day).TwentyFour.HandsSolved);
     }
+
+    [Fact]
+    public async Task An_impossible_call_counts_a_player_like_an_answer_and_says_if_it_was_right()
+    {
+        var counter = Visit(Day);
+        await counter.TwentyFourImpossibleAsync(right: true);
+        await counter.TwentyFourImpossibleAsync(right: false);
+        await counter.TwentyFourImpossibleAsync(right: false);
+
+        Assert.Equal(1, On(Day).Visitors.Total);
+        Assert.Equal(1, On(Day).TwentyFour.Players);
+        Assert.Equal((1, 2), (On(Day).TwentyFour.ImpossibleRight, On(Day).TwentyFour.ImpossibleWrong));
+        Assert.Equal((0, 0), (On(Day).TwentyFour.HandsSolved, On(Day).TwentyFour.HandsPassed));
+    }
 }

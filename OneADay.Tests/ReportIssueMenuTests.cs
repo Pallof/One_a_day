@@ -35,6 +35,7 @@ public class ReportIssueMenuTests : BunitContext
         JSInterop.Mode = JSRuntimeMode.Loose;
         _issues = Services.AddReportDialog(_env, _notifier);
         Services.AddMetrics(_env);   // the Twenty Four page counts its players
+        Services.AddTwentyFour(_env);
 
         // The challenge page's footer also offers the email sign-up, which needs these.
         Services.AddSingleton(_env.NewSubscriberStore());

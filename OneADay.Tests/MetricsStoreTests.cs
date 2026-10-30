@@ -185,6 +185,8 @@ public class MetricsStoreTests : IDisposable
         store.RecordTwentyFourPlayer(Day);
         store.RecordTwentyFourHand(Day, solved: true);
         store.RecordTwentyFourHand(Day, solved: false);
+        store.RecordImpossibleCall(Day, right: true);
+        store.RecordImpossibleCall(Day, right: false);
         store.RecordConfirmation(Day);
         store.RecordUnsubscribe(Day);
         store.SetSubscriberTotals(Day, 5, 2);
@@ -194,7 +196,8 @@ public class MetricsStoreTests : IDisposable
         {
             "SavedAtUtc", "Days", "Visitors", "New", "BackFromYesterday", "BackWithinWeek",
             "BackAfterLonger", "Puzzles", "Saw", "Tried", "Solved", "SolvedIn", "SolveAttempts",
-            "TwentyFour", "Players", "HandsSolved", "HandsPassed", "Subscribers", "Confirmed",
+            "TwentyFour", "Players", "HandsSolved", "HandsPassed", "ImpossibleRight", "ImpossibleWrong",
+            "Subscribers", "Confirmed",
             "Pending", "Confirmations", "Unsubscribes",
         };
         var dayKey = new Regex(@"^\d{4}-\d{2}-\d{2}$");

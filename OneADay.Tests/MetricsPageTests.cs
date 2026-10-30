@@ -24,6 +24,7 @@ public class MetricsPageTests : BunitContext
         Services.AddDataProtection();
         Services.AddScoped<ProtectedLocalStorage>();
         _metrics = Services.AddMetrics(_env);
+        Services.AddTwentyFour(_env);
         Services.AddGrading(_env);
     }
 
@@ -93,7 +94,7 @@ public class MetricsPageTests : BunitContext
     }
 
     [Fact]
-    public async Task A_solved_hand_cant_be_solved_or_passed_again()
+    public async Task A_solved_hand_cant_be_solved_passed_or_called_again()
     {
         // The buttons are disabled once solved, but only in the browser; these calls are what a
         // client driving the live connection could still send.
@@ -104,9 +105,24 @@ public class MetricsPageTests : BunitContext
         await SubmitAnyway(page);
         await SubmitAnyway(page);
         await SubmitAnyway(page, "Pass");
+        await SubmitAnyway(page, "CallImpossible");
 
         Assert.Equal((1, 0), (Today!.TwentyFour.HandsSolved, Today!.TwentyFour.HandsPassed));
-        Assert.Contains("Solved 1 of 1 hand this visit", page.Markup);
+        Assert.Equal((0, 0), (Today!.TwentyFour.ImpossibleRight, Today!.TwentyFour.ImpossibleWrong));
+        page.Render();
+        Assert.Equal("1", page.Find(".tf-run strong").TextContent);
+    }
+
+    [Fact]
+    public void An_impossible_call_counts_the_player_and_whether_it_was_right()
+    {
+        // A player who only ever presses Impossible still played.
+        var page = DealtSixes();
+        page.Find("button.tf-call").Click();
+
+        Assert.Equal(1, Today!.Visitors.New);
+        Assert.Equal((1, 0, 0, 1), (Today!.TwentyFour.Players, Today!.TwentyFour.HandsSolved,
+            Today!.TwentyFour.ImpossibleRight, Today!.TwentyFour.ImpossibleWrong));
     }
 
     // ---- admin's section -----------------------------------------------------------

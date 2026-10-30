@@ -76,7 +76,22 @@ public sealed class MetricsCounter(
     /// A Twenty Four answer was submitted. Only this makes a Twenty Four visitor count as a
     /// visitor — opening the page alone doesn't (author's decision, 2026-10-06).
     /// </summary>
-    public Task TwentyFourAnswerAsync(bool solved) => Step((note, day) =>
+    public Task TwentyFourAnswerAsync(bool solved) => TwentyFourPlay(day =>
+    {
+        if (solved)
+        {
+            store.RecordTwentyFourHand(day, solved: true);
+        }
+    });
+
+    /// <summary>A Twenty Four hand was called impossible. It counts the player, as an answer does.</summary>
+    public Task TwentyFourImpossibleAsync(bool right) => TwentyFourPlay(day => store.RecordImpossibleCall(day, right));
+
+    /// <summary>A Twenty Four hand was passed. A hand, not a player: passing isn't submitting.</summary>
+    public Task TwentyFourPassAsync() => Step((note, day) =>
+        (note, () => store.RecordTwentyFourHand(day, solved: false)));
+
+    private Task TwentyFourPlay(Action<DateOnly> count) => Step((note, day) =>
     {
         var (next, visit) = note.Visit(day);
         (next, var firstToday) = next.PlayTwentyFour(day);
@@ -87,16 +102,9 @@ public sealed class MetricsCounter(
             {
                 store.RecordTwentyFourPlayer(day);
             }
-            if (solved)
-            {
-                store.RecordTwentyFourHand(day, solved: true);
-            }
+            count(day);
         });
     });
-
-    /// <summary>A Twenty Four hand was passed. A hand, not a player: passing isn't submitting.</summary>
-    public Task TwentyFourPassAsync() => Step((note, day) =>
-        (note, () => store.RecordTwentyFourHand(day, solved: false)));
 
     private void Visit(DateOnly day, VisitKind? kind)
     {

@@ -125,6 +125,18 @@
     .tf-card:hover { transform: none; }
 }
 
+.tf-run {
+    margin: 0.9rem 0 0;
+    text-align: center;
+    font-size: 0.94rem;
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+}
+
+.tf-run strong {
+    color: var(--ink);
+}
+
 /* --- input and buttons -------------------------------------------------- */
 
 .tf-input {
@@ -203,6 +215,26 @@
     flex-wrap: wrap;
 }
 
+/* On a phone the three don't fit at their usual size, and Pass wrapped onto a line of its
+   own. One row of smaller buttons instead, down to a 320px screen. Each starts at its own
+   text's width and they share what's left, so "Impossible" gets the room it needs: three
+   equal columns left it spilling out of its button at 320px. */
+@media (max-width: 480px) {
+    .tf-buttons {
+        flex-wrap: nowrap;
+        gap: 0.4rem;
+    }
+
+    .tf-buttons > button {
+        flex: 1 1 auto;
+        min-height: 44px;
+        padding: 0.5rem 0.4rem;
+        font-size: 0.88rem;
+    }
+}
+
+/* Impossible and Pass: the two ways out of a hand, both quieter than Submit. */
+.tf-call,
 .tf-pass {
     background: #fff;
     border: 1.5px solid var(--field);
@@ -216,10 +248,12 @@
     transition: border-color .15s ease;
 }
 
+.tf-call:hover:not(:disabled),
 .tf-pass:hover:not(:disabled) {
     border-color: var(--ink-soft);
 }
 
+.tf-call:disabled,
 .tf-pass:disabled {
     opacity: 0.45;
     cursor: not-allowed;
@@ -295,8 +329,82 @@
     .tf-next-hint { display: none; }
 }
 
-.tf-score {
-    text-align: center;
-    font-size: 0.94rem;
+/* --- the board --------------------------------------------------------- */
+
+.tf-board h2 {
+    margin-bottom: 0.25rem;
+}
+
+.tf-board-note {
+    margin: 0 0 1rem;
     color: var(--ink-soft);
+    font-size: 0.97rem;
+}
+
+/* Today beside All time, stacked where two won't fit. */
+.tf-board-lists {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+    gap: 1rem 1.5rem;
+}
+
+.tf-board-list h3 {
+    margin: 0 0 0.4rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+}
+
+.tf-board-list ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.tf-row {
+    display: grid;
+    grid-template-columns: 1.75rem 1fr auto;
+    gap: 0.5rem;
+    align-items: baseline;
+    padding: 0.4rem 0.5rem;
+    border-bottom: 1px solid var(--line);
+    font-variant-numeric: tabular-nums;
+}
+
+.tf-row:last-child {
+    border-bottom: none;
+}
+
+.tf-row-you {
+    background: var(--blue-tint);
+    border-radius: 8px;
+    color: var(--blue-deep);
+    font-weight: 700;
+}
+
+.tf-place {
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+}
+
+.tf-row-you .tf-place {
+    color: inherit;
+}
+
+.tf-name {
+    overflow-wrap: anywhere;
+}
+
+.tf-length {
+    font-family: 'Lora', Georgia, serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+}
+
+.tf-board-empty {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 0.94rem;
 }

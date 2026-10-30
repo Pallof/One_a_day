@@ -6,6 +6,9 @@
 @inject IJSRuntime JS
 @inject MetricsCounter Metrics
 @inject CurrentTeaserContext OnScreen
+@inject TwentyFourBoard Board
+@inject ITwentyFourPlayerStorage PlayerIds
+@inject TimeProvider Time
 @implements IAsyncDisposable
 
 <PageTitle>Stumpty · 24</PageTitle>
@@ -13,7 +16,7 @@
 @{
     // Read by the cards and the keypad alike, so the two can never disagree.
     var used = UsedCards();
-    var solved = _state is RoundState.Solved;
+    var over = RoundOver;
 }
 
 <div class="tf-page">
@@ -30,9 +33,13 @@
         </p>
         @* Players took every hand to be possible and got frustrated (feedback, 2026-10-07).
            A fact about the deck, never about the hand on the table, so it gives nothing
-           away. Never say which hands, or point at how the hard ones go (PRD 07). *@
+           away. Never say which hands or how many, or point at how the hard ones go (PRD 07). *@
         <p class="tf-rules tf-impossible">
-            <strong>Not every hand can make 24.</strong> If you're stuck, Pass deals a fresh one.
+            <strong>Not every hand can make 24.</strong> If you think yours can't, press Impossible.
+        </p>
+        <p class="tf-rules tf-impossible">
+            Each hand you solve, or rightly call impossible, adds one to your run. Pass deals a
+            fresh hand but ends your run, and so does calling a hand impossible when it can be done.
         </p>
         @* An easy base case, deliberately. Players work up from here.
 
@@ -63,6 +70,7 @@
                 </span>
             }
         </div>
+        <p class="tf-run">Current run: <strong>@_run</strong></p>
     </div>
 
     <div class="oad-box">
@@ -73,7 +81,7 @@
                maxlength="120"
                @bind="_expression" @bind:event="oninput"
                @onkeydown="OnKeyDown"
-               disabled="@solved" />
+               disabled="@over" />
 
         @* The dealt numbers and the symbols as buttons, so a phone player never swaps between
            the letter and number keyboards. Touch screens only — the stylesheet hides it where
@@ -84,25 +92,28 @@
             {
                 var number = _hand[i];
                 @* Goes out with its card, and comes back with it. *@
-                <button class="tf-key tf-key-number" disabled="@(solved || used[i])"
+                <button class="tf-key tf-key-number" disabled="@(over || used[i])"
                         @onclick="() => Tap(number.ToString(CultureInfo.InvariantCulture))">@number</button>
             }
             @foreach (var key in SymbolKeys)
             {
-                <button class="tf-key tf-key-symbol" aria-label="@key.Name" disabled="@solved"
+                <button class="tf-key tf-key-symbol" aria-label="@key.Name" disabled="@over"
                         @onclick="() => Tap(key.Text)">@key.Text</button>
             }
             <button class="tf-key tf-key-delete" aria-label="Delete"
-                    disabled="@(solved || string.IsNullOrWhiteSpace(_expression))"
+                    disabled="@(over || string.IsNullOrWhiteSpace(_expression))"
                     @onclick="DeleteLast">⌫</button>
         </div>
 
         <div class="tf-buttons">
             <button class="oad-btn-green" @onclick="Submit"
-                    disabled="@(solved || string.IsNullOrWhiteSpace(_expression))">
+                    disabled="@(over || string.IsNullOrWhiteSpace(_expression))">
                 Submit
             </button>
-            <button class="tf-pass" @onclick="Pass" disabled="@solved">
+            <button class="tf-call" @onclick="CallImpossible" disabled="@over">
+                Impossible
+            </button>
+            <button class="tf-pass" @onclick="Pass" disabled="@over">
                 Pass
             </button>
         </div>
@@ -110,14 +121,14 @@
         @if (_message is not null)
         {
             <p class="tf-message @(_state switch {
-                    RoundState.Solved => "tf-correct",
+                    RoundState.Solved or RoundState.CalledRight => "tf-correct",
                     RoundState.Passed => "tf-passed",
                     _ => "tf-wrong" })">@_message</p>
         }
 
     </div>
 
-    @if (_state is RoundState.Solved)
+    @if (over)
     {
         <div class="oad-box tf-next-box">
             <button class="tf-next" @onclick="() => NewHand()">Deal a new hand</button>
@@ -126,13 +137,56 @@
         </div>
     }
 
-    <p class="tf-score">
-        Solved @_solvedCount of @_playedCount @(_playedCount == 1 ? "hand" : "hands") this visit.
-    </p>
+    <section class="oad-box tf-board" aria-labelledby="tf-board-title">
+        <h2 id="tf-board-title">Longest runs</h2>
+        @if (_player is { } me)
+        {
+            <p class="tf-board-note">You play as <strong>@me.Name</strong>.</p>
+        }
+        else if (_browserAnswered && !_triedJoining)
+        {
+            <p class="tf-board-note">Get a hand right and you'll get a name on the board.</p>
+        }
+        <div class="tf-board-lists">
+            @foreach (var (title, runs, empty) in new[]
+            {
+                ("Today", Board.TodayAsSeenBy(_player?.Id), "No runs yet today. Solve a hand to get on the board."),
+                ("All time", Board.AllTimeAsSeenBy(_player?.Id), "No runs yet."),
+            })
+            {
+                <div class="tf-board-list">
+                    <h3>@title</h3>
+                    @if (runs.Count == 0)
+                    {
+                        <p class="tf-board-empty">@empty</p>
+                    }
+                    else
+                    {
+                        <ol>
+                            @for (var place = 0; place < runs.Count; place++)
+                            {
+                                var row = runs[place];
+                                var mine = row.Player.Id == _player?.Id;
+                                <li class="tf-row @(mine ? "tf-row-you" : "")">
+                                    <span class="tf-place">@(place + 1)</span>
+                                    <span class="tf-name">@row.Player.Name@(mine ? " (you)" : "")</span>
+                                    <span class="tf-length">@row.Run</span>
+                                </li>
+                            }
+                        </ol>
+                    }
+                </div>
+            }
+        </div>
+    </section>
 </div>
 
 @code {
-    private enum RoundState { Playing, Wrong, Solved, Passed }
+    /// <summary>
+    /// Where the hand on the table stands. A solve and either Impossible call end the round:
+    /// the hand stays on screen, locked, until "Deal a new hand". Pass deals straight away.
+    /// </summary>
+    private enum RoundState { Playing, Wrong, Solved, Passed, CalledRight, CalledWrong }
 
     private readonly Random _random = new();
     private int[] _hand = [];
@@ -140,8 +194,38 @@
     private string? _message;
     private RoundState _state = RoundState.Playing;
     private DotNetObjectReference<TwentyFour>? _selfRef;
-    private int _solvedCount;
-    private int _playedCount;
+
+    /// <summary>
+    /// Hands in a row solved or rightly called impossible (PRD 07). Kept for this visit only:
+    /// leaving the page ends a run, as Pass does, so a reload can't escape a hard hand.
+    /// </summary>
+    private int _run;
+
+    /// <summary>
+    /// Who's playing: once the browser has said, or once a new player has got a hand right. Until
+    /// then a run counts but isn't on the board.
+    /// </summary>
+    private TwentyFourPlayer? _player;
+
+    /// <summary>The browser has said whether it has a player. Until it has, no new one is made, or it could replace one it has.</summary>
+    private bool _browserAnswered;
+
+    /// <summary>A new player was asked for this visit. Once, whether or not the browser kept it.</summary>
+    private bool _triedJoining;
+
+    /// <summary>
+    /// When the hand on the table was dealt, by the server's steady timer: unlike the wall
+    /// clock, it never jumps back, which would make a slow answer look fast.
+    /// </summary>
+    private long _dealtAt;
+
+    /// <summary>
+    /// Answers faster than anyone types. Once caught, the board shadow-bans the player: their
+    /// runs stay off it for everyone else, and nothing on this page changes (PRD 07).
+    /// </summary>
+    private readonly AnswerPace _pace = new();
+
+    private bool RoundOver => _state is RoundState.Solved or RoundState.CalledRight or RoundState.CalledWrong;
 
     protected override void OnInitialized() => NewHand();
 
@@ -163,8 +247,8 @@
         var flags = new bool[_hand.Length];
 
         // On a solve every card is spent — dimming the whole hand under the confetti
-        // would read as a loss. Show the winning hand lit.
-        if (_state is RoundState.Solved || string.IsNullOrWhiteSpace(_expression))
+        // would read as a loss. Show the winning hand lit, and a called one too.
+        if (RoundOver || string.IsNullOrWhiteSpace(_expression))
         {
             return flags;
         }
@@ -227,7 +311,7 @@
     /// </summary>
     private void Tap(string key)
     {
-        if (_state is RoundState.Solved)
+        if (RoundOver)
         {
             return;   // disabled in the browser; see Submit
         }
@@ -248,7 +332,7 @@
     /// </summary>
     private void DeleteLast()
     {
-        if (_state is RoundState.Solved)
+        if (RoundOver)
         {
             return;
         }
@@ -273,6 +357,46 @@
         {
             _selfRef = DotNetObjectReference.Create(this);
             await JS.InvokeVoidAsync("oadTwentyFour.register", _selfRef);
+            await LoadPlayerAsync();
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>
+    /// The player this browser plays as, if it has one. A browser that can't be read stays off
+    /// the board this visit; one that has none gets a player at its first hand right.
+    /// </summary>
+    private async Task LoadPlayerAsync()
+    {
+        try
+        {
+            if (await PlayerIds.ReadAsync() is { Number: > 0 } stored && stored.Id != Guid.Empty)
+            {
+                _player = stored;
+            }
+            _browserAnswered = true;
+        }
+        catch (Exception e) when (e is JSDisconnectedException or TaskCanceledException or InvalidOperationException
+                                      or JSException)
+        {
+            // The browser went away, or won't store anything. The game plays on regardless.
+        }
+
+        // Hands solved while the browser was still answering.
+        if (_player is null && _run > 0)
+        {
+            await JoinAsync();
+        }
+        if (_player is { } player)
+        {
+            if (_pace.Caught)
+            {
+                Board.Hide(player);
+            }
+            if (_run > 0)
+            {
+                Board.Record(player, _run);
+            }
         }
     }
 
@@ -280,7 +404,7 @@
     [JSInvokable]
     public Task DealFromSpaceBar()
     {
-        if (_state is not RoundState.Solved)
+        if (!RoundOver)
         {
             return Task.CompletedTask;
         }
@@ -291,23 +415,93 @@
         });
     }
 
+    /// <summary>
+    /// Deals the next hand. With a note it's Pass, which may replace a hand in play; without one
+    /// it's "Deal a new hand", by button or space bar, which may only once the round is over.
+    /// </summary>
     private void NewHand(string? note = null)
     {
+        // Blazor keeps a removed button's click alive until the browser confirms the redraw, so
+        // a quick double tap on "Deal a new hand", or a client sending the click again, arrives
+        // with the next hand already in play. Dealing again would be a free Pass that keeps the
+        // run (found in review, 2026-10-29).
+        if (note is null && _hand.Length > 0 && !RoundOver)
+        {
+            return;
+        }
+
         _hand = TwentyFourGame.Deal(_random);
+        _dealtAt = Time.GetTimestamp();
         // Let "Report an issue" name the hand on screen — this one, not the first dealt.
         OnScreen.SetHand(_hand);
         _expression = string.Empty;
         _message = note;
         _state = note is null ? RoundState.Playing : RoundState.Passed;
-        _playedCount++;
+    }
+
+    /// <summary>
+    /// Makes this browser a player, with the next number, the first time it gets a hand right.
+    /// Only once the browser has said it has none, and only once a visit. Only a player the
+    /// browser keeps goes on the board: one it won't save would put each visit on under a new
+    /// name (PRD 07).
+    /// </summary>
+    private async Task JoinAsync()
+    {
+        if (!_browserAnswered || _triedJoining)
+        {
+            return;
+        }
+        _triedJoining = true;
+        if (Board.NewPlayer() is not { } player)
+        {
+            return;   // the number couldn't be saved; the board logs it
+        }
+        try
+        {
+            await PlayerIds.WriteAsync(player);
+            _player = player;
+        }
+        catch (Exception e) when (e is JSDisconnectedException or TaskCanceledException or InvalidOperationException
+                                      or JSException)
+        {
+            // The browser won't keep it. Its number goes unused.
+        }
+    }
+
+    /// <summary>One more hand in a row, onto the board if it earns a place.</summary>
+    private async Task<string> ExtendRunAsync()
+    {
+        _run++;
+        var caught = _pace.Answered(Time.GetElapsedTime(_dealtAt));
+        if (_player is null)
+        {
+            await JoinAsync();
+        }
+        if (_player is { } player)
+        {
+            if (caught)
+            {
+                Board.Hide(player);
+            }
+            Board.Record(player, _run);
+        }
+        return _run == 1 ? "That starts a run." : $"That's {_run} in a row.";
+    }
+
+    /// <summary>The run is over. Returns how long it was, 0 when there was none.</summary>
+    private int EndRun()
+    {
+        var ended = _run;
+        _run = 0;
+        return ended;
     }
 
     private async Task Submit()
     {
-        // The buttons are disabled once a hand is solved, but only in the browser. A client
+        // The buttons are disabled once a round is over, but only in the browser. A client
         // driving the live connection could otherwise keep "solving" the same hand, inflating
-        // the visit tally and the site metrics (PRD 16).
-        if (_state is RoundState.Solved)
+        // the run, the board and the site metrics (PRD 16).
+        if (RoundOver)
         {
             return;
         }
@@ -315,10 +509,12 @@
         var check = TwentyFourGame.Check(_expression, _hand);
         _message = check.Message;
 
+        // A wrong answer leaves the run alone: try again as often as you like. Only Pass and
+        // a wrong Impossible call end it (author's decision, 2026-10-29).
         if (check.IsCorrect)
         {
             _state = RoundState.Solved;
-            _solvedCount++;
+            _message = $"{check.Message} {await ExtendRunAsync()}";
         }
         else
         {
@@ -337,23 +533,60 @@
         }
     }
 
-    // Passing deals again and says nothing else. Showing the solution would hand
-    // over the answer to a puzzle the player is still capable of cracking, and the
-    // whole point is that they work it out themselves.
+    // Passing deals again and says nothing about the hand. Showing the solution would hand
+    // over the answer to a puzzle the player is still capable of cracking, and saying whether
+    // it could be done is what Impossible is for, at the risk of the run.
     private async Task Pass()
     {
-        if (_state is RoundState.Solved)
+        if (RoundOver)
         {
             return;   // disabled in the browser; see Submit
         }
-        NewHand("Passed. Here's a fresh hand.");
+        var ended = EndRun();
+        NewHand(ended == 0
+            ? "Passed. Here's a fresh hand."
+            : $"Passed, ending your run of {ended}. Here's a fresh hand.");
         await Metrics.TwentyFourPassAsync();
+    }
+
+    /// <summary>
+    /// The player says this hand can't make 24. Right, it counts like a solve; wrong, the run
+    /// ends. Either way the round is over, and the page says only whether the hand could be
+    /// done, never how (author's decision, 2026-10-29).
+    /// </summary>
+    private async Task CallImpossible()
+    {
+        if (RoundOver)
+        {
+            return;   // disabled in the browser; see Submit
+        }
+
+        var right = !TwentyFourGame.HasSolution(_hand);
+        if (right)
+        {
+            _state = RoundState.CalledRight;
+            _message = $"Right, these four can't make 24. {await ExtendRunAsync()}";
+        }
+        else
+        {
+            _state = RoundState.CalledWrong;
+            var ended = EndRun();
+            _message = ended == 0 ? "It could be done." : $"It could be done. Your run of {ended} ends here.";
+        }
+
+        await Metrics.TwentyFourImpossibleAsync(right);
+
+        if (right)
+        {
+            await JS.InvokeVoidAsync("oadCelebrate");
+        }
     }
 
     private async Task OnKeyDown(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter" && _state is RoundState.Playing or RoundState.Wrong
-            && !string.IsNullOrWhiteSpace(_expression))
+        // Any hand still in play, a passed one included: until 2026-10-29 Enter did nothing on
+        // the hand Pass dealt until Submit was clicked once.
+        if (e.Key == "Enter" && !RoundOver && !string.IsNullOrWhiteSpace(_expression))
         {
             await Submit();
         }
