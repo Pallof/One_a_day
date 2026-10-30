@@ -60,10 +60,18 @@ rankings.
   server: the page's limit only binds a browser, and a script on the live connection can send
   about 32,000 characters.
 - **Name to credit**, optional, beside the difficulty so the page still fits a laptop's window
-  ([PRD 09](09-visual-design.md)) *(author's decision, 2026-10-30)*. Up to 60 characters on one line, by the page and again by the server, which also
-  folds any line breaks a script sends into spaces: the name has a line of its own in the email.
+  ([PRD 09](09-visual-design.md)) *(author's decision, 2026-10-30)*. Up to 60 characters on one
+  line, by the page and again by the server, which also folds any line breaks a script sends into
+  spaces: the name has a line of its own in the email. Control and formatting characters
+  (zero-width spaces, bidi overrides) are dropped, and a name needs a letter or a digit, so one of
+  blank-looking characters, or only emoji, counts as none (`CreditName`; cold review, 2026-10-30).
   It's kept with the suggestion, shown in admin (*"From Sam"*, or *"No name given"*), and carried
   into the teaser's **Suggested by** when the suggestion is used ([PRD 05](05-authoring-and-admin.md)).
+  **Known risk, not fixed** *(author's decision, 2026-10-30)*: the box is marked
+  `autocomplete="name"`, which can make a password manager fill the form from a saved identity.
+  One that also fills the hidden "website" decoy (Abuse defences, below) would have a real
+  suggestion dropped as a bot's, with the thank-you shown anyway; only the blocked count in admin
+  would rise. Removing the attribute would close it.
 - After sending: a thank-you, and nothing more offered that day. A visitor over the limit sees a
   friendly explanation instead of the form.
 - In admin, suggestions show difficulty, time and text, and can be **copied straight into the

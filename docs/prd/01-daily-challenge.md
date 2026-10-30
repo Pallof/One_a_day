@@ -22,7 +22,8 @@ It never shows the puzzle's own date: puzzles get recycled, and the date would g
 - **A visitor's teaser credits them** at the foot of the question card: *"Today's question was
   given by Sam Rivera"* *(author's decision, 2026-10-30)*, from the teaser's **Suggested by**
   ([PRD 05](05-authoring-and-admin.md)), which carries the name they gave the Suggest a teaser
-  form ([PRD 06](06-community-feedback.md)). Nothing is shown for the author's own teasers. A
+  form ([PRD 06](06-community-feedback.md)), cleaned the same way, and wrapped wherever it must so
+  a long name never scrolls a phone sideways. Nothing is shown for the author's own teasers. A
   recycled teaser keeps its credit. Only today's challenge shows it, not yesterday's solution or
   the daily email.
 
@@ -143,8 +144,9 @@ honest; it doesn't stop a determined one.
       ([PRD 08](08-recycling-rotation.md))
 - [x] **No date is ever shown for the teaser itself** — only today's dateline
 - [x] Future teasers never render on `/`
-- [x] A visitor's teaser credits them by name, trimmed; none or a blank name shows nothing; the
-      credit's lines count with the question's (`ChallengeLayoutTests`, mutation-verified)
+- [x] A visitor's teaser credits them by name, trimmed; none, a blank name or one of blank-looking
+      characters shows nothing; the credit's lines count with the question's
+      (`ChallengeLayoutTests`, `CreditNameTests`, mutation-verified)
 - [x] Countdown ticks each second and auto-reloads at midnight PT
 - [x] Confetti fires on a correct answer and is suppressed under reduced-motion
 - [x] Submission length enforced on both client and server

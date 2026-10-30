@@ -131,10 +131,14 @@
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => StateHasChanged();
 
-    /// <summary>Marks the active section, so the current page is obvious in the bar.</summary>
+    /// <summary>
+    /// Marks the active section, so the current page is obvious in the bar. The query and the
+    /// fragment don't count: "Skip to content" adds #oad-main, and the page lost its two columns
+    /// (cold review, 2026-10-30).
+    /// </summary>
     private bool IsCurrent(string href)
     {
-        var path = Nav.ToBaseRelativePath(Nav.Uri).Split('?')[0].TrimEnd('/');
+        var path = Nav.ToBaseRelativePath(Nav.Uri).Split('?', '#')[0].TrimEnd('/');
         return href.Length == 0 ? path.Length == 0 : path.Equals(href, StringComparison.OrdinalIgnoreCase);
     }
 

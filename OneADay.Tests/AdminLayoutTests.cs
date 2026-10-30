@@ -149,7 +149,7 @@ public class AdminLayoutTests : BunitContext
         Assert.Equal("Sam Rivera", _env.NewTeaserStore().GetAll().Single().SuggestedBy);
 
         page.FindAll("button").First(b => b.TextContent.Trim() == "Edit").Click();
-        page.Find("#suggested-by").Change("   ");
+        page.Find("#suggested-by").Change(" \u3164 ");   // looks blank, and is saved as none
         page.Find(".oad-admin-actions button.oad-btn-green").Click();
         Assert.Null(_env.NewTeaserStore().GetAll().Single().SuggestedBy);
     }

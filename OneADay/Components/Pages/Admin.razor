@@ -641,9 +641,7 @@
 
         _form.Tags = ParsedTags;
         _form.NotAccepted = string.IsNullOrWhiteSpace(_form.NotAccepted) ? null : _form.NotAccepted.Trim();
-        _form.SuggestedBy = string.IsNullOrWhiteSpace(_form.SuggestedBy)
-            ? null
-            : TextLimit.Clip(_form.SuggestedBy, TeaserSuggestion.MaxNameLength);
+        _form.SuggestedBy = CreditName.Clean(_form.SuggestedBy);
         _form.ImageAlt = string.IsNullOrWhiteSpace(_form.ImageFileName)
             ? null
             : TextLimit.Clip(_form.ImageAlt, MaxImageAltLength);

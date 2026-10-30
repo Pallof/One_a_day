@@ -4,8 +4,29 @@
 window.oadTwentyFour = {
     _handler: null,
 
+    // The focus-tracking listeners beside it, as [event, handler] pairs, to take off again.
+    _focusListeners: [],
+
     register: function (dotNetRef) {
         this.unregister();
+
+        // The button the player reached with the keyboard, if any: space presses that one, as on
+        // any page. A button clicked with the mouse doesn't keep it, so clicking High scores and
+        // then pressing space still deals. Chrome focuses a clicked button too, and counts it as
+        // keyboard-focused the moment a key goes down, so :focus-visible can't tell the two apart
+        // (cold review, 2026-10-30). Focus that arrives while a pointer is pressed is the mouse's.
+        let pressing = false;
+        let keyboardFocused = null;
+        this._focusListeners = [
+            ['pointerdown', () => { pressing = true; }],
+            ['pointerup', () => { pressing = false; }],
+            ['pointercancel', () => { pressing = false; }],
+            ['focusin', (event) => { keyboardFocused = pressing ? null : event.target; }],
+        ];
+        for (const [type, listener] of this._focusListeners) {
+            document.addEventListener(type, listener, true);
+        }
+
         this._handler = (event) => {
             if (event.code !== 'Space' && event.key !== ' ') {
                 return;
@@ -17,8 +38,9 @@ window.oadTwentyFour = {
             if (tag === 'input' || tag === 'textarea' || (active && active.isContentEditable)) {
                 return;
             }
-            // Nor from a focused button, whose own press space is: "How to play" wouldn't open.
-            if (tag === 'button' && !active.disabled) {
+            // Nor from a button reached with the keyboard, whose own press space is: "How to play"
+            // wouldn't open.
+            if (tag === 'button' && !active.disabled && active === keyboardFocused) {
                 return;
             }
             // Space scrolls the page by default; the deal is the intent here.
@@ -55,5 +77,9 @@ window.oadTwentyFour = {
             document.removeEventListener('keydown', this._handler);
             this._handler = null;
         }
+        for (const [type, listener] of this._focusListeners) {
+            document.removeEventListener(type, listener, true);
+        }
+        this._focusListeners = [];
     },
 };

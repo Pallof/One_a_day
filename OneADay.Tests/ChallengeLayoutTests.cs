@@ -95,6 +95,7 @@ public class ChallengeLayoutTests : BunitContext
     [Theory]
     [InlineData(null)]
     [InlineData("   ")]
+    [InlineData("\u3164")]   // a Hangul filler, in a bank edited by hand
     public void A_question_with_no_one_to_credit_says_nothing_of_it(string? suggestedBy)
     {
         var teaser = TeaserFactory.On("2026-08-12", new string('a', 50));
@@ -160,6 +161,8 @@ public class ChallengeLayoutTests : BunitContext
     [InlineData("yesterday", true)]
     [InlineData("twentyfour", true)]
     [InlineData("questions", true)]
+    [InlineData("twentyfour#oad-main", true)]   // after "Skip to content"
+    [InlineData("#oad-main", true)]
     [InlineData("about", false)]
     [InlineData("contact", false)]
     public void Only_the_two_column_pages_widen(string path, bool widens)

@@ -73,7 +73,8 @@ there is. It shows what to type and reveals no method. Before adding or changing
    as often as you like.
 7. After a **solve** or an **Impossible call** the round is over: the hand stays on screen with
    every card lit, the box and buttons lock, and a **Deal a new hand** button appears (or press the
-   space bar, except in a box being typed in or on a focused button, which space presses). Pass
+   space bar, except in a box being typed in or on a button reached with the keyboard, which space
+   presses; a button clicked with the mouse doesn't keep it, so space still deals). Pass
    needs no such step — it has already moved on. The lock holds **on the server too**: a Submit,
    Impossible, Pass or keypad tap sent over the live connection after the round is over is
    ignored, so it can't inflate the run, the board or the site metrics
@@ -354,11 +355,15 @@ Checked in this order, each failure naming what went wrong:
 
 - [x] Folded, the rules still show the first line and "Not every hand can make 24"; exactly the
       other three fold
-- [x] How to play opens them and Show less folds them, with `aria-expanded` to match
+- [x] How to play opens them and Show less folds them, with `aria-expanded` to match, and names
+      every paragraph it opens in `aria-controls`
 - [x] Once a hand is over, the answer box holds Deal a new hand and the space-bar line, and marks
       the three buttons for hiding; the phone's box is still there; dealing from it starts a hand
 - [x] The banner, the rules and the board are the page's own children, for the grid to place
-- [x] The page widens for two columns at both its addresses, `/twentyfour` and `/questions`
+- [x] The page widens for two columns at both its addresses, `/twentyfour` and `/questions`, and
+      after "Skip to content" adds `#oad-main`
+- [x] By hand, in Chrome: after a hand, clicking High scores and then pressing space deals; Tab to
+      How to play and space opens it (`twentyfour.js`, which the tests can't reach)
 - [x] The board folds to its title and opens again, with `aria-expanded` to match, and tells the
       browser each time; a browser that folded it last time starts folded; one whose storage
       fails starts open and still folds it

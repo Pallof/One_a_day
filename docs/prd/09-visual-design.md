@@ -325,6 +325,8 @@ exists, showing it again is nagging.
 - [x] **Twenty Four on a laptop**, checked by measurement on 2026-10-30: two columns from 1100px
       with no sideways scroll; one column at 1099px and on a 375px phone, as before; 850px at its
       tallest, which fits 1512 × 860
+- [x] A two-column page keeps its columns when the address has a `#` part, as after "Skip to
+      content" (before 2026-10-30 it fell back to the reading column)
 - [x] **What the two columns rely on** — `ChallengeLayoutTests`, each mutation-verified: the
       question's line count for its picture, 50 characters a line; the answer box and
       yesterday's link in one column; only the two-column pages widening the page

@@ -29,7 +29,7 @@
             Make <strong>24</strong> from all four numbers, using only
             <strong>+ &minus; &times; &divide;</strong> and parentheses.
         </p>
-        <p class="tf-rules tf-more">
+        <p class="tf-rules tf-more" id="tf-rule-numbers">
             Each number must be used exactly once. Numbers run 1–10, like a deck of cards
             with the face cards counting as 10, so duplicates happen.
         </p>
@@ -39,7 +39,7 @@
         <p class="tf-rules tf-impossible">
             <strong>Not every hand can make 24.</strong> If you think yours can't, press Impossible.
         </p>
-        <p class="tf-rules tf-impossible tf-more">
+        <p class="tf-rules tf-impossible tf-more" id="tf-rule-run">
             Each hand you solve, or rightly call impossible, adds one to your run. Pass deals a
             fresh hand but ends your run, and so does calling a hand impossible when it can be done.
         </p>
@@ -53,11 +53,14 @@
                 dated 2026-07-27, so the example was publishing the answer to a real
                 Challenge of the day from a different page, permanently.
            6 6 6 6 breaks neither. Don't "improve" it into something clever. *@
-        <p class="tf-rules tf-example tf-more">
+        <p class="tf-rules tf-example tf-more" id="tf-rule-example">
             For example, dealt <strong>6 6 6 6</strong> your answer could be
             <span class="tf-eg">6 + 6 + 6 + 6</span>.
         </p>
+        @* It names the paragraphs it opens: they're before it in the page as well as after, so a
+           screen reader can find them. *@
         <button type="button" class="tf-how" aria-expanded="@(_rulesOpen ? "true" : "false")"
+                aria-controls="tf-rule-numbers tf-rule-run tf-rule-example"
                 @onclick="() => _rulesOpen = !_rulesOpen">
             @(_rulesOpen ? "Show less" : "How to play")
         </button>

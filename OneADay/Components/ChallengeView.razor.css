@@ -41,6 +41,9 @@
     line-height: 1.5;
     font-style: italic;
     color: var(--ink-soft);
+    /* A name with no spaces, such as a web address, would otherwise run past the card and
+       scroll a phone's page sideways. */
+    overflow-wrap: anywhere;
 }
 
 .cv-image {

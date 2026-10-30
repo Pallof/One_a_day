@@ -8,7 +8,7 @@ public class TeaserSuggestion
     public const int MaxFieldLength = 600;
 
     /// <summary>The longest name the form takes. The server holds to it too.</summary>
-    public const int MaxNameLength = 60;
+    public const int MaxNameLength = OneADay.Models.CreditName.MaxLength;
 
     public Guid Id { get; set; } = Guid.NewGuid();
     public DateTime SubmittedAt { get; set; }

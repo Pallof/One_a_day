@@ -158,6 +158,26 @@ public class NotificationGatingTests : BunitContext
     }
 
     [Fact]
+    public void A_name_with_nothing_to_show_is_saved_and_mailed_as_none()
+    {
+        // A Hangul filler looks blank but is a letter to Unicode; it got past the first version
+        // and would have credited the teaser to no one visible (cold review, 2026-10-30).
+        var notifier = RegisterForContact();
+        var store = Services.GetRequiredService<SuggestionStore>();
+        var cut = Render<Contact>();
+        SatisfyComposeFloor(cut.Instance, "_formShownAt");
+
+        cut.Find("#teaser").Input("a genuine riddle");
+        cut.Find("#solution").Input("the answer");
+        cut.Find("#author").Input("\u3164\u200B");
+        cut.Find("button.oad-btn-green").Click();
+
+        Assert.Equal("", store.GetAll().Single().AuthorName);
+        Assert.True(notifier.Reader.TryRead(out var mail));
+        Assert.Contains("From       : no name given", mail!.Body);
+    }
+
+    [Fact]
     public void A_forged_name_is_put_on_one_line_and_cut_to_the_forms_limit()
     {
         // A browser's one-line box can't send a line break or more than its maxlength; a client

@@ -658,6 +658,20 @@ public class TwentyFourPageTests : BunitContext
     }
 
     [Fact]
+    public void How_to_play_names_every_paragraph_it_opens()
+    {
+        // They're before it in the page as well as after, so a screen reader needs telling where
+        // they are (cold review, 2026-10-30).
+        var page = Render<TwentyFour>();
+
+        var controlled = page.Find("button.tf-how").GetAttribute("aria-controls")!.Split(' ');
+        var folded = page.FindAll(".tf-rules-box p.tf-more").Select(p => p.Id).ToArray();
+
+        Assert.Equal(3, folded.Length);
+        Assert.Equal(folded, controlled);
+    }
+
+    [Fact]
     public void Once_a_hand_is_over_a_laptop_deals_the_next_from_where_the_buttons_were()
     {
         var page = Dealt(1, 1, 1, 1);
