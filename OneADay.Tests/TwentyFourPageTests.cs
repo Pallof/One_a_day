@@ -106,7 +106,7 @@ public class TwentyFourPageTests : BunitContext
         var rules = Regex.Replace(Render<TwentyFour>().FindAll(".oad-box")[0].TextContent, @"\s+", " ");
 
         Assert.Contains("If you think yours can't, press Impossible.", rules);
-        Assert.Contains("Each hand you solve, or rightly call impossible, adds one to your run.", rules);
+        Assert.Contains("Each hand you solve, or correctly call impossible, adds +1 to your run.", rules);
         Assert.Contains("Pass deals a fresh hand but ends your run, and so does calling a hand impossible when it can be done.", rules);
     }
 
