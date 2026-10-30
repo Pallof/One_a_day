@@ -120,6 +120,67 @@ public class NotificationGatingTests : BunitContext
     }
 
     [Fact]
+    public void A_suggestion_keeps_the_name_to_credit_and_mails_it()
+    {
+        var notifier = RegisterForContact();
+        var store = Services.GetRequiredService<SuggestionStore>();
+        var cut = Render<Contact>();
+        SatisfyComposeFloor(cut.Instance, "_formShownAt");
+
+        cut.Find("#teaser").Input("a genuine riddle");
+        cut.Find("#solution").Input("the answer");
+        cut.Find("#author").Input("  Sam Rivera ");
+        cut.Find("button.oad-btn-green").Click();
+
+        Assert.Equal("Sam Rivera", store.GetAll().Single().AuthorName);
+        Assert.True(notifier.Reader.TryRead(out var mail));
+        Assert.Contains("From       : Sam Rivera\n", mail!.Body.ReplaceLineEndings("\n"));
+    }
+
+    [Fact]
+    public void A_suggestion_without_a_name_is_saved_and_mailed_as_having_none()
+    {
+        // The name is optional: Submit doesn't wait for it, and the email says it's missing
+        // rather than leaving a blank to puzzle over.
+        var notifier = RegisterForContact();
+        var store = Services.GetRequiredService<SuggestionStore>();
+        var cut = Render<Contact>();
+        SatisfyComposeFloor(cut.Instance, "_formShownAt");
+
+        cut.Find("#teaser").Input("a genuine riddle");
+        cut.Find("#solution").Input("the answer");
+        Assert.False(cut.Find("button.oad-btn-green").HasAttribute("disabled"));
+        cut.Find("button.oad-btn-green").Click();
+
+        Assert.Equal("", store.GetAll().Single().AuthorName);
+        Assert.True(notifier.Reader.TryRead(out var mail));
+        Assert.Contains("From       : no name given", mail!.Body);
+    }
+
+    [Fact]
+    public void A_forged_name_is_put_on_one_line_and_cut_to_the_forms_limit()
+    {
+        // A browser's one-line box can't send a line break or more than its maxlength; a client
+        // driving the live connection can send both, and the name has a line of its own in the
+        // author's email.
+        var notifier = RegisterForContact();
+        var store = Services.GetRequiredService<SuggestionStore>();
+        var cut = Render<Contact>();
+        SatisfyComposeFloor(cut.Instance, "_formShownAt");
+
+        cut.Find("#teaser").Input("a genuine riddle");
+        cut.Find("#solution").Input("the answer");
+        cut.Find("#author").Input("Sam\r\nSubmitted  : forged\t" + new string('N', 40_000));
+        cut.Find("button.oad-btn-green").Click();
+
+        var name = store.GetAll().Single().AuthorName;
+        Assert.Equal(TeaserSuggestion.MaxNameLength, name.Length);
+        Assert.StartsWith("Sam Submitted : forged N", name);
+        Assert.True(notifier.Reader.TryRead(out var mail));
+        Assert.DoesNotContain("\nSubmitted  : forged", mail!.Body.ReplaceLineEndings("\n"));
+    }
+
+    [Fact]
     public void A_honeypot_hit_saves_nothing_and_sends_nothing()
     {
         var notifier = RegisterForContact();
@@ -378,6 +439,7 @@ public class NotificationGatingTests : BunitContext
         var limit = TeaserSuggestion.MaxFieldLength.ToString();
         Assert.Equal(limit, contact.Find("#teaser").GetAttribute("maxlength"));
         Assert.Equal(limit, contact.Find("#solution").GetAttribute("maxlength"));
+        Assert.Equal(TeaserSuggestion.MaxNameLength.ToString(), contact.Find("#author").GetAttribute("maxlength"));
         Assert.Equal(IssueReport.MaxDetailsLength.ToString(),
             report.Find("#ri-details").GetAttribute("maxlength"));
     }

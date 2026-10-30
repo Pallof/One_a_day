@@ -95,8 +95,10 @@ before.
 **A long question's picture gives way.** In the two columns the picture takes what the question
 leaves: the window's height, less the rest of the page (377px, measured), less the question's
 lines. The server counts those as the question's length divided by 50 characters, which never
-undercounts a question in the bank, because the left column is the same width on every laptop. The
-picture is never taller than its usual size or shorter than 140px. Measured over all 25 questions:
+undercounts a question in the bank, because the left column is the same width on every laptop. A
+visitor's credit under the question *(2026-10-30)* counts the same way: a line of it with its gap
+measures 30px, the height of a question's line, and a long name's second line is counted in full
+though smaller. The picture is never taller than its usual size or shorter than 140px. Measured over all 25 questions:
 
 | Window | Fits without scrolling | Pictures made smaller |
 |---|---|---|

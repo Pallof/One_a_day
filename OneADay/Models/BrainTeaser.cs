@@ -53,6 +53,13 @@ public class BrainTeaser
     /// </summary>
     public string? NotAccepted { get; set; }
 
+    /// <summary>
+    /// The visitor who suggested this teaser, by the name they gave the Suggest a teaser form, so
+    /// they can be credited (author's decision, 2026-10-30). Null for the author's own teasers,
+    /// and for any saved before there was a field for it.
+    /// </summary>
+    public string? SuggestedBy { get; set; }
+
     public bool AcceptsAnswer(string submission) => Accepts(Answer, submission);
 
     /// <summary>Whether the author has ruled <paramref name="submission"/> wrong.</summary>

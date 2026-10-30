@@ -75,6 +75,39 @@ public class ChallengeLayoutTests : BunitContext
     }
 
     /// <summary>
+    /// A visitor's teaser credits them under the question, by the name they gave (author's
+    /// decision, 2026-10-30), and the credit's lines count with the question's, so the picture
+    /// gives way to it too.
+    /// </summary>
+    [Fact]
+    public void A_visitors_question_credits_them_and_its_picture_gives_way_to_the_credit()
+    {
+        var teaser = TeaserFactory.On("2026-08-12", new string('a', 50));
+        teaser.SuggestedBy = " Sam Rivera ";
+
+        var challenge = Render<ChallengeView>(p => p.Add(c => c.Teaser, teaser).Add(c => c.IsDaily, true));
+
+        var question = challenge.Find(".cv-question");
+        Assert.Equal("Today's question was given by Sam Rivera", question.QuerySelector(".cv-credit")!.TextContent.Trim());
+        Assert.Contains("--q-lines: 2", question.GetAttribute("style"));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("   ")]
+    public void A_question_with_no_one_to_credit_says_nothing_of_it(string? suggestedBy)
+    {
+        var teaser = TeaserFactory.On("2026-08-12", new string('a', 50));
+        teaser.SuggestedBy = suggestedBy;
+
+        var challenge = Render<ChallengeView>(p => p.Add(c => c.Teaser, teaser).Add(c => c.IsDaily, true));
+
+        Assert.Empty(challenge.FindAll(".cv-credit"));
+        Assert.DoesNotContain("given by", challenge.Markup);
+        Assert.Contains("--q-lines: 1", challenge.Find(".cv-question").GetAttribute("style"));
+    }
+
+    /// <summary>
     /// The grid puts the question on the left and everything else on the right, so everything
     /// else has to be one box: the answer box and the way to yesterday's solution.
     /// </summary>

@@ -115,6 +115,12 @@
                       @bind="_form.Solution"></textarea>
         </div>
 
+        <div class="oad-field">
+            <label for="suggested-by">Suggested by (optional)</label>
+            <input id="suggested-by" type="text" maxlength="@TeaserSuggestion.MaxNameLength"
+                   placeholder="The visitor to credit. Filled in from their suggestion." @bind="_form.SuggestedBy" />
+        </div>
+
         <div class="oad-admin-actions">
             <button class="oad-btn-green" @onclick="SaveAsync"
                     disabled="@(string.IsNullOrWhiteSpace(_form.Question) || string.IsNullOrWhiteSpace(_form.Answer) || PictureNeedsDescription)">
@@ -235,6 +241,7 @@
                         <div class="oad-suggestion-meta">
                             <span class="oad-suggestion-difficulty">@suggestion.Difficulty</span>
                             <span>@suggestion.SubmittedAt.ToString("d MMM yyyy, h:mm tt") PT</span>
+                            <span class="oad-suggestion-author">@(string.IsNullOrEmpty(suggestion.AuthorName) ? "No name given" : $"From {suggestion.AuthorName}")</span>
                         </div>
                         <p class="oad-suggestion-q">@suggestion.Question</p>
                         <p class="oad-suggestion-s"><strong>Solution:</strong> @suggestion.SolutionAndHint</p>
@@ -609,6 +616,7 @@
             NotAccepted = teaser.NotAccepted,
             Hint = teaser.Hint,
             Solution = teaser.Solution,
+            SuggestedBy = teaser.SuggestedBy,
         };
         _savedMessage = null;
         _dateWarning = null;
@@ -633,6 +641,9 @@
 
         _form.Tags = ParsedTags;
         _form.NotAccepted = string.IsNullOrWhiteSpace(_form.NotAccepted) ? null : _form.NotAccepted.Trim();
+        _form.SuggestedBy = string.IsNullOrWhiteSpace(_form.SuggestedBy)
+            ? null
+            : TextLimit.Clip(_form.SuggestedBy, TeaserSuggestion.MaxNameLength);
         _form.ImageAlt = string.IsNullOrWhiteSpace(_form.ImageFileName)
             ? null
             : TextLimit.Clip(_form.ImageAlt, MaxImageAltLength);
@@ -713,7 +724,8 @@
     private void UseSuggestion(TeaserSuggestion suggestion)
     {
         // Pre-fill the add form; the suggested solution lands in Solution for
-        // manual splitting into Answer/Solution before saving.
+        // manual splitting into Answer/Solution before saving, and the name to credit
+        // goes with it into the bank.
         DiscardStagedImage();
         _editingId = null;
         _originalImageName = null;
@@ -730,6 +742,7 @@
             Difficulty = Enum.TryParse<Difficulty>(suggestion.Difficulty, out var d) ? d : Difficulty.Medium,
             Question = suggestion.Question,
             Solution = suggestion.SolutionAndHint,
+            SuggestedBy = string.IsNullOrEmpty(suggestion.AuthorName) ? null : suggestion.AuthorName,
         };
         _savedMessage = null;
         _dateWarning = null;

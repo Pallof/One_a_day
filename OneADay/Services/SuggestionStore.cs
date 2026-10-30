@@ -7,6 +7,9 @@ public class TeaserSuggestion
     /// <summary>The longest teaser, or solution, the form takes. The server holds to it too.</summary>
     public const int MaxFieldLength = 600;
 
+    /// <summary>The longest name the form takes. The server holds to it too.</summary>
+    public const int MaxNameLength = 60;
+
     public Guid Id { get; set; } = Guid.NewGuid();
     public DateTime SubmittedAt { get; set; }
     public string Difficulty { get; set; } = "Medium";
@@ -16,6 +19,12 @@ public class TeaserSuggestion
     /// hints (2026-10-27); the name stays so suggestions already saved under it still load.
     /// </summary>
     public string SolutionAndHint { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The name to credit the teaser to if it's used (author's decision, 2026-10-30), or empty:
+    /// it's optional. Suggestions saved before the form asked load empty too.
+    /// </summary>
+    public string AuthorName { get; set; } = string.Empty;
 }
 
 /// <summary>What happened to a suggestion handed to <see cref="SuggestionStore.Add"/>.</summary>

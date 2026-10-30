@@ -53,11 +53,17 @@ rankings.
 
 ## Teaser suggestions (`/contact`)
 
-- **No published email address** — a form instead, with three fields: **difficulty**, **the
-  teaser**, and **solution** *(it asked for a hint too until the site stopped showing hints,
-  2026-10-27)*. The last two are required (Submit stays disabled until both
-  are filled) and capped at 600 characters, by the page and again by the server: the page's limit
-  only binds a browser, and a script on the live connection can send about 32,000 characters.
+- **No published email address** — a form instead, with four fields: **difficulty**, **the
+  teaser**, **solution** *(it asked for a hint too until the site stopped showing hints,
+  2026-10-27)*, and the sender's **name**. The teaser and the solution are required (Submit stays
+  disabled until both are filled) and capped at 600 characters, by the page and again by the
+  server: the page's limit only binds a browser, and a script on the live connection can send
+  about 32,000 characters.
+- **Name to credit**, optional, beside the difficulty so the page still fits a laptop's window
+  ([PRD 09](09-visual-design.md)) *(author's decision, 2026-10-30)*. Up to 60 characters on one line, by the page and again by the server, which also
+  folds any line breaks a script sends into spaces: the name has a line of its own in the email.
+  It's kept with the suggestion, shown in admin (*"From Sam"*, or *"No name given"*), and carried
+  into the teaser's **Suggested by** when the suggestion is used ([PRD 05](05-authoring-and-admin.md)).
 - After sending: a thank-you, and nothing more offered that day. A visitor over the limit sees a
   friendly explanation instead of the form.
 - In admin, suggestions show difficulty, time and text, and can be **copied straight into the
