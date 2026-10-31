@@ -52,9 +52,9 @@
 </header>
 
 @* The single place the reading column is capped and centred. Admin opts into the
-   wider measure because its tables don't fit a reading column, and today's challenge
-   and yesterday's solution into a split one that widens on a laptop for their two
-   columns — but the centring still happens here, not in the page. *@
+   wider measure because its tables don't fit a reading column, and today's challenge,
+   yesterday's solution and Twenty Four into a split one that widens on a laptop for their
+   two columns — but the centring still happens here, not in the page. *@
 <main id="oad-main" class="oad-main oad-measure @(IsWidePage ? "oad-measure-wide" : "") @(IsSplitPage ? "oad-measure-split" : "")">
     @Body
 </main>
@@ -120,17 +120,25 @@
     /// <summary>Today's challenge — the only page that offers the email sign-up.</summary>
     private bool IsHomePage => IsCurrent("");
 
-    /// <summary>The two pages that go to two columns on a laptop (PRD 09).</summary>
-    private bool IsSplitPage => IsHomePage || IsCurrent("yesterday");
+    /// <summary>
+    /// The pages that go to two columns on a laptop (PRD 09). Twenty Four under both its
+    /// addresses: /questions is the old one, kept for bookmarks.
+    /// </summary>
+    private bool IsSplitPage =>
+        IsHomePage || IsCurrent("yesterday") || IsCurrent("twentyfour") || IsCurrent("questions");
 
     protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => StateHasChanged();
 
-    /// <summary>Marks the active section, so the current page is obvious in the bar.</summary>
+    /// <summary>
+    /// Marks the active section, so the current page is obvious in the bar. The query and the
+    /// fragment don't count: "Skip to content" adds #oad-main, and the page lost its two columns
+    /// (cold review, 2026-10-30).
+    /// </summary>
     private bool IsCurrent(string href)
     {
-        var path = Nav.ToBaseRelativePath(Nav.Uri).Split('?')[0].TrimEnd('/');
+        var path = Nav.ToBaseRelativePath(Nav.Uri).Split('?', '#')[0].TrimEnd('/');
         return href.Length == 0 ? path.Length == 0 : path.Equals(href, StringComparison.OrdinalIgnoreCase);
     }
 

@@ -75,6 +75,40 @@ public class ChallengeLayoutTests : BunitContext
     }
 
     /// <summary>
+    /// A visitor's teaser credits them under the question, by the name they gave (author's
+    /// decision, 2026-10-30), and the credit's lines count with the question's, so the picture
+    /// gives way to it too.
+    /// </summary>
+    [Fact]
+    public void A_visitors_question_credits_them_and_its_picture_gives_way_to_the_credit()
+    {
+        var teaser = TeaserFactory.On("2026-08-12", new string('a', 50));
+        teaser.SuggestedBy = " Sam Rivera ";
+
+        var challenge = Render<ChallengeView>(p => p.Add(c => c.Teaser, teaser).Add(c => c.IsDaily, true));
+
+        var question = challenge.Find(".cv-question");
+        Assert.Equal("Today's question was given by Sam Rivera", question.QuerySelector(".cv-credit")!.TextContent.Trim());
+        Assert.Contains("--q-lines: 2", question.GetAttribute("style"));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("   ")]
+    [InlineData("\u3164")]   // a Hangul filler, in a bank edited by hand
+    public void A_question_with_no_one_to_credit_says_nothing_of_it(string? suggestedBy)
+    {
+        var teaser = TeaserFactory.On("2026-08-12", new string('a', 50));
+        teaser.SuggestedBy = suggestedBy;
+
+        var challenge = Render<ChallengeView>(p => p.Add(c => c.Teaser, teaser).Add(c => c.IsDaily, true));
+
+        Assert.Empty(challenge.FindAll(".cv-credit"));
+        Assert.DoesNotContain("given by", challenge.Markup);
+        Assert.Contains("--q-lines: 1", challenge.Find(".cv-question").GetAttribute("style"));
+    }
+
+    /// <summary>
     /// The grid puts the question on the left and everything else on the right, so everything
     /// else has to be one box: the answer box and the way to yesterday's solution.
     /// </summary>
@@ -119,16 +153,19 @@ public class ChallengeLayoutTests : BunitContext
     }
 
     /// <summary>
-    /// Only today's challenge and yesterday's solution widen for their two columns; every other
-    /// page keeps the reading column.
+    /// Only today's challenge, yesterday's solution and Twenty Four widen for their two columns;
+    /// every other page keeps the reading column. Twenty Four under its old address too.
     /// </summary>
     [Theory]
     [InlineData("", true)]
     [InlineData("yesterday", true)]
+    [InlineData("twentyfour", true)]
+    [InlineData("questions", true)]
+    [InlineData("twentyfour#oad-main", true)]   // after "Skip to content"
+    [InlineData("#oad-main", true)]
     [InlineData("about", false)]
     [InlineData("contact", false)]
-    [InlineData("twentyfour", false)]
-    public void Only_the_challenge_and_yesterdays_solution_widen_for_two_columns(string path, bool widens)
+    public void Only_the_two_column_pages_widen(string path, bool widens)
     {
         Services.GetRequiredService<NavigationManager>().NavigateTo(path);
         var layout = Render<MainLayout>(p => p.Add(l => l.Body, (RenderFragment)(_ => { })));

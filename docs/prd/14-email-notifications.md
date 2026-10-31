@@ -43,7 +43,7 @@ So:
 
 | Trigger | Subject | Body carries |
 |---|---|---|
-| New suggestion | `Stumpty · new teaser suggestion (Hard)` | difficulty, time, the teaser, the solution |
+| New suggestion | `Stumpty · new teaser suggestion (Hard)` | difficulty, time, who to credit (or "no name given"), the teaser, the solution |
 | Issue report | `Stumpty · issue reported (answer not accepted)` | category, page, time, the teaser on screen, the details |
 | A day passes the traffic alert line | `Stumpty · unusual traffic: 50,000 requests today` | requests served and turned away, yesterday's total, what to do |
 | Monday, from 7am Pacific | `Stumpty · the week in numbers, 28 Sep – 4 Oct` | last week's visitors and return rates, recycled days, list totals, Twenty Four; then each puzzle's question with saw → tried → solved ([PRD 16](16-site-metrics.md)) |

@@ -95,8 +95,10 @@ before.
 **A long question's picture gives way.** In the two columns the picture takes what the question
 leaves: the window's height, less the rest of the page (377px, measured), less the question's
 lines. The server counts those as the question's length divided by 50 characters, which never
-undercounts a question in the bank, because the left column is the same width on every laptop. The
-picture is never taller than its usual size or shorter than 140px. Measured over all 25 questions:
+undercounts a question in the bank, because the left column is the same width on every laptop. A
+visitor's credit under the question *(2026-10-30)* counts the same way: a line of it with its gap
+measures 30px, the height of a question's line, and a long name's second line is counted in full
+though smaller. The picture is never taller than its usual size or shorter than 140px. Measured over all 25 questions:
 
 | Window | Fits without scrolling | Pictures made smaller |
 |---|---|---|
@@ -122,6 +124,21 @@ Measured over all 25 questions, with each one's own solution:
 
 The one that never fits is held up by its solution, not its picture: the blurred solution takes
 its full height even before it's revealed, and that one alone is taller than the window.
+
+**Twenty Four follows suit** *(author's decision, 2026-10-30)*. At 1512 × 860 it was 1,105px tall,
+and up to 1,634px with a full board after a hand. From 1100px wide the game sits on the left and
+the board on the right. The board alone wasn't enough: beside it, the rules wrapped onto more
+lines and the answer box fell below the fold. So on a laptop most of the rules fold under "How to
+play", and a finished hand is dealt from the answer box rather than a box of its own
+([PRD 07](07-twenty-four.md), "On a laptop"). At its tallest, a full board after a hand, the page
+is 850px:
+
+| Window | Fits without scrolling |
+|---|---|
+| 1512 × 860 (the target) | yes, with 10px to spare |
+| 1920 × 1000 | yes |
+| 1440 × 790 (15-inch MacBook Pro) | no, 60px over at most |
+| 1536 × 730 | no, 120px over at most |
 
 ## Navigation
 
@@ -305,9 +322,14 @@ exists, showing it again is nagging.
 - [x] **Today's challenge on a laptop**, checked by measurement on 2026-10-23: two columns from
       1100px with no sideways scroll; one column, at 680px, at 1024px and on a 375px phone; every
       question in the bank fits 1512 × 860 and 1440 × 790, the long ones with a smaller picture
+- [x] **Twenty Four on a laptop**, checked by measurement on 2026-10-30: two columns from 1100px
+      with no sideways scroll; one column at 1099px and on a 375px phone, as before; 850px at its
+      tallest, which fits 1512 × 860
+- [x] A two-column page keeps its columns when the address has a `#` part, as after "Skip to
+      content" (before 2026-10-30 it fell back to the reading column)
 - [x] **What the two columns rely on** — `ChallengeLayoutTests`, each mutation-verified: the
       question's line count for its picture, 50 characters a line; the answer box and
-      yesterday's link in one column; only today's challenge widening the page
+      yesterday's link in one column; only the two-column pages widening the page
 - [x] Bootstrap is no longer loaded or shipped, and nothing regressed. Its address returns 404, and
       every route loads all of its files
 - [x] **The mascot** — `MascotTests`, each mutation-verified: the whole duck beside the name (with

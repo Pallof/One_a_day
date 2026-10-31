@@ -4,7 +4,8 @@ namespace OneADay.Components;
 /// About how many lines a question takes in the laptop layout's left column, on today's
 /// challenge and on yesterday's solution (PRD 09, "Fitting on one screen"). A long question's
 /// picture gives up that much height so the page still fits the window; the CSS reads the
-/// count from <c>--q-lines</c>.
+/// count from <c>--q-lines</c>. On today's challenge a visitor's credit under the question
+/// counts too, its smaller lines counted as if full size.
 /// </summary>
 public static class QuestionLines
 {

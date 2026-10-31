@@ -19,6 +19,22 @@
     margin-top: 0.5rem;
 }
 
+/* "How to play": a laptop's way to the rules it folds (see the markup, and the laptop section
+   at the end). Plain underlined text, not a button's box, so it reads as part of the rules. */
+.tf-how {
+    display: none;
+    margin-top: 0.5rem;
+    padding: 0;
+    background: none;
+    border: none;
+    color: var(--blue-deep);
+    font-weight: 700;
+    font-size: 0.97rem;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
 .tf-eg {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     background: var(--paper);
@@ -296,6 +312,12 @@
     padding: 0.45rem;
 }
 
+/* The laptop's way to the next hand, in the answer box where the three buttons were. */
+.tf-next-here {
+    display: none;
+    margin-top: 1rem;
+}
+
 /* Was a glossy gradient; now matches the calm blue panel used for
    "yesterday's solution", so the two share one visual language. */
 .tf-next {
@@ -333,6 +355,47 @@
 
 .tf-board h2 {
     margin-bottom: 0.25rem;
+}
+
+/* Folded, the title is all there is: no gap under it. */
+.tf-board-closed h2 {
+    margin-bottom: 0;
+}
+
+/* The whole title row folds and opens the board, the chevron at its far end saying which way. */
+.tf-board-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0;
+    background: none;
+    border: none;
+    font-weight: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+/* Points up while the board is open, down once it's folded. */
+.tf-chevron {
+    flex: none;
+    width: 0.55rem;
+    height: 0.55rem;
+    margin: 0.25rem 0.3rem 0 0;
+    border-right: 2px solid var(--ink-soft);
+    border-bottom: 2px solid var(--ink-soft);
+    transform: rotate(-135deg);
+    transition: transform 0.15s ease;
+}
+
+.tf-board-closed .tf-chevron {
+    margin-top: -0.25rem;
+    transform: rotate(45deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tf-chevron { transition: none; }
 }
 
 .tf-board-note {
@@ -407,4 +470,81 @@
     margin: 0;
     color: var(--ink-soft);
     font-size: 0.94rem;
+}
+
+/* --- on a laptop -------------------------------------------------------- */
+
+/* Two columns from 1100px, like today's challenge and yesterday's solution, so the page fits a
+   laptop's window (PRD 09, "Fitting on one screen"): the game on the left, the board on the
+   right. Moving the board alone wasn't enough. The narrower column made the rules wrap onto
+   more lines, and the answer box fell below the fold, so the rules marked tf-more fold under
+   "How to play", and a finished hand is dealt from the answer box rather than a box of its own.
+   The markup keeps the phone's order; the grid places each part. The last row soaks up the
+   board's extra height, so the left column stays packed at the top. The width comes from the
+   layout's .oad-measure-split, which widens at the same 1100px. */
+@media (min-width: 1100px) {
+    .tf-page {
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+        grid-template-rows: auto auto auto auto 1fr;
+        column-gap: 1.25rem;
+        align-items: start;
+    }
+
+    .tf-page > * {
+        grid-column: 1;
+    }
+
+    .tf-page > .oad-banner {
+        grid-column: 1 / -1;
+    }
+
+    .tf-page > .tf-board {
+        grid-column: 2;
+        grid-row: 2 / -1;
+    }
+
+    .tf-how {
+        display: inline-block;
+    }
+
+    .tf-rules-box:not(.tf-rules-open) .tf-more {
+        display: none;
+    }
+
+    /* Folded, "How to play" ends the last line showing rather than taking a line of its own. */
+    .tf-rules-box:not(.tf-rules-open) .tf-impossible:not(.tf-more) {
+        display: inline;
+    }
+
+    .tf-rules-box:not(.tf-rules-open) .tf-how {
+        margin: 0 0 0 0.35rem;
+    }
+
+    .tf-buttons-over,
+    .tf-next-box {
+        display: none;
+    }
+
+    /* One row, like the three buttons it stands in for, with the space bar beside it. */
+    .tf-next-here {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .tf-next-here .tf-next {
+        width: auto;
+    }
+
+    .tf-next-here .tf-next-hint {
+        margin: 0;
+    }
+
+    /* Today beside All time even in this narrower column: stacked, the board is twice as tall
+       as the window. */
+    .tf-board-lists {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 1.25rem;
+    }
 }

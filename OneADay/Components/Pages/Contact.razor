@@ -37,13 +37,24 @@
         }
         else
         {
-            <div class="oad-contact-field">
-                <label for="difficulty">Question difficulty</label>
-                <select id="difficulty" @bind="_difficulty">
-                    <option>Easy</option>
-                    <option>Medium</option>
-                    <option>Hard</option>
-                </select>
+            @* Side by side where there's room: the page fits a laptop's window without a scrollbar
+               (PRD 09), and the name on a row of its own cost that. *@
+            <div class="oad-contact-row">
+                <div class="oad-contact-field">
+                    <label for="difficulty">Question difficulty</label>
+                    <select id="difficulty" @bind="_difficulty">
+                        <option>Easy</option>
+                        <option>Medium</option>
+                        <option>Hard</option>
+                    </select>
+                </div>
+
+                <div class="oad-contact-field">
+                    <label for="author">Name to credit <span class="oad-contact-optional">(optional)</span></label>
+                    <input id="author" type="text" maxlength="@TeaserSuggestion.MaxNameLength" autocomplete="name"
+                           placeholder="If we use your teaser"
+                           @bind="_authorName" @bind:event="oninput" />
+                </div>
             </div>
 
             <div class="oad-contact-field">
@@ -82,6 +93,7 @@
     private string _difficulty = "Medium";
     private string _question = string.Empty;
     private string _solutionAndHint = string.Empty;
+    private string _authorName = string.Empty;
     private bool _submitted;
     private bool _limitReached;
 
@@ -155,6 +167,7 @@
             Difficulty = NormalisedDifficulty(),
             Question = TextLimit.Clip(_question, TeaserSuggestion.MaxFieldLength),
             SolutionAndHint = TextLimit.Clip(_solutionAndHint, TeaserSuggestion.MaxFieldLength),
+            AuthorName = OneLineName(),
         };
 
         var outcome = Suggestions.Add(suggestion, _visitorId, GetIpHash(), AppTime.Today);
@@ -173,6 +186,7 @@
 
                  Difficulty : {suggestion.Difficulty}
                  Submitted  : {suggestion.SubmittedAt:dddd d MMMM yyyy, h:mm tt} Pacific
+                 From       : {(suggestion.AuthorName.Length > 0 ? suggestion.AuthorName : "no name given")}
 
                  THE TEASER
                  {suggestion.Question}
@@ -192,6 +206,13 @@
             _limitReached = true;
         }
     }
+
+    /// <summary>
+    /// The name as <see cref="CreditName"/> cleans it, or empty if there's no name in it. A
+    /// browser's one-line box can't send a line break, but a client driving the live connection
+    /// can, and the name has a line of its own in the author's email.
+    /// </summary>
+    private string OneLineName() => CreditName.Clean(_authorName) ?? string.Empty;
 
     /// <summary>
     /// The chosen difficulty, forced back to a known value.

@@ -29,6 +29,7 @@ the author's copy of the data, not the live site's.
 | **Picture description** | with a picture | What the picture shows, in words. Screen readers read it out, and email apps that hold pictures back show it instead. **Add teaser** stays disabled until it's written. |
 | **Hint** | no | Kept with the teaser; the site doesn't show it (2026-10-27, [PRD 03](03-hints-and-solutions.md)). |
 | **Solution** | no | Shown on solving, and on `/yesterday` the day after the challenge runs. |
+| **Suggested by** | no | The visitor to credit for a suggested teaser, saved as `SuggestedBy` in `teasers.json` *(author's decision, 2026-10-30)*. **Use in form above** fills it from the name on the suggestion; blank saves as none, and teasers saved before the field load as none. Shown under today's question as *"Today's question was given by Sam"* ([PRD 01](01-daily-challenge.md)), so check it before the teaser goes live. |
 
 ### Scheduling
 
@@ -105,6 +106,8 @@ fetches the live one ([PRD 02](02-answer-evaluation.md#the-second-opinion-jev)).
 
 - [x] Date defaults to the next free day; duplicate dates are refused with a warning
 - [x] All fields round-trip through Edit without loss
+- [x] A suggestion's name goes into Suggested by and on into the bank; editing a credited teaser
+      keeps it, and emptying it saves none (`AdminLayoutTests`, mutation-verified)
 - [x] Image type/size validated server-side; orphaned files cleaned up
 - [x] Tags visible in admin, never rendered to solvers
 - [x] Deleting a teaser removes its stats and image

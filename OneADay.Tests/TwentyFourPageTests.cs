@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using Bunit;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.JSInterop;
 using OneADay.Components.Pages;
 using OneADay.Models;
 using OneADay.Services;
@@ -105,7 +106,7 @@ public class TwentyFourPageTests : BunitContext
         var rules = Regex.Replace(Render<TwentyFour>().FindAll(".oad-box")[0].TextContent, @"\s+", " ");
 
         Assert.Contains("If you think yours can't, press Impossible.", rules);
-        Assert.Contains("Each hand you solve, or rightly call impossible, adds one to your run.", rules);
+        Assert.Contains("Each hand you solve, or correctly call impossible, adds +1 to your run.", rules);
         Assert.Contains("Pass deals a fresh hand but ends your run, and so does calling a hand impossible when it can be done.", rules);
     }
 
@@ -240,7 +241,8 @@ public class TwentyFourPageTests : BunitContext
         Assert.Equal("Right, these four can't make 24. That starts a run.", Message(page));
         Assert.Contains("tf-correct", page.Find(".tf-message").ClassList);
         Assert.Equal("1", Run(page));
-        Assert.Single(page.FindAll("button.tf-next"));
+        // Twice: in the answer box for a laptop, and in a box of its own for a phone.
+        Assert.Equal(2, page.FindAll("button.tf-next").Count);
     }
 
     [Fact]
@@ -554,6 +556,155 @@ public class TwentyFourPageTests : BunitContext
 
         Assert.NotEqual(Guid.Empty, _player.Player!.Id);
         Assert.Equal(1, _player.Player.Number);
+    }
+
+    // ---- folding the board -----------------------------------------------------------
+
+    private static bool BoardShown(IRenderedComponent<TwentyFour> page) =>
+        !page.Find("#tf-board-body").HasAttribute("hidden");
+
+    [Fact]
+    public void The_board_folds_to_its_title_and_opens_again_and_the_browser_is_told_which()
+    {
+        var page = Render<TwentyFour>();
+        Assert.True(BoardShown(page));
+        Assert.Equal("true", page.Find("button.tf-board-toggle").GetAttribute("aria-expanded"));
+
+        page.Find("button.tf-board-toggle").Click();
+
+        Assert.False(BoardShown(page));
+        Assert.Equal("false", page.Find("button.tf-board-toggle").GetAttribute("aria-expanded"));
+        Assert.Contains("tf-board-closed", page.Find(".tf-board").ClassList);
+        Assert.Equal(true, JSInterop.Invocations["oadTwentyFour.setBoardHidden"].Last().Arguments[0]);
+
+        page.Find("button.tf-board-toggle").Click();
+
+        Assert.True(BoardShown(page));
+        Assert.DoesNotContain("tf-board-closed", page.Find(".tf-board").ClassList);
+        Assert.Equal(false, JSInterop.Invocations["oadTwentyFour.setBoardHidden"].Last().Arguments[0]);
+    }
+
+    [Fact]
+    public void A_board_folded_last_time_starts_folded()
+    {
+        JSInterop.Setup<bool>("oadTwentyFour.boardHidden").SetResult(true);
+
+        var page = Render<TwentyFour>();
+
+        Assert.False(BoardShown(page));
+        Assert.Equal("false", page.Find("button.tf-board-toggle").GetAttribute("aria-expanded"));
+    }
+
+    [Fact]
+    public void A_browser_that_cant_say_starts_with_the_board_open_and_still_folds_it()
+    {
+        JSInterop.Setup<bool>("oadTwentyFour.boardHidden").SetException(new JSException("storage is off"));
+        JSInterop.SetupVoid("oadTwentyFour.setBoardHidden", _ => true).SetException(new JSException("storage is off"));
+
+        var page = Render<TwentyFour>();
+        Assert.True(BoardShown(page));
+
+        page.Find("button.tf-board-toggle").Click();
+
+        Assert.False(BoardShown(page));
+    }
+
+    // ---- on a laptop -----------------------------------------------------------------
+    //
+    // From 1100px the board sits beside the game, so the page fits a laptop's window (PRD 09).
+    // The stylesheet folds the rules marked tf-more and hides the parts marked for a phone; these
+    // tests hold what it relies on in the markup.
+
+    private static string Normalised(AngleSharp.Dom.IElement e) => Regex.Replace(e.TextContent, @"\s+", " ").Trim();
+
+    [Fact]
+    public void Folded_on_a_laptop_the_rules_still_say_what_to_do_and_that_not_every_hand_can_make_24()
+    {
+        // "Not every hand can make 24" came from players' frustration (feedback, 2026-10-07), so
+        // it never folds away.
+        var rules = Render<TwentyFour>().Find(".tf-rules-box");
+
+        var shown = rules.QuerySelectorAll("p:not(.tf-more)").Select(Normalised).ToArray();
+        var folded = rules.QuerySelectorAll("p.tf-more").Select(Normalised).ToArray();
+
+        Assert.Equal(2, shown.Length);
+        Assert.StartsWith("Make 24 from all four numbers", shown[0]);
+        Assert.StartsWith("Not every hand can make 24.", shown[1]);
+        Assert.Equal(3, folded.Length);
+        Assert.StartsWith("Each number must be used exactly once.", folded[0]);
+        Assert.StartsWith("Each hand you solve", folded[1]);
+        Assert.StartsWith("For example", folded[2]);
+    }
+
+    [Fact]
+    public void How_to_play_opens_the_folded_rules_and_Show_less_folds_them_again()
+    {
+        var page = Render<TwentyFour>();
+
+        Assert.DoesNotContain("tf-rules-open", page.Find(".tf-rules-box").ClassList);
+        Assert.Equal("false", page.Find("button.tf-how").GetAttribute("aria-expanded"));
+        Assert.Equal("How to play", page.Find("button.tf-how").TextContent.Trim());
+
+        page.Find("button.tf-how").Click();
+
+        Assert.Contains("tf-rules-open", page.Find(".tf-rules-box").ClassList);
+        Assert.Equal("true", page.Find("button.tf-how").GetAttribute("aria-expanded"));
+        Assert.Equal("Show less", page.Find("button.tf-how").TextContent.Trim());
+
+        page.Find("button.tf-how").Click();
+
+        Assert.DoesNotContain("tf-rules-open", page.Find(".tf-rules-box").ClassList);
+        Assert.Equal("How to play", page.Find("button.tf-how").TextContent.Trim());
+    }
+
+    [Fact]
+    public void How_to_play_names_every_paragraph_it_opens()
+    {
+        // They're before it in the page as well as after, so a screen reader needs telling where
+        // they are (cold review, 2026-10-30).
+        var page = Render<TwentyFour>();
+
+        var controlled = page.Find("button.tf-how").GetAttribute("aria-controls")!.Split(' ');
+        var folded = page.FindAll(".tf-rules-box p.tf-more").Select(p => p.Id).ToArray();
+
+        Assert.Equal(3, folded.Length);
+        Assert.Equal(folded, controlled);
+    }
+
+    [Fact]
+    public void Once_a_hand_is_over_a_laptop_deals_the_next_from_where_the_buttons_were()
+    {
+        var page = Dealt(1, 1, 1, 1);
+        Assert.Empty(page.FindAll(".tf-next-here"));
+        Assert.DoesNotContain("tf-buttons-over", page.Find(".tf-buttons").ClassList);
+
+        page.Find("button.tf-call").Click();
+
+        Assert.Contains("tf-buttons-over", page.Find(".tf-buttons").ClassList);
+        var answerBox = page.Find("input.tf-input").ParentElement!;
+        Assert.NotNull(answerBox.QuerySelector(".tf-next-here button.tf-next"));
+        Assert.NotNull(answerBox.QuerySelector(".tf-next-here .tf-next-hint"));
+        // A phone's own box is still there, for the stylesheet to show there instead.
+        Assert.Single(page.FindAll(".tf-next-box button.tf-next"));
+
+        page.Find(".tf-next-here button.tf-next").Click();
+
+        Assert.Empty(page.FindAll(".tf-next-here"));
+        Assert.Empty(page.FindAll(".tf-next-box"));
+        Assert.DoesNotContain("tf-buttons-over", page.Find(".tf-buttons").ClassList);
+        Assert.False(page.Find("input.tf-input").HasAttribute("disabled"));
+    }
+
+    [Fact]
+    public void The_parts_the_laptop_grid_places_are_the_pages_own_children()
+    {
+        // The grid places .tf-page's children: the banner across the top, the board on the right,
+        // the rest down the left. Wrapped in anything, a part would lose its place.
+        var page = Render<TwentyFour>().Find(".tf-page");
+
+        Assert.Contains("oad-banner", page.Children[0].ClassList);
+        Assert.Contains("tf-rules-box", page.Children[1].ClassList);
+        Assert.Contains("tf-board", page.Children[^1].ClassList);
     }
 
     protected override void Dispose(bool disposing)

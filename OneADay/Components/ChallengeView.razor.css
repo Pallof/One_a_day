@@ -32,6 +32,20 @@
     line-height: 1.55;
 }
 
+/* A visitor's credit, at the foot of the question card. Quiet, like the note above the
+   question. Its first line, with the gap above it, is as tall as a line of the question (1.86rem),
+   so QuestionLines counts it as one and a laptop's picture gives way to it. */
+.cv-credit {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    font-style: italic;
+    color: var(--ink-soft);
+    /* A name with no spaces, such as a web address, would otherwise run past the card and
+       scroll a phone's page sideways. */
+    overflow-wrap: anywhere;
+}
+
 .cv-image {
     display: block;
     max-width: 100%;

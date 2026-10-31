@@ -9,8 +9,18 @@
 @inject IHttpContextAccessor HttpAccessor
 @implements IDisposable
 
+@{
+    // Credit for a visitor's teaser, by the name they gave the Suggest a teaser form (author's
+    // decision, 2026-10-30). The author sees it in admin before the teaser goes live, and can
+    // change or clear it there (PRD 05). Cleaned here too, for a bank edited by hand.
+    var credit = CreditName.Clean(Teaser.SuggestedBy) is { } name
+        ? $"Today's question was given by {name}"
+        : null;
+}
+
 <div class="cv">
-    <div class="oad-box cv-question" style="--q-lines: @QuestionLines.Of(Teaser.Question)">
+    @* The credit's lines count with the question's: its picture gives way to both. *@
+    <div class="oad-box cv-question" style="--q-lines: @(QuestionLines.Of(Teaser.Question) + (credit is null ? 0 : QuestionLines.Of(credit)))">
         <div class="cv-question-head">
             <h2>Question:</h2>
             <DifficultyBadge Level="Teaser.Difficulty" />
@@ -25,6 +35,11 @@
         @if (!string.IsNullOrWhiteSpace(Teaser.ImageFileName))
         {
             <img class="cv-image" src="@($"{ImageStore.RequestPath}/{Teaser.ImageFileName}")" alt="@Teaser.ImageDescription()" />
+        }
+
+        @if (credit is not null)
+        {
+            <p class="cv-credit">@credit</p>
         }
     </div>
 
