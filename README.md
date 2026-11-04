@@ -36,8 +36,8 @@ Built with **C# / Blazor Server (.NET 10)**.
   runs go on a scoreboard, today's and of all time, under given names like *Otter 17*, numbered in the order players joined
 
 **For the author (`/admin`)**
-- Add, edit, delete, and schedule teasers; the date defaults to the next free day
-  so a whole week can be queued in one sitting
+- Add, edit, delete, and queue teasers; new ones run first, one a day in date order,
+  and the date defaults to the back of the queue so a whole week can be queued in one sitting
 - Set difficulty, attach a support image, and apply backend-only tags for sorting
 - Review visitor suggestions and promote good ones straight into the add form
 - Per-teaser stats: answers sent and success rate
@@ -81,7 +81,8 @@ Open the **☰ menu → Add a teaser (admin)**, or go straight to `/admin`.
 
 | Field | Notes |
 |---|---|
-| **Show on date** | The day it becomes the Challenge of the day. Defaults to the next free date. |
+| **Date** | Its place in the queue: new teasers run one a day in date order, from the day after they're uploaded, and a gap closes up. Defaults to the day after the last one waiting. |
+| **Pin to this date** | Runs it on exactly its date and never before, for a holiday question. Off by default. |
 | **Difficulty** | Easy / Medium / Hard — shown to solvers as a colour-coded badge. |
 | **Question** | The teaser itself. |
 | **Answer** | Separate alternative accepted answers with `;` — e.g. `48; 48 mph; forty-eight`. |

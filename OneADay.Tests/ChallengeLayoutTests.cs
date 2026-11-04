@@ -30,11 +30,16 @@ public class ChallengeLayoutTests : BunitContext
         JSInterop.Mode = JSRuntimeMode.Loose;
         // Two days, so yesterday's solution has something to show that isn't today's challenge.
         var today = AppTime.Today;
-        _env.SeedTeasers(
-            TeaserFactory.On(today.ToString("yyyy-MM-dd"), "Today's question?"),
-            TeaserFactory.On(today.AddDays(-1).ToString("yyyy-MM-dd"), YesterdaysQuestion,
-                             hint: "Think it through.", solution: "Because."));
-        Services.AddSingleton(new DailySchedule(_env.NewTeaserStore(), _env.NewRotationStore()));
+        var todays = TeaserFactory.On(today.ToString("yyyy-MM-dd"), "Today's question?");
+        var yesterdays = TeaserFactory.On(today.AddDays(-1).ToString("yyyy-MM-dd"), YesterdaysQuestion,
+                                          hint: "Think it through.", solution: "Because.");
+        _env.SeedTeasers(todays, yesterdays);
+        // Each day settled on its question, as the site would have. A date alone no longer says
+        // which day a question runs (PRD 08).
+        var rotation = _env.NewRotationStore();
+        rotation.RecordScheduled(today.AddDays(-1), yesterdays.Id);
+        rotation.RecordScheduled(today, todays.Id);
+        Services.AddSingleton(new DailySchedule(_env.NewTeaserStore(), rotation));
         Services.AddReportDialog(_env);         // the layout carries it on every page
         Services.AddSingleton(_env.NewStatsStore());
         Services.AddDataProtection();

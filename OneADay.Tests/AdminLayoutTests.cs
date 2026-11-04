@@ -30,6 +30,7 @@ public class AdminLayoutTests : BunitContext
         Services.AddSingleton(new ImageStore(_env));
         Services.AddSingleton(_env.NewIssueStore());
         Services.AddSingleton(_env.NewRotationStore());
+        Services.AddSingleton<DailySchedule>();
         Services.AddSingleton(_env.NewMetricsStore());
         Services.AddSingleton(new JudgedAnswerStore(_env));
         Services.AddSingleton(new AgreedVerdictStore(_env));
@@ -61,8 +62,12 @@ public class AdminLayoutTests : BunitContext
     {
         // The recycling box's count is the only warning that the queue is running dry, so
         // it has to survive the section being collapsed. The number, not just its label:
-        // "scheduled ahead" alone would still be there with the count dropped.
-        Services.GetRequiredService<TeaserStore>().Save(new BrainTeaser
+        // "new waiting" alone would still be there with the count dropped. The seeded question
+        // has run, so only the one added here is waiting (PRD 08).
+        var store = Services.GetRequiredService<TeaserStore>();
+        Services.GetRequiredService<RotationStore>()
+            .RecordScheduled(AppTime.Today.AddDays(-1), store.GetAll().Single().Id);
+        store.Save(new BrainTeaser
         {
             Date = AppTime.Today.AddDays(3),
             Difficulty = Difficulty.Easy,
@@ -73,7 +78,75 @@ public class AdminLayoutTests : BunitContext
 
         var recycling = page.FindAll("details.oad-admin-section")[2];
 
-        Assert.Contains("1 scheduled ahead", recycling.QuerySelector("summary")!.TextContent);
+        Assert.Contains("1 new waiting", recycling.QuerySelector("summary")!.TextContent);
+    }
+
+    [Fact]
+    public void The_recycling_box_lists_the_questions_up_next_with_the_day_each_runs()
+    {
+        // A date sets the order rather than the day (PRD 08), so admin says when each will run.
+        var store = Services.GetRequiredService<TeaserStore>();
+        Services.GetRequiredService<RotationStore>().RecordScheduled(AppTime.Today, store.GetAll().Single().Id);
+        store.Save(new BrainTeaser { Date = AppTime.Today.AddDays(9), Question = "dated well ahead", Answer = "a" });
+        store.Save(new BrainTeaser { Date = AppTime.Today.AddDays(5), Question = "for a holiday", Answer = "a", Pinned = true });
+
+        var rows = Render<Admin>().FindAll(".oad-upcoming-table tbody tr")
+            .Select(r => r.QuerySelectorAll("td").Select(td => td.TextContent.Trim()).ToArray())
+            .ToList();
+
+        Assert.Equal(2, rows.Count);
+        Assert.Equal([AppTime.Today.AddDays(1).ToString("ddd d MMM"), "dated well ahead", "new"], rows[0]);
+        Assert.Equal([AppTime.Today.AddDays(5).ToString("ddd d MMM"), "for a holiday", "pinned"], rows[1]);
+    }
+
+    [Fact]
+    public void The_date_defaults_to_the_back_of_the_queue_skipping_a_taken_date()
+    {
+        // The day after the last question waiting, gap or no gap, so it queues behind them and its
+        // date is the day it runs. A pinned question's date is taken but isn't the queue's end.
+        var store = Services.GetRequiredService<TeaserStore>();
+        Services.GetRequiredService<RotationStore>().RecordScheduled(AppTime.Today, store.GetAll().Single().Id);
+        store.Save(new BrainTeaser { Date = AppTime.Today.AddDays(2), Question = "waiting 1", Answer = "a" });
+        store.Save(new BrainTeaser { Date = AppTime.Today.AddDays(4), Question = "waiting 2", Answer = "a" });
+        store.Save(new BrainTeaser { Date = AppTime.Today.AddDays(5), Question = "pinned", Answer = "a", Pinned = true });
+        store.Save(new BrainTeaser { Date = AppTime.Today.AddDays(9), Question = "pinned later", Answer = "a", Pinned = true });
+
+        var page = Render<Admin>();
+
+        Assert.Equal(AppTime.Today.AddDays(6).ToString("yyyy-MM-dd"), page.Find("#date").GetAttribute("value"));
+    }
+
+    [Fact]
+    public void The_date_defaults_to_the_day_a_new_question_would_run_when_those_waiting_are_dated_behind()
+    {
+        // Two waiting with dates already gone run tomorrow and the day after, so a third would run
+        // the day after that, not tomorrow.
+        var store = Services.GetRequiredService<TeaserStore>();
+        Services.GetRequiredService<RotationStore>().RecordScheduled(AppTime.Today, store.GetAll().Single().Id);
+        store.Save(new BrainTeaser { Date = AppTime.Today.AddDays(-5), Question = "waiting 1", Answer = "a" });
+        store.Save(new BrainTeaser { Date = AppTime.Today.AddDays(-4), Question = "waiting 2", Answer = "a" });
+
+        var page = Render<Admin>();
+
+        Assert.Equal(AppTime.Today.AddDays(3).ToString("yyyy-MM-dd"), page.Find("#date").GetAttribute("value"));
+    }
+
+    [Fact]
+    public void A_question_saved_with_the_pin_ticked_is_pinned_to_its_date()
+    {
+        var page = Render<Admin>();
+        var day = AppTime.Today.AddDays(20);
+
+        page.Find("#date").Change(day.ToString("yyyy-MM-dd"));
+        page.Find("#pinned").Change(true);
+        page.Find("#question").Change("a holiday question");
+        page.Find("#answer").Change("a");
+        page.Find("button.oad-btn-green").Click();
+
+        var saved = Services.GetRequiredService<TeaserStore>().GetAll().Single(t => t.Question == "a holiday question");
+        Assert.True(saved.Pinned);
+        Assert.Equal(day, saved.Date);
+        Assert.Contains($"is pinned to {day:dddd d MMMM yyyy}", page.Find(".oad-saved").TextContent);
     }
 
     [Fact]

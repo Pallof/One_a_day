@@ -36,8 +36,9 @@ on a busy Thursday. Three conveniences would help:
    scheduled, naming the last scheduled date.
 2. It states the gap — e.g. *"Nothing scheduled after Mon 3 Aug. Tomorrow is empty."*
 3. It tells **"tomorrow is empty"** (urgent) apart from **"running low"** (soon).
-4. A **gap mid-schedule** (a skipped date between two scheduled ones) is flagged too, since
-   recycling hides it from solvers.
+4. ~~A **gap mid-schedule** (a skipped date between two scheduled ones) is flagged too, since
+   recycling hides it from solvers.~~ *Dropped 2026-11-04: a gap in the dates now closes up, so
+   it never reaches solvers as a repeat ([PRD 08](08-recycling-rotation.md)).*
 5. Optional: a quiet reminder for the author only — never shown to solvers.
 
 ### Bulk import

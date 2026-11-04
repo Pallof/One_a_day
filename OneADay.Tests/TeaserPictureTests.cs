@@ -37,6 +37,7 @@ public class TeaserPictureTests : BunitContext
         Services.AddSingleton(new ImageStore(_env));
         Services.AddSingleton(_env.NewIssueStore());
         Services.AddSingleton(_env.NewRotationStore());
+        Services.AddSingleton<DailySchedule>();
         Services.AddSingleton(_env.NewMetricsStore());
         Services.AddSingleton(new JudgedAnswerStore(_env));
         Services.AddSingleton(new AgreedVerdictStore(_env));
@@ -83,7 +84,9 @@ public class TeaserPictureTests : BunitContext
         page.Find("#image-alt").Input(Poles);
         SaveButton(page).Click();
 
-        page.FindAll("tr").Single(row => row.TextContent.Contains("How far apart are the poles?"))
+        // The teaser table's row: the recycling box's Up next list names the question too.
+        page.FindAll("tr").Where(row => row.QuerySelector("td.oad-cell-actions") is not null)
+            .Single(row => row.TextContent.Contains("How far apart are the poles?"))
             .QuerySelectorAll("td.oad-cell-actions button").Single(b => b.TextContent == "Edit").Click();
 
         Assert.Equal(Poles, page.Find("#image-alt").GetAttribute("value") ?? page.Find("#image-alt").TextContent);

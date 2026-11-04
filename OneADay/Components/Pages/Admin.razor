@@ -9,6 +9,7 @@
 @inject ImageStore Images
 @inject IssueStore Issues
 @inject RotationStore Rotation
+@inject DailySchedule Schedule
 @inject JudgedAnswerStore Judged
 @inject AgreedVerdictStore Agreed
 @inject Microsoft.Extensions.Options.IOptions<JevOptions> JevSettings
@@ -20,8 +21,17 @@
 
     <div class="oad-box">
         <div class="oad-field">
-            <label for="date">Show on date</label>
+            <label for="date">Date</label>
             <InputDate id="date" @bind-Value="_form.Date" />
+            <span class="oad-pin">
+                <InputCheckbox id="pinned" @bind-Value="_form.Pinned" />
+                <label for="pinned">Pin to this date</label>
+            </span>
+            <span class="oad-field-note">
+                New questions run one a day in date order, from the day after they're uploaded, ahead
+                of any repeat. A gap in the dates closes up. Pin a question to run it on exactly this
+                date and never before, for a holiday say.
+            </span>
             @if (_dateWarning is not null)
             {
                 <span class="oad-warning">@_dateWarning</span>
@@ -175,8 +185,15 @@
                     <tbody>
                         @foreach (var teaser in _all)
                         {
-                            <tr class="@(teaser.Date == _today ? "oad-row-today" : teaser.Date > _today ? "oad-row-future" : "")">
-                                <td class="oad-cell-date">@teaser.Date.ToString("ddd d MMM yyyy")</td>
+                            @* Highlighted: the question running today. Faded: one still waiting to run. *@
+                            <tr class="@(teaser.Id == _runningToday ? "oad-row-today" : !_shown.Contains(teaser.Id) ? "oad-row-future" : "")">
+                                <td class="oad-cell-date">
+                                    @teaser.Date.ToString("ddd d MMM yyyy")
+                                    @if (teaser.Pinned)
+                                    {
+                                        <span class="oad-tag-chip oad-pinned-chip">pinned</span>
+                                    }
+                                </td>
                                 <td><DifficultyBadge Level="teaser.Difficulty" /></td>
                                 <td>@Truncate(teaser.Question, 80)</td>
                                 <td class="oad-cell-tags">
@@ -258,21 +275,44 @@
     <details class="oad-admin-section">
         <summary class="oad-banner">
             <span>Recycling box</span>
-            <span class="oad-section-count">@_queueAhead scheduled ahead</span>
+            <span class="oad-section-count">@_waiting new waiting</span>
             <span class="oad-chevron" aria-hidden="true"></span>
         </summary>
 
         <div class="oad-box">
             <p class="oad-rotation-lead">
-                New teasers always run on their own date. Once the queue is empty, past
-                teasers are drawn from a box without replacement, so none repeats until the
-                box refills. Teasers shown less often are weighted to come up sooner.
+                New questions run first, one a day in date order, from the day after they arrive.
+                A gap in the dates closes up, and a day already settled never changes. A pinned
+                question runs on exactly its date. When the new questions have all run, the box is
+                reshuffled with every question in it. From then on questions are drawn without
+                replacement, so none repeats until the box refills, and ones shown less often are
+                weighted to come up sooner. This is this Mac's copy of the history: stop the site
+                and run <code>sh deploy/pull-live-data.sh</code> for the live one.
             </p>
             <p class="oad-rotation-state">
                 <strong>@_boxRemaining</strong> of <strong>@_bankSize</strong> still in the box
                 &middot; refills at @TeaserRotation.RefillThreshold(_bankSize) left
-                &middot; <strong>@_queueAhead</strong> new @Wording.Plural(_queueAhead, "teaser") scheduled ahead
+                &middot; <strong>@_waiting</strong> new @Wording.Plural(_waiting, "question") waiting
             </p>
+
+            @if (_upcoming.Count > 0)
+            {
+                <div class="oad-admin-table-scroll">
+                <table class="oad-admin-table oad-rotation-table oad-upcoming-table">
+                    <thead><tr><th>Up next</th><th>Question</th><th>Source</th></tr></thead>
+                    <tbody>
+                        @foreach (var (day, teaser) in _upcoming)
+                        {
+                            <tr>
+                                <td class="oad-cell-date">@day.ToString("ddd d MMM")</td>
+                                <td>@Truncate(teaser.Question, 60)</td>
+                                <td>@(teaser.Pinned ? "pinned" : "new")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                </div>
+            }
 
             @if (_recentRuns.Count > 0)
             {
@@ -493,7 +533,12 @@
     }
     private int _boxRemaining;
     private int _bankSize;
-    private int _queueAhead;
+
+    /// <summary>Questions that have never run, by this Mac's copy of the history (PRD 08).</summary>
+    private int _waiting;
+    private IReadOnlySet<Guid> _shown = new HashSet<Guid>();
+    private Guid? _runningToday;
+    private IReadOnlyList<(DateOnly Day, BrainTeaser Teaser)> _upcoming = [];
 
     private void ResetBox()
     {
@@ -525,8 +570,11 @@
         _boxRemaining = snapshot.Remaining;
         _recentRuns = snapshot.Recent;
         _showCounts = snapshot.ShowCounts;
-        _bankSize = Store.ReleasedOn(_today).Count;
-        _queueAhead = _all.Count(t => t.Date > _today);
+        _bankSize = Schedule.BankOn(_today).Count;
+        _shown = Rotation.ShownIds();
+        _waiting = _all.Count(t => !_shown.Contains(t.Id));
+        _runningToday = Rotation.RunFor(_today)?.TeaserId;
+        _upcoming = Schedule.Upcoming(_today.AddDays(1));
 
         _toReview = Judged.GetAll()
             .Select(j => (Judged: j, Teaser: _all.FirstOrDefault(t => t.Id == j.TeaserId)))
@@ -587,14 +635,36 @@
         _tagsText = string.Empty;
         _imageError = null;
         _imageNote = null;
-        // Default to the first upcoming day that doesn't have a teaser yet.
-        var date = _today;
+        _form = new BrainTeaser { Date = BackOfTheQueue() };
+        _dateWarning = null;
+    }
+
+    /// <summary>
+    /// The default date: after the last question still waiting, both its date and the day it
+    /// runs, and no earlier than tomorrow, skipping a date already taken. So a new question goes
+    /// to the back of the queue, and its date is usually the day it runs (PRD 05).
+    /// </summary>
+    private DateOnly BackOfTheQueue()
+    {
+        var shown = Rotation.ShownIds();
+        var lastDate = Store.GetAll()
+            .Where(t => !t.Pinned && !shown.Contains(t.Id))
+            .Select(t => t.Date)
+            .DefaultIfEmpty(_today)
+            .Max();
+        // A gap or a date already gone moves the day a question runs away from its date. A pin on
+        // its own day is skipped below as a taken date.
+        var lastDay = Schedule.Upcoming(_today.AddDays(1))
+            .Where(u => !(u.Teaser.Pinned && u.Day == u.Teaser.Date))
+            .Select(u => u.Day)
+            .DefaultIfEmpty(_today)
+            .Max();
+        var date = new[] { lastDate, lastDay, _today }.Max().AddDays(1);
         while (Store.GetForDate(date) is not null)
         {
             date = date.AddDays(1);
         }
-        _form = new BrainTeaser { Date = date };
-        _dateWarning = null;
+        return date;
     }
 
     private void Edit(BrainTeaser teaser)
@@ -607,6 +677,7 @@
         {
             Id = teaser.Id,
             Date = teaser.Date,
+            Pinned = teaser.Pinned,
             Difficulty = teaser.Difficulty,
             Tags = new List<string>(teaser.Tags),
             ImageFileName = teaser.ImageFileName,
@@ -653,10 +724,27 @@
             Images.Delete(_originalImageName);
         }
 
-        _savedMessage = $"Saved! \"{Truncate(_form.Question, 50)}\" will show on {_form.Date:dddd d MMMM yyyy}.";
+        _savedMessage = SavedMessage(_form);
         ResetForm(discardStaged: false);   // the image just saved is now committed
         Refresh();
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// When the question just saved is due, from this Mac's copy of the history. A question that
+    /// has run before, and isn't pinned ahead, comes back through the box, so it has no day.
+    /// </summary>
+    private string SavedMessage(BrainTeaser saved)
+    {
+        var question = Truncate(saved.Question, 50);
+        var due = Schedule.Upcoming(_today.AddDays(1)).FirstOrDefault(u => u.Teaser.Id == saved.Id);
+        if (due.Teaser is null)
+        {
+            return $"Saved! \"{question}\".";
+        }
+        return saved.Pinned && due.Day == saved.Date
+            ? $"Saved! \"{question}\" is pinned to {due.Day:dddd d MMMM yyyy}."
+            : $"Saved! \"{question}\" is due on {due.Day:dddd d MMMM yyyy}.";
     }
 
     private async Task OnImageSelected(InputFileChangeEventArgs e)
@@ -729,14 +817,9 @@
         _originalImageName = null;
         _tagsText = string.Empty;
         _imageError = null;
-        var date = _today;
-        while (Store.GetForDate(date) is not null)
-        {
-            date = date.AddDays(1);
-        }
         _form = new BrainTeaser
         {
-            Date = date,
+            Date = BackOfTheQueue(),
             Difficulty = Enum.TryParse<Difficulty>(suggestion.Difficulty, out var d) ? d : Difficulty.Medium,
             Question = suggestion.Question,
             Solution = suggestion.SolutionAndHint,

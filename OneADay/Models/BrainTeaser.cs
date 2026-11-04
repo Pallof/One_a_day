@@ -16,8 +16,18 @@ public class BrainTeaser
 {
     public Guid Id { get; set; } = Guid.NewGuid();
 
-    /// <summary>The day this teaser is shown as the "Challenge of the day".</summary>
+    /// <summary>
+    /// Where a new teaser stands in the queue. New teasers run one a day, earliest date first,
+    /// so a gap or a date already gone closes up (PRD 08). Only a <see cref="Pinned"/> teaser is
+    /// held to its date.
+    /// </summary>
     public DateOnly Date { get; set; }
+
+    /// <summary>
+    /// Runs on exactly <see cref="Date"/> and never before it, a holiday question say. Afterwards
+    /// it recycles like any other (author's decision, 2026-11-04).
+    /// </summary>
+    public bool Pinned { get; set; }
 
     public Difficulty Difficulty { get; set; } = Difficulty.Medium;
 
