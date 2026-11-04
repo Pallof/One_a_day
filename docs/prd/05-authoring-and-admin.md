@@ -7,7 +7,7 @@
 One person writes every puzzle by hand, so adding one has to be fast. The realistic failure isn't
 a bug — it's the author not getting round to it, the queue running dry, and the site breaking its
 only promise. This page is the form: question, accepted answers, and an optional hint, explanation
-and picture. The date defaults to the next empty day, so a week can be queued in one sitting.
+and picture. The date defaults to the back of the queue, so a week can be queued in one sitting.
 
 It exists **only on the author's computer**; teasers reach the live site by copying `teasers.json`
 across ([PRD 10](10-admin-authentication.md)). So the review queues and rotation reset below act on
@@ -19,7 +19,8 @@ the author's copy of the data, not the live site's.
 
 | Field | Required | Behaviour |
 |---|---|---|
-| **Show on date** | yes | The day it becomes the challenge. Defaults to the **next date with no teaser**, so repeated adds queue forward. |
+| **Date** | yes | Its place in the queue of new teasers, which run one a day in date order from the day after they're uploaded ([PRD 08](08-recycling-rotation.md)). Defaults to **after the last teaser waiting**, both its date and the day it will run, no earlier than tomorrow, skipping a taken date. So repeated adds queue forward, and the date is normally the day it runs. *Until 2026-11-04 this was "Show on date", and a date was a promise.* |
+| **Pin to this date** | no (off) | Runs it on exactly its date and never before, for a holiday question say ([PRD 08](08-recycling-rotation.md#pinning-a-teaser-to-a-day)). Shown as a **pinned** chip in the teaser table. |
 | **Difficulty** | yes (default Medium) | Easy / Medium / Hard, shown to solvers as a pill with a green, gold or red dot ([PRD 09](09-visual-design.md)). |
 | **Question** | yes | The teaser text. |
 | **Answer** | yes | Accepted answers, separated by `;` ([PRD 02](02-answer-evaluation.md)). |
@@ -34,9 +35,13 @@ the author's copy of the data, not the live site's.
 ### Scheduling
 
 - Two teasers never share a date: trying must **warn and refuse**, never silently overwrite.
-- Dates may be any distance ahead.
-- Gaps are allowed — recycling fills them ([PRD 08](08-recycling-rotation.md)), so solvers never see
-  a dry spell. **The author still needs to know**, which is what the rotation panel is for.
+- Dates may be any distance ahead or behind. For a new teaser, a gap or a date already gone just
+  closes up; only a pinned teaser waits for its date ([PRD 08](08-recycling-rotation.md)).
+- Saving says when the teaser is due, by this Mac's copy of the history: *"is due on Thursday 5
+  November"*, or *"is pinned to Friday 25 December 2026"*. A teaser that has run before and isn't
+  pinned ahead has no day, since it comes back through the box.
+- Once the queue is empty, recycling fills the days, so solvers never see a dry spell. **The author
+  still needs to know**, which is what the rotation panel is for.
 
 ### Support images
 
@@ -60,8 +65,9 @@ the author's copy of the data, not the live site's.
 ### Teaser table
 
 - Every teaser, scheduled and past: date, difficulty, question, tags, answer, statistics, and a
-  **Shown** count with its current draw weight ([PRD 08](08-recycling-rotation.md)). Today's row
-  is highlighted; future rows are faded.
+  **Shown** count with its current draw weight ([PRD 08](08-recycling-rotation.md)). The row of
+  the teaser running today is highlighted; rows of teasers that have never run are faded. Both by
+  this Mac's copy of the history, since a date no longer says which day a teaser runs.
 - **Edit** loads every field back into the form; **Delete** removes the teaser, its statistics and
   its image.
 - Wide tables scroll **inside their own box** and never widen the page ([PRD 09](09-visual-design.md)).
@@ -71,10 +77,15 @@ the author's copy of the data, not the live site's.
 The recycling box at a glance, without opening `rotation.json`:
 
 - Slips left, bank size, and the refill point
-- **How many new teasers are scheduled ahead** — the real sign of a queue running dry, since
-  solvers never see a gap
+- **How many new teasers are waiting** (never run), in the section's heading so it shows while
+  collapsed: the real sign of a queue running dry, since solvers never see a gap
+- **Up next**: each waiting or pinned teaser with the day it will run, worked out the same way the
+  site works out a day ([PRD 08](08-recycling-rotation.md))
 - The last 14 days: which teaser ran, and whether it was `new` or `recycled`
 - **Reset the box now**, starting a fresh cycle over the whole bank
+
+All of it comes from this Mac's copy of `rotation.json`, which says so, with the command that fetches
+the live one.
 
 ### Review queues
 
@@ -104,7 +115,11 @@ fetches the live one ([PRD 02](02-answer-evaluation.md#the-second-opinion-jev)).
 
 ## Acceptance criteria
 
-- [x] Date defaults to the next free day; duplicate dates are refused with a warning
+- [x] Date defaults to the back of the queue, skipping a taken date; duplicate dates are refused
+      with a warning
+- [x] **The queue in admin** — `AdminLayoutTests`, each mutation-verified: the heading counts only
+      teasers that have never run; Up next lists each with its day and whether it's new or pinned;
+      a teaser saved with the pin ticked is stored pinned, and the message names its date
 - [x] All fields round-trip through Edit without loss
 - [x] A suggestion's name goes into Suggested by and on into the bank; editing a credited teaser
       keeps it, and emptying it saves none (`AdminLayoutTests`, mutation-verified)

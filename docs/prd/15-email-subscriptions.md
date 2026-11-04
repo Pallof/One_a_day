@@ -212,9 +212,10 @@ touch storage, scheduling or wording.
 
 ## Known gaps
 
-- **A teaser dated today and published after 7am** takes over a day that has already settled
+- ~~**A teaser dated today and published after 7am** takes over a day that has already settled
   ([PRD 08](08-recycling-rotation.md)), so the site switches while subscribers already have the old
-  one. A PRD 08 issue the email makes visible; parked.
+  one.~~ **Fixed 2026-11-04**: a settled day never changes, and a new teaser waits for the day
+  after it arrives, so the email and the site always agree.
 - ~~**A confirmation counts as sent when requested, not when delivered.**~~ **Fixed 2026-09-28**:
   a confirmation that never went out reopens its sign-up at once (see Confirmation limits).
 - **A scanner running a full browser can unsubscribe someone** (see Unsubscribing).

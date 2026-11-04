@@ -145,6 +145,7 @@ public class AdminRoutingTests : BunitContext
         Services.AddSingleton(_env.NewSuggestionStore());
         Services.AddSingleton(new ImageStore(_env));
         Services.AddSingleton(_env.NewRotationStore());
+        Services.AddSingleton<DailySchedule>();
         Services.AddSingleton(_env.NewMetricsStore());
         Services.AddSingleton(new JudgedAnswerStore(_env));
         Services.AddSingleton(new AgreedVerdictStore(_env));

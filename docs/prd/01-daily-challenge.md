@@ -15,10 +15,11 @@ It never shows the puzzle's own date: puzzles get recycled, and the date would g
 
 ### Which teaser
 
-- The teaser scheduled for **today (Pacific)**; if there isn't one, a **recycled** one
-  ([PRD 08](08-recycling-rotation.md)); if there are no teasers at all, a friendly "check back
-  soon".
-- Never a teaser dated in the future.
+- The teaser settled for **today (Pacific)**, which once settled never changes: a teaser pinned to
+  today, else the next new teaser waiting, else a **recycled** one ([PRD 08](08-recycling-rotation.md));
+  if there are no teasers at all, a friendly "check back soon".
+- Never a teaser pinned to a later date, nor one that arrived today. A new teaser dated ahead can
+  run early, since dates set the order of new teasers rather than their day.
 - **A visitor's teaser credits them** at the foot of the question card: *"Today's question was
   given by Sam Rivera"* *(author's decision, 2026-10-30)*, from the teaser's **Suggested by**
   ([PRD 05](05-authoring-and-admin.md)), which carries the name they gave the Suggest a teaser
@@ -140,10 +141,12 @@ honest; it doesn't stop a determined one.
 
 ## Acceptance criteria
 
-- [x] Home shows today's teaser; a day with none scheduled recycles one
-      ([PRD 08](08-recycling-rotation.md))
+- [x] Home shows today's teaser; a day with no new or pinned teaser recycles one
+      ([PRD 08](08-recycling-rotation.md), `DailyScheduleTests`)
 - [x] **No date is ever shown for the teaser itself** — only today's dateline
-- [x] Future teasers never render on `/`
+- [x] A teaser pinned to a later date never renders on `/`, nor one that arrived today
+      (`DailyScheduleTests`). *Until 2026-11-04: "Future teasers never render", when every date
+      was a promise.*
 - [x] A visitor's teaser credits them by name, trimmed; none, a blank name or one of blank-looking
       characters shows nothing; the credit's lines count with the question's
       (`ChallengeLayoutTests`, `CreditNameTests`, mutation-verified)

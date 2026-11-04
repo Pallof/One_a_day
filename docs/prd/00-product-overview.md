@@ -69,7 +69,7 @@ Shipped, and covered by the specs of record:
 - **No archive** — only today's puzzle can be reached ([04](04-archive-and-discovery.md))
 - **Twenty Four** — a game that makes its own puzzles, so it can't use up the teasers, with a
   scoreboard of the longest runs ([07](07-twenty-four.md))
-- **Recycling** — past teasers come back when none is scheduled, so dry spells don't show and newcomers see the back catalogue ([08](08-recycling-rotation.md))
+- **Recycling** — new teasers always go first; past teasers come back when none is waiting, so dry spells don't show and newcomers see the back catalogue ([08](08-recycling-rotation.md))
 - Authoring — scheduling, difficulty, private tags, pictures ([05](05-authoring-and-admin.md))
 - Suggestions and issue reports, screened for bots ([06](06-community-feedback.md)) and emailed to the author ([14](14-email-notifications.md))
 - **Daily email** at 7am Pacific for anyone who confirms their address; one click to leave ([15](15-email-subscriptions.md))

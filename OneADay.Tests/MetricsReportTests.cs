@@ -82,6 +82,21 @@ public class MetricsReportTests
     }
 
     [Fact]
+    public void A_new_puzzle_that_ran_ahead_of_its_date_is_listed()
+    {
+        // New puzzles run in date order and close up gaps (PRD 08), so one dated a week ahead can
+        // run today. It ran, so it belongs in the table; one dated ahead that hasn't run doesn't.
+        var early = Teaser("2026-10-13", "ran early");
+        Teaser("2026-10-14", "still waiting");
+        Ran(early, Today);
+
+        var rows = Build().Fairness;
+
+        Assert.Equal(new[] { early.Id }, rows.Select(r => r.TeaserId));
+        Assert.Equal(1, rows[0].DaysShown);
+    }
+
+    [Fact]
     public void The_next_day_return_rate_divides_by_the_day_before()
     {
         On(Today.AddDays(-2)).Visitors.New = 10;
