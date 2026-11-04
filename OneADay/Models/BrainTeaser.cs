@@ -84,9 +84,12 @@ public class BrainTeaser
     /// <item>Never on a formula question: the checker works formulas out, so it is right by definition.</item>
     /// <item>A submission that names numbers must name only one accepted answer's numbers, in
     /// its order: "it's 48" can be asked about, "50" and "50 or 48" can't, and for "2:1"
-    /// neither "21" nor "1:2" can. So Jev never turns a wrong number into a right one. Numbers
-    /// inside an answer count too: the 3 of "3rd floor", both parts of "3:15".</item>
+    /// neither "21" nor "1:2" can. So a wrong number rarely reaches Jev: only as part of an
+    /// accepted answer naming two, the 4 of "6 red and 4 blue", which is what
+    /// <see cref="NotAccepted"/> is for. Numbers inside an answer count too: the 3 of "3rd
+    /// floor", both parts of "3:15".</item>
     /// <item>Where every accepted answer is a number, the submission must name one.</item>
+    /// <item>Neither number rule holds on an explanation question (see <see cref="IsExplanationQuestion"/>).</item>
     /// <item>Never on a submission with no letters or digits ("?", "...", an emoji). Its
     /// <see cref="AnswerKey"/> would be empty, the same for every such submission, so one
     /// verdict would answer for them all.</item>
@@ -105,6 +108,11 @@ public class BrainTeaser
             return false;
         }
 
+        if (IsExplanationQuestion())
+        {
+            return true;
+        }
+
         var acceptedNumbers = accepted.Select(a => NumbersIn(a)).Where(n => n.Count > 0).ToList();
         if (acceptedNumbers.Count == 0)
         {
@@ -121,6 +129,40 @@ public class BrainTeaser
         }
         return acceptedNumbers.Any(numbers => InOrderWithin(typedNumbers, numbers));
     }
+
+    /// <summary>
+    /// The fewest words an accepted answer has when it's a method written out rather than a
+    /// number or a name. The longest short answer in the bank is 8 words ("1 fish is worth 2
+    /// bags of rice"), so 10 leaves room.
+    /// </summary>
+    public const int ExplanationWords = 10;
+
+    /// <summary>
+    /// Whether every accepted answer is a method written out, <see cref="ExplanationWords"/> words
+    /// or more, as for "How can you find the heavy pill with one weighing?" The numbers in such an
+    /// answer describe the method rather than give the answer: "every 0.1g over 325g is one heavy
+    /// pill" names numbers no accepted wording has, in no set order. Held to the number rules,
+    /// most right methods were wrong before Jev saw them (5 of 7 in the trial of 2026-11-03),
+    /// so any answer may be asked about. Jev turned down every wrong method in that trial, at
+    /// 0.12 or less. One short answer among them (a "325g", say) and the number rules hold.
+    /// </summary>
+    public bool IsExplanationQuestion()
+    {
+        var answers = AcceptedAnswers();
+        return answers.Count > 0 && answers.All(a => WordCount(a) >= ExplanationWords);
+    }
+
+    /// <summary>
+    /// The answer printed above the solution once it's revealed: the first accepted one. None
+    /// on an explanation question with a solution: its first answer is the method the solution
+    /// already walks through, so the page said it twice (review of 2026-11-03).
+    /// </summary>
+    public string? AnswerToShow() =>
+        IsExplanationQuestion() && !string.IsNullOrWhiteSpace(Solution) ? null : AcceptedAnswers().FirstOrDefault();
+
+    /// <summary>Words with a letter or digit in them, so a lone "-" or "..." isn't one.</summary>
+    private static int WordCount(string text) =>
+        text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Count(w => w.Any(char.IsLetterOrDigit));
 
     /// <summary>
     /// Whether every one of <paramref name="typed"/> is one of <paramref name="accepted"/>, in
@@ -253,13 +295,16 @@ public class BrainTeaser
     /// An accepted answer like "12 (a dozen)" also accepts "12", "a dozen",
     /// and the full "12 (a dozen)". Only a single parenthetical group is split
     /// this way — formula answers such as "5*(5-(1/5))" have multiple/nested
-    /// parentheses and are left intact so they aren't matched by a fragment.
+    /// parentheses and are left intact so they aren't matched by a fragment. Nor is a method
+    /// written out (<see cref="ExplanationWords"/> words or more): an aside in one, "(325 pills
+    /// in all)", is part of the method, not an answer on its own (review of 2026-11-03).
     /// </summary>
     private static IEnumerable<string> Variants(string accepted)
     {
         yield return accepted;
 
-        if (accepted.Count(c => c == '(') != 1 || accepted.Count(c => c == ')') != 1)
+        if (accepted.Count(c => c == '(') != 1 || accepted.Count(c => c == ')') != 1 ||
+            WordCount(accepted) >= ExplanationWords)
         {
             yield break;
         }
@@ -332,13 +377,21 @@ public class BrainTeaser
             return false;
         }
 
-        // Same, but for a number followed by a unit ("80 degrees" vs "eighty degrees").
+        // Same, but for a number followed by a unit ("80 degrees" vs "eighty degrees"). A
+        // different number is a wrong answer here and now: left to the text check below, it
+        // loses its point or space and reads the same, so "4.8 mph" and "4 8 mph" passed for
+        // "48 mph" and "53.3 bottles" for "533.33 bottles" (review of 2026-11-03).
         if (TrySplitNumberAndUnit(accepted, out var acceptedValue, out var acceptedUnit) &&
-            TrySplitNumberAndUnit(submission, out var submittedValue, out var submittedUnit) &&
-            acceptedValue == submittedValue &&
-            Normalize(acceptedUnit) == Normalize(submittedUnit))
+            TrySplitNumberAndUnit(submission, out var submittedValue, out var submittedUnit))
         {
-            return true;
+            if (!Arithmetic.ValuesClose(acceptedValue, submittedValue))
+            {
+                return false;
+            }
+            if (Normalize(acceptedUnit) == Normalize(submittedUnit))
+            {
+                return true;
+            }
         }
 
         var normalizedAccepted = Normalize(accepted);

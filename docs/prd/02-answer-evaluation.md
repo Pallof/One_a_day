@@ -42,9 +42,12 @@ One line of text. **Alternative accepted answers are separated by `;`** — e.g.
    `forty eight` = `48`, `five thousand` = `5000`, `nine hundred and one` = `901`. The common
    misspelling `fourty` is accepted.
 4. **Number + unit** compare separately: `eighty degrees` matches `80 degrees`; `eighty radians`
-   doesn't.
+   doesn't. A different number with the same unit is wrong outright, never handed to the text
+   check, which strips points and spaces: `4.8 mph` and `4 8 mph` would read as `48 mph` there.
+   *(Both were accepted until the review of 2026-11-03.)*
 5. **One pair of brackets creates alternatives:** storing `12 (a dozen)` accepts `12`, `a dozen`,
-   or `12 (a dozen)`.
+   or `12 (a dozen)`. Not in a method written out (10 words or more, as on an explanation
+   question): an aside in one is part of the method, not an answer on its own.
 6. **Formulas are matched whole.** An answer with several or nested brackets — `5*(5-(1/5))` —
    is **not** split by rule 5, so a fragment such as `5` is rejected.
 7. **Formulas compare by what they work out to — but must use exactly the numbers given.** The
@@ -113,13 +116,23 @@ so there's no text to parse and nothing it can be talked into saying.
      answer's, in its order.** Numbers inside an answer count: the 3 of `3rd floor`, both parts
      of `2:1` or `3:15`. "It's 48" can go to Jev; "50" and "50 or 48" can't. For `2:1`, "2 to 1"
      can, but "21" and "1:2" can't. Where every accepted answer is a number, the answer must give
-     one. So Jev can never turn a wrong number into a right one. A lone "one" counts only where an
-     accepted answer has a 1 in it: elsewhere it's far likelier "the one on the left". The cost: a
-     right answer worded with another number ("48 mph over 2 hours") stays wrong without Jev
-     being asked. On a question whose answers are all words, there's no number to hold a typed one
-     to, so "1st place" is asked about, and Jev says no (0.04 to 0.06 in the trial). *(At first
-     only whole-number answers were read, and one right number let wrong ones through beside it.
-     PR 74 review.)*
+     one. So a wrong number rarely reaches Jev. One way remains: where an accepted answer names
+     two numbers ("6 red and 4 blue"), a bare "4" is one of its numbers and goes to Jev, so the
+     likely wrong one belongs under Not accepted (review of 2026-11-03). A lone "one" counts only
+     where an accepted answer has a 1 in it: elsewhere it's far likelier "the one on the left".
+     The cost: a right answer worded with another number ("48 mph over 2 hours") stays wrong
+     without Jev being asked. On a question whose answers are all words, there's no number to
+     hold a typed one to, so "1st place" is asked about, and Jev says no (0.04 to 0.06 in the
+     trial). *(At first only whole-number answers were read, and one right number let wrong ones
+     through beside it. PR 74 review.)*
+   - **Except on an explanation question.** Where every accepted answer is a method written out,
+     10 words or more ("How can you find the heavy pill with one reading?"), the number rule
+     doesn't apply: the numbers in a method describe it rather than give the answer. "Every 0.1g
+     over 325g is one heavy pill" names numbers no accepted wording has, so under the number rule
+     5 of 7 right methods were wrong before Jev saw them. Jev turned down all 7 wrong methods,
+     at 0.12 or less (trial of 2026-11-03). One short answer beside the methods, a "325g" say,
+     and the number rule holds. The longest answer in the bank before this was 6 words, so no
+     earlier question changed.
    - **The answer has a letter or a digit.** "?", "..." or an emoji alone is wrong without asking.
 4. **An earlier verdict.** Every answer Jev judges is kept, so the same answer to the same
    question, however it's typed, gets the same verdict without asking again. "However it's typed"
