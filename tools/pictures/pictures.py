@@ -19,6 +19,7 @@ Everything here works on OneADay/App_Data, which git leaves out because it holds
 NN is the entry's number in App_Data/picture-prompts.md, whose headings read
 "## NN · 2026-08-14 · title (Easy)". The date ties the entry to its question.
 """
+import hashlib
 import html
 import json
 import os
@@ -168,9 +169,18 @@ def take(name):
     ORIGINALS.mkdir(parents=True, exist_ok=True)
     seen_file = ORIGINALS / ".taken"
 
+    # Chrome renames its temporary file when a download finishes, so a file listed a moment ago
+    # can be gone by the time it's read. Each read below treats that as "not yet": the next pass
+    # finds the file under its new name.
     def newest(prefix):
-        found = [p for p in DOWNLOADS.iterdir() if p.name.startswith(prefix)]
-        return sorted(found, key=lambda p: p.stat().st_mtime, reverse=True)
+        found = []
+        for p in DOWNLOADS.iterdir():
+            if p.name.startswith(prefix):
+                try:
+                    found.append((p.stat().st_mtime, p))
+                except OSError:
+                    pass
+        return [p for _, p in sorted(found, key=lambda f: f[0], reverse=True)]
 
     if not seen_file.exists():
         # The first run counts everything already in Downloads as old.
@@ -178,21 +188,50 @@ def take(name):
         seen_file.write_text("".join(p.name + "\n" for p in old))
     seen = set(seen_file.read_text().split("\n"))
 
+    # A picture taken from Chrome's temporary file can land again later under its real name. Seen
+    # only by name, that copy looked new, and the next take filed it in place of the next
+    # picture (2026-11-03: the camel came back as 27-pills). So anything identical to a picture
+    # already filed is old too.
+    def digest(p):
+        try:
+            return hashlib.sha256(p.read_bytes()).hexdigest()
+        except OSError:
+            return None
+
+    filed = {digest(p) for p in ORIGINALS.rglob("*") if p.is_file() and p.suffix.lower() in PICTURE_TYPES} - {None}
+
+    def is_new(p):
+        if p.name in seen:
+            return False
+        d = digest(p)
+        if d is None:
+            return False
+        if d in filed:
+            print(f"Skipping {p.name}: the same picture is already filed.")
+            seen.add(p.name)
+            with open(seen_file, "a") as f:
+                f.write(p.name + "\n")
+            return False
+        return True
+
     start = time.time()
     source = None
     while source is None and time.time() - start < 150:
-        fresh = [p for p in newest("Gemini_Generated_Image_") if p.name not in seen]
+        fresh = [p for p in newest("Gemini_Generated_Image_") if is_new(p)]
         if fresh:
             source = fresh[0]
             break
         # Chrome sometimes never finishes saving and leaves a complete JPEG under a temporary name.
         if time.time() - start > 18:
             for p in newest(".com.google.Chrome."):
-                if p.name in seen:
+                if not is_new(p):
                     continue
-                size = p.stat().st_size
-                time.sleep(5)
-                data = p.read_bytes()
+                try:
+                    size = p.stat().st_size
+                    time.sleep(5)
+                    data = p.read_bytes()
+                except OSError:
+                    break
                 if size and len(data) == size and data[:2] == b"\xff\xd8" and data[-2:] == b"\xff\xd9":
                     source = p
                 break

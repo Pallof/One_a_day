@@ -86,9 +86,9 @@
         @if (_revealed || (_solved && !string.IsNullOrWhiteSpace(Teaser.Solution)))
         {
             <div class="cv-solution">
-                @if (_revealed)
+                @if (_revealed && Teaser.AnswerToShow() is { } answer)
                 {
-                    <span><strong>Answer:</strong> @Teaser.Answer.Split(';')[0].Trim()</span>
+                    <span><strong>Answer:</strong> @answer</span>
                 }
                 @if (!string.IsNullOrWhiteSpace(Teaser.Solution))
                 {

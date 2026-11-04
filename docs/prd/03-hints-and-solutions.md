@@ -38,7 +38,10 @@ wasn't recorded.*
   the solver hasn't solved it. "Not running now" is *not* "dated in the past": a recycled teaser
   is dated in the past while being today's challenge. Decide from the schedule, never the
   teaser's date.
-- Revealing shows the main accepted answer and the explanation, and locks the answer box.
+- Revealing shows the main accepted answer and the explanation, and locks the answer box. On an
+  explanation question ([PRD 02](02-answer-evaluation.md)) with an explanation written, the
+  answer line is left out: the main answer is the method itself, so it said the same thing twice
+  *(review of 2026-11-03)*. Yesterday's page does the same.
 - On a **live** challenge, after the first attempt, a note sets expectations, *"No peeking
   today. The solution unlocks tomorrow."*, so nobody hunts for a button that isn't there. On a
   past one, the retry message points to the button: *"Not quite. Try again, or reveal the

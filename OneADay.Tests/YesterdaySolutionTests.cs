@@ -228,6 +228,45 @@ public class YesterdaySolutionTests : BunitContext
         Assert.DoesNotContain("hint", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
+    // ---- an explanation question's answer is the method --------------------------
+
+    private const string MethodAnswer =
+        "Put 1 pill of type 1, 2 of type 2, and so on, and weigh them all at once";
+
+    [Fact]
+    public void Yesterdays_method_shows_once_in_the_solution_not_again_as_the_answer()
+    {
+        // Every teaser in the bank is an explanation question, so whichever is drawn counts.
+        var teasers = Enumerable.Range(1, 6)
+            .Select(i => TeaserFactory.On(
+                new DateOnly(2026, 8, 1).AddDays(i).ToString("yyyy-MM-dd"),
+                $"question {i}", answer: MethodAnswer, solution: $"solution {i}"))
+            .ToArray();
+        RegisterAppServices(StoreWith(teasers));
+
+        var cut = Render<Yesterday>();
+        cut.Find("button.ys-unveil").Click();
+
+        Assert.Empty(cut.FindAll(".ys-answer"));
+        Assert.StartsWith("solution ", cut.Find(".ys-explanation").TextContent.Trim());
+    }
+
+    [Fact]
+    public void A_revealed_method_shows_once_in_the_solution_not_again_as_the_answer()
+    {
+        RegisterAppServices(StoreWithBank());
+        var cut = Render<ChallengeView>(p => p
+            .Add(c => c.Teaser, TeaserFactory.On("2026-08-12", answer: MethodAnswer, solution: "zq-solution"))
+            .Add(c => c.CanReveal, true));
+
+        cut.Find("button.cv-reveal").Click();
+
+        var solution = cut.Find(".cv-solution").TextContent;
+        Assert.Contains("zq-solution", solution);
+        Assert.DoesNotContain("Answer:", solution);
+        Assert.DoesNotContain(MethodAnswer, solution);
+    }
+
     protected override void Dispose(bool disposing)
     {
         _env.Dispose();

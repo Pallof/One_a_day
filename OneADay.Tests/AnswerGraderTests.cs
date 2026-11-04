@@ -172,6 +172,72 @@ public sealed class AnswerGraderTests : IDisposable
         Assert.Equal(asked, _jev.Asked.Count == 1);
     }
 
+    private const string Method = "Put 1 pill of type 1, 2 of type 2, and so on up to 25 of type 25, and weigh them all at once";
+
+    [Theory]
+    // 2026-11-03 trial: a right method names its own numbers, and in its own order...
+    [InlineData("Every 0.1g over 325g is one heavy pill, so the extra tells you the type", true)]
+    [InlineData("25 of type 25 down to 1 of type 1, then weigh", true)]
+    // ...but an answer with no letters or digits still never goes
+    [InlineData("?", false)]
+    public async Task On_an_explanation_question_any_numbers_can_be_asked_about(string typed, bool asked)
+    {
+        _jev.Chance = _ => 0.99;
+        var explained = TeaserFactory.On("2026-08-21", "How can you find the heavy type with one reading?",
+            answer: $"{Method}; Use a different number of pills of each type and weigh them together");
+
+        await Grader().IsCorrectAsync(explained, typed);
+
+        Assert.Equal(asked, _jev.Asked.Count == 1);
+    }
+
+    [Fact]
+    public async Task One_short_answer_beside_the_methods_keeps_the_number_rule()
+    {
+        _jev.Chance = _ => 0.99;
+        var mixed = TeaserFactory.On("2026-08-21", "How many pills go on the scale?", answer: $"{Method}; 325 pills");
+
+        await Grader().IsCorrectAsync(mixed, "300 pills");
+
+        Assert.Empty(_jev.Asked);
+    }
+
+    [Theory]
+    [InlineData("Weigh 1 of the first type and so on", false)]      // 9 words: a short answer
+    [InlineData("Weigh 1 of the first type and so on up", true)]    // 10: a method
+    public async Task An_explanation_starts_at_ten_words(string accepted, bool asked)
+    {
+        _jev.Chance = _ => 0.99;
+        var teaser = TeaserFactory.On("2026-08-21", "How can you find the heavy type with one reading?", answer: accepted);
+
+        await Grader().IsCorrectAsync(teaser, "Every 0.1g over 325g is one heavy pill");
+
+        Assert.Equal(asked, _jev.Asked.Count == 1);
+    }
+
+    [Theory]
+    [InlineData("Weigh 1 of the first type and so on - ...", false)]  // a dash and dots aren't words
+    [InlineData("Weigh 1 of the first type and so on up", true)]
+    public void Only_words_with_a_letter_or_digit_count(string accepted, bool explanation) =>
+        Assert.Equal(explanation, TeaserFactory.On("2026-08-21", "How?", answer: accepted).IsExplanationQuestion());
+
+    [Theory]
+    [InlineData(Method, "the solution", null)]       // the solution walks through the method
+    [InlineData(Method, null, Method)]               // with no solution, the method is all there is
+    [InlineData("48; 48 mph", "the solution", "48")]
+    public void The_answer_shown_above_the_solution(string answer, string? solution, string? shown) =>
+        Assert.Equal(shown, TeaserFactory.On("2026-08-21", "How?", answer: answer, solution: solution).AnswerToShow());
+
+    [Fact]
+    public void An_aside_in_a_method_is_not_an_answer_on_its_own()
+    {
+        var teaser = TeaserFactory.On("2026-08-21", "How can you find the heavy type with one reading?",
+            answer: "Put 1 pill of type 1, 2 of type 2 and so on (325 pills in all), and weigh them at once");
+
+        Assert.False(teaser.AcceptsAnswer("325 pills in all"));
+        Assert.True(teaser.AcceptsAnswer("Put 1 pill of type 1, 2 of type 2 and so on (325 pills in all), and weigh them at once"));
+    }
+
     [Fact]
     public async Task Where_every_answer_is_words_a_number_can_still_be_asked_about()
     {

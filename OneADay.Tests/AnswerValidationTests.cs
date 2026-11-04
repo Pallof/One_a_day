@@ -174,6 +174,26 @@ public class AnswerValidationTests
         Assert.False(TeaserWithAnswer(storedAnswer).AcceptsAnswer(submission));
 
     [Theory]
+    // The unit matches but the number doesn't. Once the point or space is stripped the text
+    // reads the same, and all five passed until the review of 2026-11-03.
+    [InlineData("48; 48 mph", "4.8 mph")]
+    [InlineData("48; 48 mph", "4 8 mph")]
+    [InlineData("533; 533 bottles; 533.33 bottles", "53.3 bottles")]
+    [InlineData("533; 533 bottles; 533.33 bottles", "5.33 bottles")]
+    [InlineData("533; 533 bottles; 533.33 bottles", "53333 bottles")]
+    public void Rejects_a_wrong_number_with_the_right_unit(string storedAnswer, string submission) =>
+        Assert.False(TeaserWithAnswer(storedAnswer).AcceptsAnswer(submission));
+
+    [Theory]
+    // ...while the same number, however it's written, still passes
+    [InlineData("48; 48 mph", "48.0 mph")]
+    [InlineData("48; 48 mph", "48 MPH")]
+    [InlineData("533; 533 bottles; 533.33 bottles", "533.330 bottles")]
+    [InlineData("1,000 feet", "1000 feet")]
+    public void Accepts_the_same_number_with_the_right_unit(string storedAnswer, string submission) =>
+        Assert.True(TeaserWithAnswer(storedAnswer).AcceptsAnswer(submission));
+
+    [Theory]
     [InlineData("a keyboard", "a piano")]
     [InlineData("9", "8")]
     [InlineData("9", "90")]

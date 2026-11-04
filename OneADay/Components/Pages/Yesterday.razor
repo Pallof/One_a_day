@@ -55,7 +55,10 @@
 
             <div class="ys-veil @(_showSolution ? "ys-open" : "")">
                 <div class="ys-content">
-                    <p class="ys-answer"><strong>Answer:</strong> @_teaser.Answer.Split(';')[0].Trim()</p>
+                    @if (_teaser.AnswerToShow() is { } answer)
+                    {
+                        <p class="ys-answer"><strong>Answer:</strong> @answer</p>
+                    }
                     @if (!string.IsNullOrWhiteSpace(_teaser.Solution))
                     {
                         <p class="ys-explanation">@_teaser.Solution</p>
