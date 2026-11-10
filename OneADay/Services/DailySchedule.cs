@@ -128,24 +128,26 @@ public class DailySchedule(TeaserStore teasers, RotationStore rotation, Func<Dat
     private static bool HeldForItsDay(BrainTeaser teaser, DateOnly date) => teaser.Pinned && teaser.Date > date;
 
     /// <summary>
-    /// The challenge from the day before <paramref name="date"/> — the source for
-    /// "yesterday's solution".
+    /// The challenge that ran the day before <paramref name="date"/> — the source for
+    /// "yesterday's solution". None if nothing ran that day.
     /// </summary>
     /// <remarks>
-    /// Resolved through the same path as any other day, so it follows the recycling
-    /// rotation rather than the hand-written schedule. An earlier version read the
-    /// schedule when history was thin, which anchored the page to whichever teasers
-    /// had been typed in most recently — so it barely changed between new uploads,
-    /// exactly the opposite of the daily churn the rotation exists to provide.
+    /// Read from the day history, so it follows the recycling rotation rather than the
+    /// hand-written dates. An earlier version read the dates when history was thin, which
+    /// anchored the page to whichever teasers had been typed in most recently — so it barely
+    /// changed between new uploads, exactly the opposite of the daily churn the rotation
+    /// exists to provide.
     ///
-    /// Today is settled first so the outcome does not depend on which page a visitor
-    /// happens to open. That ordering also guarantees yesterday's draw sees today's in
-    /// the cooldown, so the two can never be the same teaser.
+    /// A day nobody opened the site on (an outage, say) never had a challenge, and none is
+    /// made up for it afterwards (2026-11-10, PRD 03). Until then this worked yesterday out
+    /// like any other day, and with new teasers waiting that took the next one: its solution
+    /// was published before it ever ran, and it never ran as new.
     /// </remarks>
     public BrainTeaser? PreviousBefore(DateOnly date)
     {
         var today = ForDay(date);
-        var yesterday = ForDay(date.AddDays(-1));
+        var ran = rotation.RunFor(date.AddDays(-1));
+        var yesterday = ran is null ? null : teasers.GetById(ran.TeaserId);
 
         // Never publish the answer to the challenge people are solving right now.
         // The cooldown normally keeps the two days apart, but a bank too small for it

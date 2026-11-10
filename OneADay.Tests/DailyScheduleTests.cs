@@ -286,6 +286,41 @@ public sealed class DailyScheduleTests : IDisposable
         Assert.Equal(7, _rotation.Snapshot().Remaining);   // 10, less three draws
     }
 
+    // ---- yesterday's solution ------------------------------------------------------
+
+    [Fact]
+    public void Yesterday_is_what_ran_yesterday()
+    {
+        BankThatHasRun(5);
+        var ranYesterday = _rotation.RunFor(Today.AddDays(-1))!.TeaserId;
+
+        Assert.Equal(ranYesterday, _schedule.PreviousBefore(Today)!.Id);
+    }
+
+    [Fact]
+    public void A_yesterday_nobody_opened_the_site_on_has_no_solution_and_spends_no_new_question()
+    {
+        // A whole day with no visit, an outage say, never had a challenge. Working one out
+        // afterwards took the next new question: its solution published before it ever ran.
+        _env.SeedTeasers(Enumerable.Range(1, 5)
+            .Select(i => Q($"old {i}", new DateOnly(2026, 7, 1).AddDays(i)))
+            .ToArray());
+        Start();
+        for (var i = 6; i >= 2; i--)
+        {
+            Day(Today.AddDays(-i));
+        }
+        _store.Save(Q("new 1", Today.AddDays(1)));
+        _store.Save(Q("new 2", Today.AddDays(2)));
+        _schedule.ForDay(Today.AddDays(-2));   // the site has them two days ago
+        _clock = Today;                        // and then nothing, all of yesterday
+
+        Assert.Null(_schedule.PreviousBefore(Today));
+        Assert.Null(_rotation.RunFor(Today.AddDays(-1)));
+        Assert.Equal("new 1", _schedule.ForDay(Today)!.Question);
+        Assert.Equal("new 2", Day(Today.AddDays(1)).Question);
+    }
+
     // ---- what admin shows ----------------------------------------------------------
 
     [Fact]

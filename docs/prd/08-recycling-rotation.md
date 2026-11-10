@@ -124,9 +124,10 @@ and the other gets that teaser back.
 
 ### Yesterday, small banks, admin
 
-- `/yesterday` works yesterday out through this same schedule, which is what makes it question-based
-  rather than date-based. Its rules, including hiding the page when yesterday and today land on the
-  same teaser, are in [PRD 03](03-hints-and-solutions.md).
+- `/yesterday` reads what ran yesterday from this same history, which is what makes it
+  question-based rather than date-based. It never works out a day that was never settled, so a day
+  nobody opened the site on can't spend a new teaser (2026-11-10). Its rules, including hiding the
+  page when yesterday and today land on the same teaser, are in [PRD 03](03-hints-and-solutions.md).
 - The cooldown rounds down, so a bank of fewer than five holds nothing back. Accepted rather than
   fixed: at that size there's too little material to avoid repeats, and the only visible effect is
   `/yesterday` going blank. A real bank never gets that small; the guard is for a fresh install.
@@ -193,6 +194,8 @@ shown to fail with a deliberate break, then restored.
 - [x] Once new teasers have run, the box is reshuffled with every teaser, the new ones included, and
       only once; a pinned teaser running again doesn't reshuffle it
 - [x] Admin's **Up next** puts each teaser on the day the site then runs it, and settles nothing
+- [x] Yesterday's solution is what ran yesterday; a yesterday never settled has none, and the new
+      teasers waiting stay waiting (added 2026-11-10)
 
 ## Implementation notes
 

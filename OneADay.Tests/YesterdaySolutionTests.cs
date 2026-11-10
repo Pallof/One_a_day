@@ -49,6 +49,9 @@ public class YesterdaySolutionTests : BunitContext
         var rotation = _env.NewRotationStore();
         Services.AddSingleton(rotation);
         var schedule = new DailySchedule(store, rotation);
+        // Someone opened the site yesterday, so it has a challenge. The page shows only what
+        // ran, never a day worked out after the fact (PRD 03).
+        schedule.ForDay(AppTime.Today.AddDays(-1));
         Services.AddSingleton(schedule);
         Services.AddScoped<CurrentTeaserContext>();
         Services.AddDataProtection();
@@ -58,8 +61,8 @@ public class YesterdaySolutionTests : BunitContext
         return schedule;
     }
 
-    // Which teaser counts as "yesterday's" is the rotation's answer (DailySchedule.ForDay the
-    // day before), pinned by the page tests below. Tests of the old date-based methods,
+    // Which teaser counts as "yesterday's" is whatever the rotation's history says ran the day
+    // before (DailySchedule.PreviousBefore, and DailyScheduleTests), pinned by the page tests below. Tests of the old date-based methods,
     // TeaserStore.GetCurrent and GetPreviousBefore, went with those methods: nothing in the
     // app called either (test audit, 2026-09-28).
 

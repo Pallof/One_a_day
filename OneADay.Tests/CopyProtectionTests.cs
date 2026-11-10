@@ -75,7 +75,9 @@ public class CopyProtectionTests : BunitContext
             .Select(i => TeaserFactory.On(new DateOnly(2026, 8, 1).AddDays(i).ToString("yyyy-MM-dd"),
                 $"question {i}", answer: $"{i}", hint: $"hint {i}", solution: $"solution {i}"))
             .ToArray());
-        Services.AddSingleton(new DailySchedule(_env.NewTeaserStore(), _env.NewRotationStore()));
+        var schedule = new DailySchedule(_env.NewTeaserStore(), _env.NewRotationStore());
+        schedule.ForDay(AppTime.Today.AddDays(-1));   // someone opened the site yesterday
+        Services.AddSingleton(schedule);
 
         var page = Render<Yesterday>();
         foreach (var veil in page.FindAll("button.ys-unveil").ToList()) { veil.Click(); }

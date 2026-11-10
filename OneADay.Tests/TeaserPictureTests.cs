@@ -107,7 +107,9 @@ public class TeaserPictureTests : BunitContext
         Services.AddMetrics(_env);
         Services.AddGrading(_env);
         Services.AddScoped<CurrentTeaserContext>();
-        Services.AddSingleton(new DailySchedule(_env.NewTeaserStore(), _env.NewRotationStore()));
+        var schedule = new DailySchedule(_env.NewTeaserStore(), _env.NewRotationStore());
+        schedule.ForDay(AppTime.Today.AddDays(-1));   // someone opened the site yesterday
+        Services.AddSingleton(schedule);
 
         var challenge = Render<ChallengeView>(p => p.Add(c => c.Teaser, Pictured(TeaserFactory.On("2026-08-12"))));
         var yesterday = Render<Yesterday>();
