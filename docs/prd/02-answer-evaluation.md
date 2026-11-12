@@ -133,6 +133,10 @@ so there's no text to parse and nothing it can be talked into saying.
      at 0.12 or less (trial of 2026-11-03). One short answer beside the methods, a "325g" say,
      and the number rule holds. The longest answer in the bank before this was 6 words, so no
      earlier question changed.
+     **The answer box takes 600 characters on these questions, not 300** ([PRD 01](01-daily-challenge.md);
+     author's decision, 2026-11-12). A whole method didn't fit: a visitor's right one stopped
+     mid-step at 298 characters, and Jev scored it 0.46. Jev's request and the verdicts file
+     grow a little and stay far inside their limits.
    - **The answer has a letter or a digit.** "?", "..." or an emoji alone is wrong without asking.
 4. **An earlier verdict.** Every answer Jev judges is kept, so the same answer to the same
    question, however it's typed, gets the same verdict without asking again. "However it's typed"
@@ -279,6 +283,8 @@ cases:
       an explanation question, shown only there, mentioning the reveal only with a solution, and
       never stopping Add, a long answer shown whole in the list and in the box, and the whole
       question shown on each row)
+- [x] **600 characters on an explanation question**: `AnswerLengthTests.cs` and the Accept box
+      test in `JudgedAnswersAdminTests.cs`, each mutation-verified on 2026-11-12
 - [ ] Jev on the live site, and a week of verdicts reviewed before the 70% bar is settled
 
 > **History:** a running total of tests used to be a criterion here. It read 144 while the suite
@@ -301,4 +307,5 @@ stored only when Jev judges it (`judged-answers.json`), and sent only to Jev, as
 client is `Services/JevClient.cs`, and the order is `Services/AnswerGrader.cs`.
 `Arithmetic` is hand-written with a **cap on how deeply brackets nest**, so hostile input
 (`((((((…`) is rejected instead of crashing the server. A very long *flat* expression never
-nests, so callers cap length too: 300 characters on the daily challenge, 120 in the game.
+nests, so callers cap length too: 300 characters on the daily challenge (600 on an explanation
+question, from `BrainTeaser.MaxSubmissionLength`), 120 in the game.

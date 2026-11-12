@@ -643,9 +643,10 @@
 
     /// <summary>
     /// Enough lines for the whole wording, at about 60 characters a line in the box's width,
-    /// growing as the author types. A visitor can type at most 300 characters, so 6 lines.
+    /// growing as the author types, up to the most a visitor can type to any question: 600
+    /// characters on an explanation question, so 11 lines.
     /// </summary>
-    private int AcceptBoxRows => Math.Clamp(_acceptText.Length / 60 + 1, 2, 8);
+    private int AcceptBoxRows => Math.Clamp(_acceptText.Length / 60 + 1, 2, BrainTeaser.MaxExplanationLength / 60 + 1);
 
     private bool IsAccepting(JudgedAnswer judged) =>
         _accepting is { } open && open.TeaserId == judged.TeaserId && open.Submission == judged.Submission;
