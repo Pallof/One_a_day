@@ -91,10 +91,17 @@ at today's bar, with two buttons:
 - **Rule it wrong**, shown only where the answer counts as right, adds what was typed to the
   teaser's *Ruled wrong* list. A `;` in it becomes a
   `,`, so it stays one ruling.
+- **Accept…**, shown only where the answer counts as wrong, passes it without leaving the list
+  (author's decision, 2026-11-11). It opens a box on the row filled in with what was typed; the
+  author rewords it and presses **Add**, and that wording joins the teaser's accepted answers.
+  It's cleaned the same way as a ruling, and refused if the checker already accepts it or it's
+  ruled wrong. Every verdict on that question then leaves the list, since changing the accepted
+  answers retires them all.
 
-Nothing a visitor typed can be made an accepted answer from here: to pass an answer Jev turned
-down, add it in your own words with Edit. The list is this Mac's copy: `deploy/pull-live-data.sh`
-fetches the live one ([PRD 02](02-answer-evaluation.md#the-second-opinion-jev)).
+Nothing a visitor typed becomes an accepted answer as it is: Accept… only fills in the box, and the
+author's own wording is what's added ([PRD 02](02-answer-evaluation.md#the-second-opinion-jev)).
+Ruling and accepting both change `teasers.json`, so publish it afterwards. The list is this Mac's
+copy: `deploy/pull-live-data.sh` fetches the live one.
 
 ## Non-goals
 

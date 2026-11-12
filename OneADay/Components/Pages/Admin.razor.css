@@ -335,6 +335,20 @@
     gap: 0.5rem;
 }
 
+/* Accept under one of Jev's verdicts: the author's wording for a new accepted answer. */
+.jv-accept-box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-width: 36rem;
+    margin-top: 0.75rem;
+}
+
+.jv-accept-box label {
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
 .oad-row-future {
     opacity: 0.75;
 }
