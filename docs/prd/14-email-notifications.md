@@ -168,7 +168,7 @@ separate.
 > **The better long-term answer is probably one daily summary, not more mail.** A single message like
 > *"2 new suggestions · 3 days of teasers left"* would also fix a gap: recycling hides a dry queue
 > from visitors ([PRD 08](08-recycling-rotation.md)), and nothing warns the author — the count of
-> teasers scheduled ahead sits in admin, seen only when they look. [PRD 13](13-content-pipeline.md)
+> new teasers waiting sits in admin, seen only when they look. [PRD 13](13-content-pipeline.md)
 > proposes the warning; a summary would deliver it. Immediate mail came first because volume is
 > about one suggestion every two months. *(2026-10-07: the Monday summary is a first step — weekly,
 > and site numbers only. The dry-queue warning could join it there.)*

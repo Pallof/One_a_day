@@ -126,7 +126,9 @@ public sealed class MetricsReport
             .ToDictionary(g => g.Key, g => g.Max(r => r.Date));
 
         var fairness = teasers
-            .Where(t => t.Date <= today)   // a teaser not yet due can't have been drawn
+            // A teaser dated ahead that hasn't run yet isn't listed. One that ran ahead of its
+            // date, as a new teaser can when the queue closes a gap (PRD 08), is.
+            .Where(t => t.Date <= today || lastShown.ContainsKey(t.Id))
             .Select(t =>
             {
                 var shown = runs.Where(r => r.TeaserId == t.Id).ToList();

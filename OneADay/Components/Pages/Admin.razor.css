@@ -28,6 +28,27 @@
     max-width: 220px;
 }
 
+/* The pin tick sits on its own line under the date, its label beside it rather than above. */
+.oad-pin {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+}
+
+.oad-pin label {
+    display: inline;
+    font-weight: 600;
+    margin-bottom: 0;
+}
+
+.oad-field-note {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
 .oad-difficulty-row {
     display: flex;
     align-items: center;

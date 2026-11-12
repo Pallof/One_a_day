@@ -9,7 +9,7 @@ public sealed class DailyRun
     public DateOnly Date { get; set; }
     public Guid TeaserId { get; set; }
 
-    /// <summary>True when this was a recycled draw rather than a newly scheduled teaser.</summary>
+    /// <summary>True when this was a recycled draw rather than a new or pinned teaser.</summary>
     public bool Recycled { get; set; }
 }
 
@@ -26,6 +26,14 @@ public sealed class RotationState
     /// keeps sitting out a cycle becomes steadily more likely to come up.
     /// </summary>
     public Dictionary<Guid, int> ShowCounts { get; set; } = [];
+
+    /// <summary>
+    /// The day the site first had each teaser. A new teaser runs no sooner than the day after,
+    /// so one uploaded today waits for tomorrow even if nobody has seen today's yet (author's
+    /// decision, 2026-11-04). Null in a file written before this was kept: the first time it's
+    /// filled, every teaser already in the bank counts as having arrived long ago.
+    /// </summary>
+    public Dictionary<Guid, DateOnly>? Arrived { get; set; }
 }
 
 /// <summary>
@@ -73,25 +81,95 @@ public class RotationStore
         }
     }
 
-    /// <summary>Records a newly scheduled teaser running on its own day (no draw involved).</summary>
-    public void RecordScheduled(DateOnly date, Guid teaserId)
+    /// <summary>
+    /// Records a new or pinned teaser running on <paramref name="date"/> (no draw involved), and
+    /// returns what runs that day. If another request settled the day first, that run is kept
+    /// and returned instead: a day's teaser never changes.
+    /// </summary>
+    public DailyRun RecordScheduled(DateOnly date, Guid teaserId)
     {
         lock (_lock)
         {
-            if (_state.History.Any(r => r.Date == date))
+            var existing = _state.History.FirstOrDefault(r => r.Date == date);
+            if (existing is not null)
             {
-                return;
+                return existing;
             }
-            _state.History.Add(new DailyRun { Date = date, TeaserId = teaserId, Recycled = false });
+            var run = new DailyRun { Date = date, TeaserId = teaserId, Recycled = false };
+            _state.History.Add(run);
             CountShow(teaserId);
             Persist();
+            return run;
+        }
+    }
+
+    /// <summary>Every teaser that has run on at least one day.</summary>
+    public IReadOnlySet<Guid> ShownIds()
+    {
+        lock (_lock)
+        {
+            return _state.History.Select(r => r.TeaserId).ToHashSet();
+        }
+    }
+
+    /// <summary>
+    /// Notes the teasers the site hasn't had before as arriving <paramref name="today"/>, and
+    /// returns the day each one arrived. Writes only when something is new.
+    /// </summary>
+    public IReadOnlyDictionary<Guid, DateOnly> NoteArrivals(IEnumerable<Guid> teaserIds, DateOnly today)
+    {
+        lock (_lock)
+        {
+            var ids = teaserIds.ToList();
+            var changed = false;
+            if (_state.Arrived is null)
+            {
+                if (ids.Count == 0)
+                {
+                    return new Dictionary<Guid, DateOnly>();
+                }
+                // The first time, for a bank that was here before arrivals were kept.
+                _state.Arrived = ids.Distinct().ToDictionary(id => id, _ => DateOnly.MinValue);
+                changed = true;
+            }
+            foreach (var id in ids)
+            {
+                changed |= _state.Arrived.TryAdd(id, today);
+            }
+            if (changed)
+            {
+                Persist();
+            }
+            return new Dictionary<Guid, DateOnly>(_state.Arrived);
+        }
+    }
+
+    /// <summary>
+    /// Whether a teaser has run for the first time since the last recycled draw: the run of new
+    /// teasers the box gets reshuffled after. A pinned teaser running again doesn't count.
+    /// </summary>
+    public bool NewRunsSinceLastDraw()
+    {
+        lock (_lock)
+        {
+            var lastDraw = _state.History
+                .Where(r => r.Recycled)
+                .Select(r => r.Date)
+                .DefaultIfEmpty(DateOnly.MinValue)
+                .Max();
+            return _state.History
+                .GroupBy(r => r.TeaserId)
+                .Select(g => g.MinBy(r => r.Date)!)
+                .Any(first => !first.Recycled && first.Date > lastDraw);
         }
     }
 
     /// <summary>
     /// Resolves a day by drawing from the box, or returns the draw already made for it.
+    /// <paramref name="freshBox"/> empties the box first, so the draw refills it from the
+    /// whole bank.
     /// </summary>
-    public DailyRun? DrawFor(DateOnly date, IReadOnlyList<Guid> bank, Random random)
+    public DailyRun? DrawFor(DateOnly date, IReadOnlyList<Guid> bank, Random random, bool freshBox = false)
     {
         lock (_lock)
         {
@@ -107,7 +185,8 @@ public class RotationStore
                 .Select(r => r.TeaserId)
                 .ToList();
 
-            var draw = TeaserRotation.Draw(_state.Box, bank, recent, random, _state.ShowCounts);
+            IEnumerable<Guid> box = freshBox ? [] : _state.Box;
+            var draw = TeaserRotation.Draw(box, bank, recent, random, _state.ShowCounts);
             if (draw is null)
             {
                 return null;

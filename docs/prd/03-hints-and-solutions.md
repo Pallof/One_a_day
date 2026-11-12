@@ -62,6 +62,8 @@ teasers can't be reached at all, and must never offer a reveal if they could.
 - [x] **No hint on today's challenge or yesterday's page**, though the teaser has one: not before
       an attempt, not after wrong ones, not once the solution shows (`NoHintTests` and
       `YesterdaySolutionTests`, mutation-verified 2026-10-27 by putting a hint back on each page)
+- [x] **Yesterday's page shows what ran yesterday, and nothing for a day nobody opened the site
+      on**, so no new question is spent on it (`DailyScheduleTests`, mutation-verified 2026-11-10)
 - [x] Reveal button available immediately on a past challenge, with no attempt threshold
 - [x] Reveal button **never** appears on a live challenge, however many attempts are made
       (verified with 4 failed attempts on a teaser dated today)
@@ -80,13 +82,16 @@ With no archive, this is the one place a solution is published.
 
 **It publishes whichever teaser actually ran yesterday — not the one dated yesterday.** With
 recycling ([PRD 08](08-recycling-rotation.md)), a puzzle written in March can be the challenge in
-August, so its date says nothing about when it last ran. The page works yesterday out the same
-way as any other day:
+August, so its date says nothing about when it last ran. The page:
 
-1. Work out today's challenge, then yesterday's. Doing today first means the result doesn't depend
-   on which page a visitor opens first, and it puts today's teaser in the rotation's cooldown, so
-   yesterday can't draw it.
-2. Publish what came back for yesterday.
+1. Works out today's challenge, as any page load may.
+2. Reads what ran yesterday from the day history in `rotation.json`, and publishes that.
+
+**A yesterday nobody opened the site on shows nothing** *(author's decision, 2026-11-10)*. A whole
+day with no visit and no 7am email, an outage say, never had a challenge, and none is made up for
+it afterwards: the page says there's no earlier challenge, as on a fresh install. Until then the
+page worked yesterday out like any other day. With new questions waiting, that took the next one,
+so its solution was published before it ever ran, and it never ran as new.
 
 > **History — regression:** an earlier version fell back to a *date-based* lookup whenever the
 > rotation's history was thin — every fresh deploy and any gap in visits. It kept returning the
