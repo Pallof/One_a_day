@@ -193,6 +193,50 @@ Don't add a second machine instead: the data files assume one writer. On a very 
 
 ---
 
+## How Stumpty works, in diagrams
+
+Eleven diagrams of how the site is put together and how it behaves, drawn from the code on
+`master` at commit 5d90447 on November 10, 2026. At that point
+[PR #83](https://github.com/Pallof/One_a_day/pull/83) (new questions first) was still open. It
+has since merged, so where a figure shows the way things worked before PR #83 and after it, the
+"after" side is how `master` works now. Click any picture to see it full size.
+
+![Colour key: gold is on the author's Mac, blue is on the live site, green is a good outcome, red is refused, wrong or ended, and a dashed outline means by hand, or only after PR #83.](docs/images/how-it-works/00-colour-key.png)
+
+![Figure 1, the whole system. Visitors reach Cloudflare, which is the only way into the Fly.io machine. The machine runs the Blazor Server app and keeps its data on the App_Data volume. The app sends mail through Gmail and asks Jev on OpenRouter for second opinions. The author's Mac deploys code, uploads the question bank and pictures to the volume, and pulls four data files back down. Gemini draws the pictures for the Mac.](docs/images/how-it-works/01-whole-system.png)
+
+<details>
+<summary><b>How it's built</b>: every request in order, inside the app, and a question's journey</summary>
+
+![Figure 2, every request in order. Eleven steps: the Cloudflare lock (refuses with 403), traffic count, proxy headers, connection cap (refuses with 429), compression, error pages and HSTS, the admin gate (404 for /admin on the live site), HTTPS and antiforgery, static files (served), one-click unsubscribe (served), and Blazor pages.](docs/images/how-it-works/02-request-pipeline.png)
+
+![Figure 3, inside the app. Seven features, each a row from page to service to file on the volume: Today, Answers (which can ask Jev), Yesterday, Twenty Four, Feedback (which emails the author), Email list (which emails subscribers) and Metrics (which emails the author).](docs/images/how-it-works/03-inside-the-app.png)
+
+![Figure 4, a question's journey. Ten steps. On the author's Mac: write it, check it, add it to the bank, draw the picture in Gemini, prepare it, review it (a rejected picture goes back to Gemini), attach it, and upload. On the live site: restart, then it runs on its date and joins the recycling box.](docs/images/how-it-works/04-question-journey.png)
+
+</details>
+
+<details>
+<summary><b>How things change</b>: which question runs today, the recycling box, grading an answer, a visitor on today's question, the email list, Twenty Four, and issue reports</summary>
+
+![Figure 5, which question runs today, before and after PR #83. Before: a question dated today runs even if today already had one; otherwise a settled day keeps its question; otherwise one is drawn from the box. After: a settled day keeps its question; otherwise a question pinned to today runs; otherwise the earliest new question; otherwise, if new ones just ran, a fresh box is started; then one is drawn from the box.](docs/images/how-it-works/05-daily-schedule.png)
+
+![Figure 6, the recycling box. The box is refilled with every eligible question and each draw takes one slip out. A draw with 7 or fewer slips left refills the box first, and after PR #83 a run of new questions does too. One draw: start from the slips in the box, hold back the 7 most recently shown, pick by weight 1 / (1 + times shown), and take that slip out.](docs/images/how-it-works/06-recycling-box.png)
+
+![Figure 7, grading an answer. A match with an accepted answer is correct. An answer on the Not accepted list is wrong. If Jev is off or may not be asked, it is wrong. If Jev has judged this answer before, that verdict is reused. If today's limits are used up, it is wrong. Otherwise Jev is asked: no reply is wrong, a reply is saved, and a chance of 0.7 or higher is correct.](docs/images/how-it-works/07-grading.png)
+
+![Figure 8, a visitor on today's question. Answering, then checking. An accepted answer goes to Solved, with a dialog, stats and a countdown. A turned-down answer goes to Not quite and back to answering, and the third miss shows a Twenty Four nudge. Reloading starts fresh. The next day, on /yesterday, the solution stays hidden until the visitor taps to reveal it.](docs/images/how-it-works/08-visitor-states.png)
+
+![Figure 9, joining the email list. Signing up stores the address and sends a confirmation, unless 500 are already waiting. A pending address gets the link again only after 24 hours, is deleted after 7 days unconfirmed, and is confirmed by clicking the link. A confirmed address gets today's question at 7am Pacific. Unsubscribing, by link or one click, deletes the record.](docs/images/how-it-works/09-email-list.png)
+
+![Figure 10, a round of Twenty Four. A wrong answer keeps playing with the run kept. Pass ends the run and deals a fresh hand. Making 24 is Solved, run plus one. Calling a hand impossible when it is impossible is a right call, run plus one. Calling it impossible when it isn't is a wrong call, and the run ends. Then a new hand is dealt.](docs/images/how-it-works/10-twenty-four.png)
+
+![Figure 11, issue reports. A report starts as New, is picked up into In progress, and closes as Solved, Won't solve or Duplicate.](docs/images/how-it-works/11-issue-reports.png)
+
+</details>
+
+---
+
 ## How it's built
 
 ```
