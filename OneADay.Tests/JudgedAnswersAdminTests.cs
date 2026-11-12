@@ -10,8 +10,9 @@ namespace OneADay.Tests;
 
 /// <summary>
 /// Admin's "Answers Jev judged" (PRD 02): Jev's verdicts still in force that the author hasn't
-/// dealt with, "Agree with Jev", which only clears the row, and "Rule it wrong", which goes into
-/// teasers.json. Nothing a visitor typed can be made an accepted answer from here.
+/// dealt with, "Agree with Jev", which only clears the row, and "Rule it wrong" and "Accept",
+/// which go into teasers.json. Nothing a visitor typed becomes an accepted answer as it is:
+/// Accept opens a box for the author to reword it in first.
 /// </summary>
 public class JudgedAnswersAdminTests : BunitContext
 {
@@ -108,17 +109,17 @@ public class JudgedAnswersAdminTests : BunitContext
     }
 
     [Fact]
-    public void No_button_puts_what_a_visitor_typed_into_the_accepted_answers()
+    public void No_single_press_puts_what_a_visitor_typed_into_the_accepted_answers()
     {
-        // The author's decision, 2026-10-28: accepted answers stay in their own words. Each
-        // button is pressed, each on the first row of a fresh page. A low bar shows them all.
-        Services.AddSingleton(Options.Create(new JevOptions { Threshold = 0.3 }));
-        var buttons = Render<Admin>().FindAll(".jv-judged")[0].QuerySelectorAll("button").Length;
-        Assert.True(buttons >= 2);
+        // The author's decision, 2026-10-28: accepted answers stay in their own words, so Accept
+        // only opens a box to reword it in. Each kind of button is pressed once, each on a fresh
+        // page. At the 70% bar the rows show all three kinds between them.
+        var kinds = Render<Admin>().FindAll(".jv-judged button").Select(b => b.ClassName!).Distinct().ToList();
+        Assert.True(kinds.Count >= 3);
 
-        for (var i = 0; i < buttons; i++)
+        foreach (var kind in kinds)
         {
-            Render<Admin>().FindAll(".jv-judged")[0].QuerySelectorAll("button")[i].Click();
+            Render<Admin>().FindAll(".jv-judged button").First(b => b.ClassName == kind).Click();
         }
 
         Assert.Equal(Place.Answer, Saved().Answer);
@@ -216,6 +217,309 @@ public class JudgedAnswersAdminTests : BunitContext
         page.Find("button.oad-btn-green").Click();
 
         Assert.True(Saved().RulesOut("right behind the leader"));
+    }
+
+    // ----- Accept: passing an answer Jev turned down, in the author's own words -----
+
+    private static readonly Guid OtherId = Guid.Parse("3b9e1c44-8a2d-4f6e-b1c7-5d4e3f2a1b09");
+
+    private static readonly BrainTeaser Other = new()
+    {
+        Id = OtherId,
+        Date = new DateOnly(2026, 9, 3),
+        Question = "A made-up question for these tests?",
+        Answer = "alpha; beta",
+    };
+
+    /// <summary>Adds a second question with one verdict of its own, which counts as wrong.</summary>
+    private void WithOtherQuestion()
+    {
+        _env.SeedTeasers(Place, Other);
+        _env.WriteDataFile(JudgedAnswerStore.FileName, JsonSerializer.Serialize(new[]
+        {
+            Judged("right behind the leader", 0.95),
+            Judged("second; or first", 0.40),
+            Judged("behind the leader", 0.85),
+            new JudgedAnswer
+            {
+                TeaserId = OtherId, Submission = "gamma", Chance = 0.30,
+                Against = Other.Fingerprint(), JudgedAt = new DateTime(2026, 9, 1, 8, 0, 0),
+            },
+        }));
+        Services.AddSingleton(_env.NewTeaserStore());       // the last registration wins
+        Services.AddSingleton(new JudgedAnswerStore(_env));
+    }
+
+    /// <summary>Opens Accept on the 40% row ("second; or first"), which counts as wrong, and types into its box.</summary>
+    private static void AcceptAs(IRenderedComponent<Admin> page, string wording, bool add = true)
+    {
+        var row = page.FindAll(".jv-judged").Single(r => r.QuerySelector(".jv-typed")!.TextContent.Trim() == "second; or first");
+        row.QuerySelector("button.jv-accept")!.Click();
+        page.Find("textarea.jv-accept-text").Input(wording);
+        if (add)
+        {
+            page.Find("button.jv-accept-add").Click();
+        }
+    }
+
+    [Fact]
+    public void Accept_is_offered_only_where_the_answer_counts_as_wrong()
+    {
+        // An answer already counted right needs nothing more to pass.
+        var page = Render<Admin>();
+
+        var offered = page.FindAll(".jv-judged").Select(row => row.QuerySelector("button.jv-accept") is not null);
+
+        Assert.Equal([false, true, false], offered);   // 95%, 40% and 85% at the 70% bar
+    }
+
+    [Fact]
+    public void Accept_opens_a_box_filled_in_with_what_was_typed_and_saves_nothing_yet()
+    {
+        var page = Render<Admin>();
+        Assert.Empty(page.FindAll(".jv-accept-box"));
+
+        Press(page, 1, "jv-accept");
+
+        var box = page.FindAll(".jv-judged")[1].QuerySelector(".jv-accept-box")!;
+        Assert.Equal("second; or first", box.QuerySelector("textarea.jv-accept-text")!.GetAttribute("value"));
+        Assert.Equal(Place.Answer, Saved().Answer);
+    }
+
+    [Fact]
+    public void Add_does_nothing_without_an_answer()
+    {
+        var page = Render<Admin>();
+
+        AcceptAs(page, "   ", add: false);
+        Assert.True(page.Find("button.jv-accept-add").HasAttribute("disabled"));
+
+        // Brackets become spaces, which leaves nothing the checker could match.
+        AcceptAs(page, "( )");
+        Assert.Contains("needs a letter or a digit", page.Find(".jv-accept-warning").TextContent);
+        Assert.Equal(Place.Answer, Saved().Answer);
+    }
+
+    [Fact]
+    public void Accepting_saves_the_authors_wording_to_that_question_only_and_says_to_publish()
+    {
+        WithOtherQuestion();
+        var page = Render<Admin>();
+
+        AcceptAs(page, "just behind the leader");
+
+        Assert.Equal(["second", "2nd", "just behind the leader"], Saved().AcceptedAnswers());
+        Assert.True(Saved().AcceptsAnswer("Just behind the leader!"));
+        Assert.Equal(Other.Answer, Services.GetRequiredService<TeaserStore>().GetById(OtherId)!.Answer);
+        Assert.Contains("Publish teasers.json afterwards", page.Find(".jv-accepted-note").TextContent);
+        Assert.Empty(page.FindAll(".jv-accept-box"));
+    }
+
+    [Fact]
+    public void A_semicolon_and_brackets_in_the_box_dont_make_more_than_one_answer()
+    {
+        // As written, the ';' would have made "trailing" right on its own, and the brackets
+        // would have made "just" right, and the wording without it.
+        var page = Render<Admin>();
+
+        AcceptAs(page, "the runner (just) behind the leader; trailing");
+
+        Assert.Equal(["second", "2nd", "the runner just behind the leader, trailing"], Saved().AcceptedAnswers());
+        Assert.False(Saved().AcceptsAnswer("trailing"));
+        Assert.False(Saved().AcceptsAnswer("just"));
+        Assert.False(Saved().AcceptsAnswer("the runner behind the leader"));
+    }
+
+    [Fact]
+    public void An_answer_already_accepted_is_refused()
+    {
+        // Matched the way the checker matches, so a different typing of "second" counts too.
+        var page = Render<Admin>();
+
+        AcceptAs(page, "Second!");
+
+        Assert.Contains("already accepted", page.Find(".jv-accept-warning").TextContent);
+        Assert.Equal(Place.Answer, Saved().Answer);
+        Assert.Contains("second; or first", Listed(page));   // the box stays open to try again
+        Assert.NotEmpty(page.FindAll(".jv-accept-box"));
+    }
+
+    [Fact]
+    public void An_answer_ruled_wrong_is_refused()
+    {
+        // Accepted answers are checked first, so this would have quietly undone the ruling.
+        var page = Render<Admin>();
+
+        AcceptAs(page, "First");
+
+        Assert.Contains("ruled wrong", page.Find(".jv-accept-warning").TextContent);
+        Assert.Equal(Place.Answer, Saved().Answer);
+        Assert.Equal(Place.NotAccepted, Saved().NotAccepted);
+    }
+
+    [Fact]
+    public void Cancel_closes_the_box_and_adds_nothing()
+    {
+        var page = Render<Admin>();
+
+        AcceptAs(page, "just behind the leader", add: false);
+        page.Find("button.jv-accept-cancel").Click();
+
+        Assert.Empty(page.FindAll(".jv-accept-box"));
+        Assert.Equal(Place.Answer, Saved().Answer);
+    }
+
+    [Fact]
+    public void Accepting_clears_every_verdict_on_that_question_and_writes_no_verdicts()
+    {
+        // New accepted answers change the question's fingerprint, so none of Jev's verdicts on it
+        // count any more: they leave the list though the new answer passes none of them. The
+        // other question's verdict stays, and the verdicts file is left alone (one writer per file).
+        WithOtherQuestion();
+        var verdictsBefore = _env.ReadDataFile(JudgedAnswerStore.FileName);
+        var page = Render<Admin>();
+        Assert.Equal(["right behind the leader", "second; or first", "behind the leader", "gamma"], Listed(page));
+
+        AcceptAs(page, "just behind the leader");
+
+        Assert.False(Saved().AcceptsAnswer("behind the leader"));
+        Assert.Equal(["gamma"], Listed(page));
+        Assert.Contains("Jev's 2 other verdicts on that question no longer count", page.Find(".jv-accepted-note").TextContent);
+        Assert.Equal(verdictsBefore, _env.ReadDataFile(JudgedAnswerStore.FileName));
+    }
+
+    [Fact]
+    public void An_answer_accepted_while_the_question_is_open_in_the_form_survives_saving_it()
+    {
+        // The form holds its own copy of the question; saving it must not put back the
+        // accepted answers it had before.
+        var page = Render<Admin>();
+        page.FindAll("button.oad-btn-plain").First(b => b.TextContent.Trim() == "Edit").Click();
+
+        AcceptAs(page, "just behind the leader");
+        page.Find("button.oad-btn-green").Click();
+
+        Assert.True(Saved().AcceptsAnswer("just behind the leader"));
+    }
+
+    // ----- The warning on a question whose answers are all written-out methods -----
+
+    private static readonly Guid MethodId = Guid.Parse("5c2a7e19-0d4b-4a8f-9e36-b1f0c7d2e844");
+
+    /// <summary>A made-up question whose one accepted answer is a method, 10 words or more.</summary>
+    private void WithMethodQuestion(string? solution)
+    {
+        var method = new BrainTeaser
+        {
+            Id = MethodId,
+            Date = new DateOnly(2026, 9, 4),
+            Question = "A made-up question that wants a method?",
+            Answer = "count the red marbles first and then the blue ones in the jar",
+            Solution = solution,
+        };
+        Assert.True(method.IsExplanationQuestion());
+        _env.SeedTeasers(Place, method);
+        _env.WriteDataFile(JudgedAnswerStore.FileName, JsonSerializer.Serialize(new[]
+        {
+            new JudgedAnswer
+            {
+                TeaserId = MethodId, Submission = "count them", Chance = 0.20,
+                Against = method.Fingerprint(), JudgedAt = new DateTime(2026, 9, 2, 8, 0, 0),
+            },
+        }));
+        Services.AddSingleton(_env.NewTeaserStore());       // the last registration wins
+        Services.AddSingleton(new JudgedAnswerStore(_env));
+    }
+
+    [Theory]
+    // The reveal leaves the answer line out only where there's a solution to show the method in
+    [InlineData("Made-up solution.", true)]
+    [InlineData(null, false)]
+    public void A_short_answer_on_a_method_question_warns_while_it_is_typed(string? solution, bool mentionsReveal)
+    {
+        WithMethodQuestion(solution);
+        var page = Render<Admin>();
+
+        Press(page, 0, "jv-accept");   // the pre-filled "count them" is two words
+
+        var warning = page.Find(".jv-accept-method-warning").TextContent;
+        Assert.Contains("some right methods will be marked wrong", warning);
+        Assert.Equal(mentionsReveal, warning.Contains("above the solution"));
+        Assert.False(page.Find("button.jv-accept-add").HasAttribute("disabled"));   // a warning, not a refusal
+
+        // Saved as one answer, the ';' doesn't leave a short answer of its own.
+        page.Find("textarea.jv-accept-text").Input("count them; the red marbles first and then the blue ones");
+        Assert.Empty(page.FindAll(".jv-accept-method-warning"));
+    }
+
+    [Fact]
+    public void No_method_warning_where_the_answers_are_short_already()
+    {
+        var page = Render<Admin>();
+
+        AcceptAs(page, "near", add: false);
+
+        Assert.Empty(page.FindAll(".jv-accept-method-warning"));
+    }
+
+    // ----- Long answers, shown whole -----
+
+    /// <summary>A written-out answer near the 300 characters a visitor can type.</summary>
+    private static readonly string LongAnswer = string.Join(' ', Enumerable.Repeat("then I pass the next runner on the inside", 7)).Trim();
+
+    private void WithLongAnswer()
+    {
+        Assert.True(LongAnswer.Length > 250);
+        _env.WriteDataFile(JudgedAnswerStore.FileName, JsonSerializer.Serialize(new[] { Judged(LongAnswer, 0.40) }));
+        Services.AddSingleton(new JudgedAnswerStore(_env));   // the last registration wins
+    }
+
+    [Fact]
+    public void A_long_answer_is_listed_whole()
+    {
+        WithLongAnswer();
+        var page = Render<Admin>();
+
+        Assert.Equal([LongAnswer], Listed(page));
+    }
+
+    [Fact]
+    public void The_accept_box_shows_a_long_answer_whole()
+    {
+        // A one-line field showed only the start of a written-out method; a text area wraps it,
+        // with a line for each 60 characters or so.
+        WithLongAnswer();
+        var page = Render<Admin>();
+
+        Press(page, 0, "jv-accept");
+
+        var box = page.Find("textarea.jv-accept-text");
+        Assert.Equal(LongAnswer, box.GetAttribute("value"));
+        Assert.True(int.Parse(box.GetAttribute("rows")!) * 60 >= LongAnswer.Length);
+    }
+
+    [Fact]
+    public void The_question_is_shown_whole()
+    {
+        // It used to stop at 90 characters, and an answer can turn on the end of the question.
+        var question = string.Join(' ', Enumerable.Repeat("A made-up question that runs on for a while,", 4)) + " so where does it end?";
+        var wordy = new BrainTeaser { Id = OtherId, Date = new DateOnly(2026, 9, 3), Question = question, Answer = "alpha" };
+        _env.SeedTeasers(wordy);
+        _env.WriteDataFile(JudgedAnswerStore.FileName, JsonSerializer.Serialize(new[]
+        {
+            new JudgedAnswer
+            {
+                TeaserId = OtherId, Submission = "gamma", Chance = 0.30,
+                Against = wordy.Fingerprint(), JudgedAt = new DateTime(2026, 9, 2, 8, 0, 0),
+            },
+        }));
+        Services.AddSingleton(_env.NewTeaserStore());       // the last registration wins
+        Services.AddSingleton(new JudgedAnswerStore(_env));
+        Assert.True(question.Length > 150);
+
+        var page = Render<Admin>();
+
+        Assert.Equal(question, page.Find(".jv-judged .jv-question em").TextContent);
     }
 
     protected override void Dispose(bool disposing)

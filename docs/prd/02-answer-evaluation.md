@@ -176,19 +176,39 @@ anything, which is why the request names asking to be marked correct as a "no".
 **The author reviews Jev's verdicts in admin** ([PRD 05](05-authoring-and-admin.md)). The live
 site keeps them in `judged-answers.json`; `deploy/pull-live-data.sh` copies it down
 ([PRD 10](10-admin-authentication.md)), over the copy the Mac's own site keeps when testing. Each verdict still in force and not yet dealt with has two
-buttons:
+buttons, **Agree with Jev** and one of the other two:
 - **Agree with Jev** clears the row and changes nothing else. Which rows were cleared is kept in
   `agreed-verdicts.json` on the author's Mac, which is never uploaded.
 - **Rule it wrong**, shown only where the answer counts as right, adds what was typed to the
   teaser's *Ruled wrong* list in `teasers.json`, so publishing the bank puts it live. A `;` in it
   becomes a `,` and brackets become spaces, so it stays one ruling: kept as typed, `second place
   (or third)` would also have ruled out a bare `second place` *(PR 74 review)*.
+- **Accept…**, shown only where the answer counts as wrong, opens a box on the row filled in
+  with what was typed (author's decision, 2026-11-11). The box wraps and grows, so a long
+  written-out method shows whole, as it does in the row above. The author rewords it and presses **Add**,
+  which adds it to the teaser's accepted answers in `teasers.json`; publishing the bank puts it
+  live, and admin says so. **Cancel** closes the box. Add is greyed out while the box is empty.
+  Before it's added, a `;` becomes a `,` and brackets become spaces, as for a ruling, so it stays
+  one answer: kept as typed, `the runner (just) behind the leader; trailing` would also have made
+  `trailing` and `just` right. Add adds nothing, and says why, if the checker already accepts the
+  wording, or if it's ruled wrong (accepted answers are checked first, so it would quietly undo
+  the ruling). The accepted answers are part of the question's fingerprint, so adding one retires
+  **every** verdict Jev made on that question, not just this row's: they all leave the list, and
+  Jev is asked afresh when one of those answers is typed again. Edit has always done the same.
+  On a question whose accepted answers are all methods written out (an *explanation question*,
+  above), the box warns while the wording is under 10 words, since one short answer ends that:
+  the number rules hold again, turning some right methods down before Jev sees them, and where
+  there's a solution the reveal shows the first answer above it, so the method appears twice. It
+  warns rather than refuses: the author may still want the short answer (author's decision,
+  2026-11-11).
 
-**Nothing a visitor typed becomes an accepted answer** (author's decision, 2026-10-28). The
-accepted answers stay in the author's own words. To pass an answer Jev turned down, the author
-adds it with Edit. (An *Add to accepted answers* button existed briefly: it took the visitor's
-text literally, so a typed `second (i think)` would have made `i think` right on its own.)
-Rulings never go back into the verdicts file, which keeps one writer per file.
+**Nothing a visitor typed becomes an accepted answer as it is** (author's decision, 2026-10-28).
+The accepted answers stay in the author's own words: Accept… only fills in the box, and what is
+added is whatever the author leaves there, cleaned as above. Edit still works too. (An *Add to
+accepted answers* button existed briefly: it took the visitor's text literally, so a typed
+`second (i think)` would have made `i think` right on its own. Accept… replaced it on 2026-11-11.)
+Neither rulings nor accepted answers go back into the verdicts file, which keeps one writer per
+file.
 
 **Writing more accepted answers keeps Jev rare.** On 2026-10-27 the bank gained 92 more, such as
 `second place` and `16th day`. Tried on 123 typical answers, wrong verdicts went from 54 to one
@@ -239,8 +259,8 @@ cases:
       symbol-only answers, the switch stopping kept verdicts, edits re-asking, the per-address
       share), `AnswerValidationTests.cs` (answer keys, the oversized ratio),
       `JudgedAnswerStoreTests.cs` (making room when full, replacing a verdict after an edit,
-      answers saved as typed), `JudgedAnswersAdminTests.cs` (no way to add a visitor's text to
-      the accepted answers, Agree with Jev, a ruling while the form is open),
+      answers saved as typed), `JudgedAnswersAdminTests.cs` (no single press adds a visitor's
+      text to the accepted answers, Agree with Jev, a ruling while the form is open),
       `SolvedAnswerTests.cs` (one press counts while Jev is asked), and `DeployFilesTests.cs`
       (the verdicts file exists from startup)
 - [x] **The request shape**, confirmed with a real key on 2026-10-28: `instructions` alone is
@@ -249,6 +269,16 @@ cases:
 - [x] **The bar**, set from the 2026-10-28 trial: `AnswerGraderTests.cs` checks the shipped
       bar sits in the gap the trial found, that exactly the bar passes, and that a kept verdict
       follows today's bar; `JudgedAnswersAdminTests.cs` checks admin labels each verdict by it
+- [x] **Accept…**, each test mutation-verified on 2026-11-11: `JudgedAnswersAdminTests.cs`
+      (offered only where the answer counts as wrong, the box filled in with what was typed and
+      nothing saved yet, Add greyed out or refusing without an answer, the author's wording saved
+      to that question only with the publish reminder, `;` and brackets made one answer, a
+      wording already accepted or ruled wrong refused, Cancel, every verdict on the question
+      leaving the list with the verdicts file untouched, the question open in the form, no
+      single press of any button adding a visitor's text, the warning for a short answer on
+      an explanation question, shown only there, mentioning the reveal only with a solution, and
+      never stopping Add, a long answer shown whole in the list and in the box, and the whole
+      question shown on each row)
 - [ ] Jev on the live site, and a week of verdicts reviewed before the 70% bar is settled
 
 > **History:** a running total of tests used to be a criterion here. It read 144 while the suite

@@ -455,8 +455,13 @@
                 copy: stop the site and run <code>sh deploy/pull-live-data.sh</code> for the live one.
                 Agreeing with Jev clears a row here and changes nothing else. Ruling an answer wrong
                 goes into the question, so publish teasers.json afterwards. To pass an answer Jev
-                turned down, add it in your own words with Edit.
+                turned down, press Accept and put it in your own words: that goes into the question too.
             </p>
+
+            @if (_acceptedNote is not null)
+            {
+                <p class="oad-saved jv-accepted-note">@_acceptedNote</p>
+            }
 
             @if (_toReview.Count == 0)
             {
@@ -476,7 +481,8 @@
                             <span>@judged.JudgedAt.ToString("d MMM yyyy, h:mm tt") PT</span>
                         </div>
                         <p class="oad-issue-details jv-typed">@judged.Submission</p>
-                        <p class="oad-issue-context"><span>Question: <em>@Truncate(teaser.Question, 90)</em></span></p>
+                        @* Whole, not shortened: judging an answer can turn on the end of the question. *@
+                        <p class="oad-issue-context"><span class="jv-question">Question: <em>@teaser.Question</em></span></p>
                         <div class="oad-issue-actions">
                             <button class="oad-btn-plain jv-agree" @onclick="() => AgreeWithJev(judged)">Agree with Jev</button>
                             @* Only where it counts as right: an answer already wrong needs no ruling. *@
@@ -484,7 +490,36 @@
                             {
                                 <button class="oad-btn-danger jv-rule-out" @onclick="() => RuleWrong(judged)">Rule it wrong</button>
                             }
+                            else
+                            {
+                                @* Opens a box rather than adding: what a visitor typed never becomes an
+                                   accepted answer until the author has had the chance to reword it. *@
+                                <button class="oad-btn-plain jv-accept" @onclick="() => OpenAccept(judged)">Accept…</button>
+                            }
                         </div>
+                        @if (IsAccepting(judged))
+                        {
+                            <form class="jv-accept-box" @onsubmit="() => Accept(judged)">
+                                <label for="jv-accept-text">Add to the accepted answers, in your own words</label>
+                                @* A text area, not a one-line field, so a long written method shows whole. *@
+                                <textarea id="jv-accept-text" class="jv-accept-text" rows="@AcceptBoxRows"
+                                          @bind="_acceptText" @bind:event="oninput"></textarea>
+                                @* A warning, not a refusal: the author may still want the short answer. *@
+                                @if (EndsMethodQuestion(teaser, _acceptText))
+                                {
+                                    <span class="oad-warning jv-accept-method-warning">@MethodWarning(teaser)</span>
+                                }
+                                <div class="oad-issue-actions">
+                                    <button type="submit" class="oad-btn-green jv-accept-add"
+                                            disabled="@string.IsNullOrWhiteSpace(_acceptText)">Add</button>
+                                    <button type="button" class="oad-btn-plain jv-accept-cancel" @onclick="CloseAccept">Cancel</button>
+                                </div>
+                                @if (_acceptWarning is not null)
+                                {
+                                    <span class="oad-warning jv-accept-warning">@_acceptWarning</span>
+                                }
+                            </form>
+                        }
                     </div>
                 }
             }
@@ -524,6 +559,12 @@
     /// listed.
     /// </summary>
     private IReadOnlyList<(JudgedAnswer Judged, BrainTeaser Teaser)> _toReview = [];
+
+    /// <summary>The verdict whose Accept box is open, if any: one at a time.</summary>
+    private JudgedAnswer? _accepting;
+    private string _acceptText = string.Empty;
+    private string? _acceptWarning;   // why Add added nothing, shown in the box
+    private string? _acceptedNote;    // what the last Add did, shown above the list
 
     /// <summary>Times shown, and the draw weight that follows from it.</summary>
     private string ShowSummary(Guid teaserId)
@@ -586,7 +627,7 @@
 
     /// <summary>
     /// Clears the row, remembered on this Mac only. What a visitor typed never goes into the
-    /// accepted answers: the author adds those in their own words (PRD 02).
+    /// accepted answers as it is: the author rewords it in the Accept box first (PRD 02).
     /// </summary>
     private void AgreeWithJev(JudgedAnswer judged)
     {
@@ -599,6 +640,75 @@
         Rule(judged, t => t.NotAccepted = string.IsNullOrWhiteSpace(t.NotAccepted)
             ? AsOneAnswer(judged.Submission)
             : $"{t.NotAccepted}; {AsOneAnswer(judged.Submission)}");
+
+    /// <summary>
+    /// Enough lines for the whole wording, at about 60 characters a line in the box's width,
+    /// growing as the author types. A visitor can type at most 300 characters, so 6 lines.
+    /// </summary>
+    private int AcceptBoxRows => Math.Clamp(_acceptText.Length / 60 + 1, 2, 8);
+
+    private bool IsAccepting(JudgedAnswer judged) =>
+        _accepting is { } open && open.TeaserId == judged.TeaserId && open.Submission == judged.Submission;
+
+    /// <summary>Opens the Accept box on this row, filled in with what was typed, for the author to reword.</summary>
+    private void OpenAccept(JudgedAnswer judged)
+    {
+        _accepting = judged;
+        _acceptText = judged.Submission;
+        _acceptWarning = null;
+        _acceptedNote = null;
+    }
+
+    private void CloseAccept()
+    {
+        _accepting = null;
+        _acceptText = string.Empty;
+        _acceptWarning = null;
+    }
+
+    /// <summary>
+    /// Adds the author's wording from the Accept box to the question's accepted answers, made
+    /// one answer the way a ruling is. The accepted answers are part of the question's
+    /// fingerprint, so every verdict Jev made on it stops counting, this row's included, and
+    /// they all leave the list. The verdicts file itself is never written here.
+    /// </summary>
+    private void Accept(JudgedAnswer judged)
+    {
+        if (Store.GetById(judged.TeaserId) is not { } teaser)
+        {
+            CloseAccept();
+            return;
+        }
+
+        var answer = AsAcceptedAnswer(_acceptText);
+        if (!answer.Any(char.IsLetterOrDigit))
+        {
+            // Matching looks only at letters and digits, so nothing else could ever match.
+            _acceptWarning = "Nothing to add: an answer needs a letter or a digit.";
+            return;
+        }
+        if (teaser.AcceptsAnswer(answer))
+        {
+            _acceptWarning = $"\"{answer}\" is already accepted, so nothing was added.";
+            return;
+        }
+        // Accepted answers are checked first, so adding a ruled-out one would quietly undo the ruling.
+        if (teaser.RulesOut(answer))
+        {
+            _acceptWarning = $"\"{answer}\" is ruled wrong, so nothing was added. Take it out of Ruled wrong with Edit first.";
+            return;
+        }
+
+        var others = _toReview.Count(r => r.Teaser.Id == teaser.Id && r.Judged.Submission != judged.Submission);
+        Rule(judged, t => t.Answer = string.IsNullOrWhiteSpace(t.Answer) ? answer : $"{t.Answer}; {answer}");
+        CloseAccept();
+        _acceptedNote = $"Added \"{answer}\" to the accepted answers. Publish teasers.json afterwards." + others switch
+        {
+            0 => "",
+            1 => " Jev's other verdict on that question no longer counts, so it has left the list too.",
+            _ => $" Jev's {others} other verdicts on that question no longer count, so they have left the list too.",
+        };
+    }
 
     private void Rule(JudgedAnswer judged, Action<BrainTeaser> ruling)
     {
@@ -623,6 +733,31 @@
     /// </summary>
     private static string AsOneAnswer(string typed) =>
         typed.Replace(';', ',').Replace('(', ' ').Replace(')', ' ').Trim();
+
+    /// <summary>
+    /// The Accept box's wording as it will be saved: one answer, with the gaps that brackets
+    /// leave closed up ("second  or third").
+    /// </summary>
+    private static string AsAcceptedAnswer(string typed) =>
+        string.Join(' ', AsOneAnswer(typed).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+
+    /// <summary>
+    /// Whether adding this wording would stop the question being one whose answers are all
+    /// written-out methods (<see cref="BrainTeaser.IsExplanationQuestion"/>): one short answer is
+    /// enough. Its number rules would then hold again, turning down right methods before Jev
+    /// sees them, and the reveal would show the first answer above the solution.
+    /// </summary>
+    private static bool EndsMethodQuestion(BrainTeaser teaser, string typed) =>
+        teaser.IsExplanationQuestion() &&
+        !new BrainTeaser { Answer = $"{teaser.Answer}; {AsAcceptedAnswer(typed)}" }.IsExplanationQuestion();
+
+    private static string MethodWarning(BrainTeaser teaser) =>
+        $"Every accepted answer here is a method written out. One under {BrainTeaser.ExplanationWords} words changes that: " +
+        "answers that name numbers then have to match an accepted answer's numbers before Jev sees them, " +
+        "so some right methods will be marked wrong." +
+        (string.IsNullOrWhiteSpace(teaser.Solution)
+            ? ""
+            : " The reveal will also show the first accepted answer above the solution, so the method appears twice.");
 
     private void ResetForm(bool discardStaged = true)
     {
