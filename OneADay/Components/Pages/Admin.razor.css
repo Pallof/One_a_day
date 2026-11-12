@@ -335,6 +335,12 @@
     gap: 0.5rem;
 }
 
+/* What a visitor typed, shown whole: a long run with no spaces, a pasted link say, breaks
+   rather than running out of the box. */
+.jv-typed {
+    overflow-wrap: anywhere;
+}
+
 /* Accept under one of Jev's verdicts: the author's wording for a new accepted answer. */
 .jv-accept-box {
     display: flex;

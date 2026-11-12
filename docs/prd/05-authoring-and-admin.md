@@ -84,7 +84,7 @@ Suggestions and issue reports are reviewed here too ([PRD 06](06-community-feedb
 and nothing here waits on the author. Its header counts them as "3 new from Jev", not as a to-do
 (author's decision, 2026-10-28). It lists the answers the checker turned down and Jev then judged, newest
 first, leaving out any the author has already dealt with and any made before the question was
-last edited. Each shows what was typed, the question, Jev's chance and whether it counts as right
+last edited. Each shows what was typed, in full however long, the question, Jev's chance and whether it counts as right
 at today's bar, with two buttons:
 - **Agree with Jev** clears the row and changes nothing else. It's remembered in
   `agreed-verdicts.json` on this Mac only.
@@ -92,11 +92,13 @@ at today's bar, with two buttons:
   teaser's *Ruled wrong* list. A `;` in it becomes a
   `,`, so it stays one ruling.
 - **Accept…**, shown only where the answer counts as wrong, passes it without leaving the list
-  (author's decision, 2026-11-11). It opens a box on the row filled in with what was typed; the
-  author rewords it and presses **Add**, and that wording joins the teaser's accepted answers.
+  (author's decision, 2026-11-11). It opens a box on the row filled in with what was typed, which
+  wraps and grows so a long answer shows whole; the author rewords it and presses **Add**, and that wording joins the teaser's accepted answers.
   It's cleaned the same way as a ruling, and refused if the checker already accepts it or it's
   ruled wrong. Every verdict on that question then leaves the list, since changing the accepted
-  answers retires them all.
+  answers retires them all. On a question whose answers are all methods written out, the box
+  warns when the wording is under 10 words, since one short answer changes how the question is
+  graded and revealed ([PRD 02](02-answer-evaluation.md#the-second-opinion-jev)).
 
 Nothing a visitor typed becomes an accepted answer as it is: Accept… only fills in the box, and the
 author's own wording is what's added ([PRD 02](02-answer-evaluation.md#the-second-opinion-jev)).

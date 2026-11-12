@@ -254,7 +254,7 @@ public class JudgedAnswersAdminTests : BunitContext
     {
         var row = page.FindAll(".jv-judged").Single(r => r.QuerySelector(".jv-typed")!.TextContent.Trim() == "second; or first");
         row.QuerySelector("button.jv-accept")!.Click();
-        page.Find("input.jv-accept-text").Input(wording);
+        page.Find("textarea.jv-accept-text").Input(wording);
         if (add)
         {
             page.Find("button.jv-accept-add").Click();
@@ -281,7 +281,7 @@ public class JudgedAnswersAdminTests : BunitContext
         Press(page, 1, "jv-accept");
 
         var box = page.FindAll(".jv-judged")[1].QuerySelector(".jv-accept-box")!;
-        Assert.Equal("second; or first", box.QuerySelector("input.jv-accept-text")!.GetAttribute("value"));
+        Assert.Equal("second; or first", box.QuerySelector("textarea.jv-accept-text")!.GetAttribute("value"));
         Assert.Equal(Place.Answer, Saved().Answer);
     }
 
@@ -399,6 +399,102 @@ public class JudgedAnswersAdminTests : BunitContext
         page.Find("button.oad-btn-green").Click();
 
         Assert.True(Saved().AcceptsAnswer("just behind the leader"));
+    }
+
+    // ----- The warning on a question whose answers are all written-out methods -----
+
+    private static readonly Guid MethodId = Guid.Parse("5c2a7e19-0d4b-4a8f-9e36-b1f0c7d2e844");
+
+    /// <summary>A made-up question whose one accepted answer is a method, 10 words or more.</summary>
+    private void WithMethodQuestion(string? solution)
+    {
+        var method = new BrainTeaser
+        {
+            Id = MethodId,
+            Date = new DateOnly(2026, 9, 4),
+            Question = "A made-up question that wants a method?",
+            Answer = "count the red marbles first and then the blue ones in the jar",
+            Solution = solution,
+        };
+        Assert.True(method.IsExplanationQuestion());
+        _env.SeedTeasers(Place, method);
+        _env.WriteDataFile(JudgedAnswerStore.FileName, JsonSerializer.Serialize(new[]
+        {
+            new JudgedAnswer
+            {
+                TeaserId = MethodId, Submission = "count them", Chance = 0.20,
+                Against = method.Fingerprint(), JudgedAt = new DateTime(2026, 9, 2, 8, 0, 0),
+            },
+        }));
+        Services.AddSingleton(_env.NewTeaserStore());       // the last registration wins
+        Services.AddSingleton(new JudgedAnswerStore(_env));
+    }
+
+    [Theory]
+    // The reveal leaves the answer line out only where there's a solution to show the method in
+    [InlineData("Made-up solution.", true)]
+    [InlineData(null, false)]
+    public void A_short_answer_on_a_method_question_warns_while_it_is_typed(string? solution, bool mentionsReveal)
+    {
+        WithMethodQuestion(solution);
+        var page = Render<Admin>();
+
+        Press(page, 0, "jv-accept");   // the pre-filled "count them" is two words
+
+        var warning = page.Find(".jv-accept-method-warning").TextContent;
+        Assert.Contains("some right methods will be marked wrong", warning);
+        Assert.Equal(mentionsReveal, warning.Contains("above the solution"));
+        Assert.False(page.Find("button.jv-accept-add").HasAttribute("disabled"));   // a warning, not a refusal
+
+        // Saved as one answer, the ';' doesn't leave a short answer of its own.
+        page.Find("textarea.jv-accept-text").Input("count them; the red marbles first and then the blue ones");
+        Assert.Empty(page.FindAll(".jv-accept-method-warning"));
+    }
+
+    [Fact]
+    public void No_method_warning_where_the_answers_are_short_already()
+    {
+        var page = Render<Admin>();
+
+        AcceptAs(page, "near", add: false);
+
+        Assert.Empty(page.FindAll(".jv-accept-method-warning"));
+    }
+
+    // ----- Long answers, shown whole -----
+
+    /// <summary>A written-out answer near the 300 characters a visitor can type.</summary>
+    private static readonly string LongAnswer = string.Join(' ', Enumerable.Repeat("then I pass the next runner on the inside", 7)).Trim();
+
+    private void WithLongAnswer()
+    {
+        Assert.True(LongAnswer.Length > 250);
+        _env.WriteDataFile(JudgedAnswerStore.FileName, JsonSerializer.Serialize(new[] { Judged(LongAnswer, 0.40) }));
+        Services.AddSingleton(new JudgedAnswerStore(_env));   // the last registration wins
+    }
+
+    [Fact]
+    public void A_long_answer_is_listed_whole()
+    {
+        WithLongAnswer();
+        var page = Render<Admin>();
+
+        Assert.Equal([LongAnswer], Listed(page));
+    }
+
+    [Fact]
+    public void The_accept_box_shows_a_long_answer_whole()
+    {
+        // A one-line field showed only the start of a written-out method; a text area wraps it,
+        // with a line for each 60 characters or so.
+        WithLongAnswer();
+        var page = Render<Admin>();
+
+        Press(page, 0, "jv-accept");
+
+        var box = page.Find("textarea.jv-accept-text");
+        Assert.Equal(LongAnswer, box.GetAttribute("value"));
+        Assert.True(int.Parse(box.GetAttribute("rows")!) * 60 >= LongAnswer.Length);
     }
 
     protected override void Dispose(bool disposing)

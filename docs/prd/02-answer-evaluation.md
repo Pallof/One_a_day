@@ -184,7 +184,8 @@ buttons, **Agree with Jev** and one of the other two:
   becomes a `,` and brackets become spaces, so it stays one ruling: kept as typed, `second place
   (or third)` would also have ruled out a bare `second place` *(PR 74 review)*.
 - **Accept…**, shown only where the answer counts as wrong, opens a box on the row filled in
-  with what was typed (author's decision, 2026-11-11). The author rewords it and presses **Add**,
+  with what was typed (author's decision, 2026-11-11). The box wraps and grows, so a long
+  written-out method shows whole, as it does in the row above. The author rewords it and presses **Add**,
   which adds it to the teaser's accepted answers in `teasers.json`; publishing the bank puts it
   live, and admin says so. **Cancel** closes the box. Add is greyed out while the box is empty.
   Before it's added, a `;` becomes a `,` and brackets become spaces, as for a ruling, so it stays
@@ -194,6 +195,12 @@ buttons, **Agree with Jev** and one of the other two:
   the ruling). The accepted answers are part of the question's fingerprint, so adding one retires
   **every** verdict Jev made on that question, not just this row's: they all leave the list, and
   Jev is asked afresh when one of those answers is typed again. Edit has always done the same.
+  On a question whose accepted answers are all methods written out (an *explanation question*,
+  above), the box warns while the wording is under 10 words, since one short answer ends that:
+  the number rules hold again, turning some right methods down before Jev sees them, and where
+  there's a solution the reveal shows the first answer above it, so the method appears twice. It
+  warns rather than refuses: the author may still want the short answer (author's decision,
+  2026-11-11).
 
 **Nothing a visitor typed becomes an accepted answer as it is** (author's decision, 2026-10-28).
 The accepted answers stay in the author's own words: Accept… only fills in the box, and what is
@@ -267,8 +274,10 @@ cases:
       nothing saved yet, Add greyed out or refusing without an answer, the author's wording saved
       to that question only with the publish reminder, `;` and brackets made one answer, a
       wording already accepted or ruled wrong refused, Cancel, every verdict on the question
-      leaving the list with the verdicts file untouched, the question open in the form, and no
-      single press of any button adding a visitor's text)
+      leaving the list with the verdicts file untouched, the question open in the form, no
+      single press of any button adding a visitor's text, the warning for a short answer on
+      an explanation question, shown only there, mentioning the reveal only with a solution, and
+      never stopping Add, and a long answer shown whole in the list and in the box)
 - [ ] Jev on the live site, and a week of verdicts reviewed before the 70% bar is settled
 
 > **History:** a running total of tests used to be a criterion here. It read 144 while the suite

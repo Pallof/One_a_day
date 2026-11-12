@@ -460,8 +460,14 @@
                         {
                             <form class="jv-accept-box" @onsubmit="() => Accept(judged)">
                                 <label for="jv-accept-text">Add to the accepted answers, in your own words</label>
-                                <input id="jv-accept-text" type="text" class="jv-accept-text"
-                                       @bind="_acceptText" @bind:event="oninput" />
+                                @* A text area, not a one-line field, so a long written method shows whole. *@
+                                <textarea id="jv-accept-text" class="jv-accept-text" rows="@AcceptBoxRows"
+                                          @bind="_acceptText" @bind:event="oninput"></textarea>
+                                @* A warning, not a refusal: the author may still want the short answer. *@
+                                @if (EndsMethodQuestion(teaser, _acceptText))
+                                {
+                                    <span class="oad-warning jv-accept-method-warning">@MethodWarning(teaser)</span>
+                                }
                                 <div class="oad-issue-actions">
                                     <button type="submit" class="oad-btn-green jv-accept-add"
                                             disabled="@string.IsNullOrWhiteSpace(_acceptText)">Add</button>
@@ -586,6 +592,12 @@
             ? AsOneAnswer(judged.Submission)
             : $"{t.NotAccepted}; {AsOneAnswer(judged.Submission)}");
 
+    /// <summary>
+    /// Enough lines for the whole wording, at about 60 characters a line in the box's width,
+    /// growing as the author types. A visitor can type at most 300 characters, so 6 lines.
+    /// </summary>
+    private int AcceptBoxRows => Math.Clamp(_acceptText.Length / 60 + 1, 2, 8);
+
     private bool IsAccepting(JudgedAnswer judged) =>
         _accepting is { } open && open.TeaserId == judged.TeaserId && open.Submission == judged.Submission;
 
@@ -619,8 +631,7 @@
             return;
         }
 
-        // Brackets become spaces, so close up the gaps they leave: "second  or third".
-        var answer = string.Join(' ', AsOneAnswer(_acceptText).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+        var answer = AsAcceptedAnswer(_acceptText);
         if (!answer.Any(char.IsLetterOrDigit))
         {
             // Matching looks only at letters and digits, so nothing else could ever match.
@@ -673,6 +684,31 @@
     /// </summary>
     private static string AsOneAnswer(string typed) =>
         typed.Replace(';', ',').Replace('(', ' ').Replace(')', ' ').Trim();
+
+    /// <summary>
+    /// The Accept box's wording as it will be saved: one answer, with the gaps that brackets
+    /// leave closed up ("second  or third").
+    /// </summary>
+    private static string AsAcceptedAnswer(string typed) =>
+        string.Join(' ', AsOneAnswer(typed).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+
+    /// <summary>
+    /// Whether adding this wording would stop the question being one whose answers are all
+    /// written-out methods (<see cref="BrainTeaser.IsExplanationQuestion"/>): one short answer is
+    /// enough. Its number rules would then hold again, turning down right methods before Jev
+    /// sees them, and the reveal would show the first answer above the solution.
+    /// </summary>
+    private static bool EndsMethodQuestion(BrainTeaser teaser, string typed) =>
+        teaser.IsExplanationQuestion() &&
+        !new BrainTeaser { Answer = $"{teaser.Answer}; {AsAcceptedAnswer(typed)}" }.IsExplanationQuestion();
+
+    private static string MethodWarning(BrainTeaser teaser) =>
+        $"Every accepted answer here is a method written out. One under {BrainTeaser.ExplanationWords} words changes that: " +
+        "answers that name numbers then have to match an accepted answer's numbers before Jev sees them, " +
+        "so some right methods will be marked wrong." +
+        (string.IsNullOrWhiteSpace(teaser.Solution)
+            ? ""
+            : " The reveal will also show the first accepted answer above the solution, so the method appears twice.");
 
     private void ResetForm(bool discardStaged = true)
     {
