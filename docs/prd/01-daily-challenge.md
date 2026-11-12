@@ -45,8 +45,11 @@ It never shows the puzzle's own date: puzzles get recycled, and the date would g
 ### Answering
 
 - One answer box; **Submit answer** is disabled while it's empty.
-- Answers are capped at **300 characters**, in the browser *and* on the server, so a crafted
-  request can't get round it. How answers are judged: [PRD 02](02-answer-evaluation.md).
+- Answers are capped at **300 characters**, or **600 on an explanation question** (one whose
+  accepted answers are all methods written out), in the browser *and* on the server, so a crafted
+  request can't get round it. 600 because a whole method didn't fit in 300 *(author's decision,
+  2026-11-12)*; other questions' answers are a word or a number, so they keep 300. How answers
+  are judged: [PRD 02](02-answer-evaluation.md).
 - **Wrong** → an encouraging message; unlimited retries.
 - **Right** → *"Correct! Solved in N attempts."*, the box locks, and the author's explanation
   shows if there is one. **Confetti** fires — self-contained (no outside library), and skipped for
@@ -152,7 +155,8 @@ honest; it doesn't stop a determined one.
       (`ChallengeLayoutTests`, `CreditNameTests`, mutation-verified)
 - [x] Countdown ticks each second and auto-reloads at midnight PT
 - [x] Confetti fires on a correct answer and is suppressed under reduced-motion
-- [x] Submission length enforced on both client and server
+- [x] Submission length enforced on both client and server: `AnswerLengthTests`, each test
+      mutation-verified on 2026-11-12
 - [x] **Scratch pad** — `ScratchPadTests`, each mutation-verified: on the challenge page, and not
       in the layout or on Twenty Four; Pen, Eraser, Undo, Clear and nothing else, with a drawing area;
       starts closed with the pen picked; nothing on it has a server-side handler

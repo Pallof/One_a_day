@@ -170,6 +170,27 @@ public class BrainTeaser
     public string? AnswerToShow() =>
         IsExplanationQuestion() && !string.IsNullOrWhiteSpace(Solution) ? null : AcceptedAnswers().FirstOrDefault();
 
+    /// <summary>
+    /// The most characters a visitor can type as an answer to most questions (PRD 01). The
+    /// longest accepted answer outside the explanation questions is 30 characters, so this is
+    /// room enough, and no more for Jev to be argued with or for its verdicts file to hold.
+    /// </summary>
+    public const int MaxAnswerLength = 300;
+
+    /// <summary>
+    /// The most on an explanation question, double the usual (author's decision, 2026-11-12).
+    /// A whole method didn't fit in 300: a right one stopped mid-step at 298 characters, and Jev
+    /// scored it 0.46. The longest solution the author has written to one is under 500.
+    /// </summary>
+    public const int MaxExplanationLength = 600;
+
+    /// <summary>
+    /// How many characters the answer box takes for this question: the box's limit in the
+    /// browser and the server's cut behind it, so the two can't drift apart. One short accepted
+    /// answer makes it an ordinary question again, back to <see cref="MaxAnswerLength"/>.
+    /// </summary>
+    public int MaxSubmissionLength() => IsExplanationQuestion() ? MaxExplanationLength : MaxAnswerLength;
+
     /// <summary>Words with a letter or digit in them, so a lone "-" or "..." isn't one.</summary>
     private static int WordCount(string text) =>
         text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Count(w => w.Any(char.IsLetterOrDigit));

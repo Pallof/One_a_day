@@ -464,12 +464,12 @@ public class JudgedAnswersAdminTests : BunitContext
 
     // ----- Long answers, shown whole -----
 
-    /// <summary>A written-out answer near the 300 characters a visitor can type.</summary>
-    private static readonly string LongAnswer = string.Join(' ', Enumerable.Repeat("then I pass the next runner on the inside", 7)).Trim();
+    /// <summary>A written-out answer near the 600 characters a visitor can type on an explanation question.</summary>
+    private static readonly string LongAnswer = string.Join(' ', Enumerable.Repeat("then I pass the next runner on the inside", 14)).Trim();
 
     private void WithLongAnswer()
     {
-        Assert.True(LongAnswer.Length > 250);
+        Assert.InRange(LongAnswer.Length, 540, 600);
         _env.WriteDataFile(JudgedAnswerStore.FileName, JsonSerializer.Serialize(new[] { Judged(LongAnswer, 0.40) }));
         Services.AddSingleton(new JudgedAnswerStore(_env));   // the last registration wins
     }
