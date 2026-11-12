@@ -277,7 +277,8 @@ cases:
       leaving the list with the verdicts file untouched, the question open in the form, no
       single press of any button adding a visitor's text, the warning for a short answer on
       an explanation question, shown only there, mentioning the reveal only with a solution, and
-      never stopping Add, and a long answer shown whole in the list and in the box)
+      never stopping Add, a long answer shown whole in the list and in the box, and the whole
+      question shown on each row)
 - [ ] Jev on the live site, and a week of verdicts reviewed before the 70% bar is settled
 
 > **History:** a running total of tests used to be a criterion here. It read 144 while the suite

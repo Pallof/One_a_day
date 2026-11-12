@@ -497,6 +497,30 @@ public class JudgedAnswersAdminTests : BunitContext
         Assert.True(int.Parse(box.GetAttribute("rows")!) * 60 >= LongAnswer.Length);
     }
 
+    [Fact]
+    public void The_question_is_shown_whole()
+    {
+        // It used to stop at 90 characters, and an answer can turn on the end of the question.
+        var question = string.Join(' ', Enumerable.Repeat("A made-up question that runs on for a while,", 4)) + " so where does it end?";
+        var wordy = new BrainTeaser { Id = OtherId, Date = new DateOnly(2026, 9, 3), Question = question, Answer = "alpha" };
+        _env.SeedTeasers(wordy);
+        _env.WriteDataFile(JudgedAnswerStore.FileName, JsonSerializer.Serialize(new[]
+        {
+            new JudgedAnswer
+            {
+                TeaserId = OtherId, Submission = "gamma", Chance = 0.30,
+                Against = wordy.Fingerprint(), JudgedAt = new DateTime(2026, 9, 2, 8, 0, 0),
+            },
+        }));
+        Services.AddSingleton(_env.NewTeaserStore());       // the last registration wins
+        Services.AddSingleton(new JudgedAnswerStore(_env));
+        Assert.True(question.Length > 150);
+
+        var page = Render<Admin>();
+
+        Assert.Equal(question, page.Find(".jv-judged .jv-question em").TextContent);
+    }
+
     protected override void Dispose(bool disposing)
     {
         _env.Dispose();

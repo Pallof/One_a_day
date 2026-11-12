@@ -84,7 +84,7 @@ Suggestions and issue reports are reviewed here too ([PRD 06](06-community-feedb
 and nothing here waits on the author. Its header counts them as "3 new from Jev", not as a to-do
 (author's decision, 2026-10-28). It lists the answers the checker turned down and Jev then judged, newest
 first, leaving out any the author has already dealt with and any made before the question was
-last edited. Each shows what was typed, in full however long, the question, Jev's chance and whether it counts as right
+last edited. Each shows what was typed and the whole question, however long, Jev's chance and whether it counts as right
 at today's bar, with two buttons:
 - **Agree with Jev** clears the row and changes nothing else. It's remembered in
   `agreed-verdicts.json` on this Mac only.

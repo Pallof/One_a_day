@@ -441,7 +441,8 @@
                             <span>@judged.JudgedAt.ToString("d MMM yyyy, h:mm tt") PT</span>
                         </div>
                         <p class="oad-issue-details jv-typed">@judged.Submission</p>
-                        <p class="oad-issue-context"><span>Question: <em>@Truncate(teaser.Question, 90)</em></span></p>
+                        @* Whole, not shortened: judging an answer can turn on the end of the question. *@
+                        <p class="oad-issue-context"><span class="jv-question">Question: <em>@teaser.Question</em></span></p>
                         <div class="oad-issue-actions">
                             <button class="oad-btn-plain jv-agree" @onclick="() => AgreeWithJev(judged)">Agree with Jev</button>
                             @* Only where it counts as right: an answer already wrong needs no ruling. *@

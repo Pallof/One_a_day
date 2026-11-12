@@ -337,7 +337,8 @@
 
 /* What a visitor typed, shown whole: a long run with no spaces, a pasted link say, breaks
    rather than running out of the box. */
-.jv-typed {
+.jv-typed,
+.jv-question {
     overflow-wrap: anywhere;
 }
 
