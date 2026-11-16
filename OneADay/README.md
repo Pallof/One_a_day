@@ -74,6 +74,7 @@ per-teaser Stats column.
 | `/` | Home — welcome banner, Challenge of the day, submission box |
 | `/yesterday` | Yesterday's solution: the previous challenge, with its answer behind a blur veil |
 | `/twentyfour` | Twenty Four — make 24 from four dealt cards (also answers the legacy `/questions`) |
+| `/twentyfour/blitz` | 24 Blitz: the same game against a five-minute clock, with its own scoreboard |
 | `/about` | About us |
 | `/contact` | Suggest a teaser — the suggestion form (difficulty, teaser, solution); submissions land in `App_Data/suggestions.json` and are reviewed in admin. Rate-limited to 1/day per device (and 3/day per hashed IP as a bot backstop) |
 | `/admin` | Your input system for adding daily teasers |

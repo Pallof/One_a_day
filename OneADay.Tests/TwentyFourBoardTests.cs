@@ -91,6 +91,71 @@ public class TwentyFourBoardTests : IDisposable
         Assert.Equal([(Ann, 1)], Rows(read));
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-4)]
+    public void A_score_below_one_never_goes_on_even_an_empty_board(int score)
+    {
+        // A Blitz game can end on nothing or less (author's decision, 2026-11-13).
+        var board = NewBoard();
+
+        board.Blitz.Record(Ann, score);
+        board.Record(Bo, score);
+
+        Assert.Empty(board.Blitz.AllTime);
+        Assert.Empty(board.Blitz.Today);
+        Assert.Empty(board.AllTime);
+    }
+
+    // ---- the Blitz board -------------------------------------------------------------
+
+    [Fact]
+    public void The_Blitz_board_is_kept_apart_in_its_own_file_by_the_same_rules()
+    {
+        var board = NewBoard();
+        board.Record(Ann, 9);
+        board.Blitz.Record(Bo, 4);
+        _now = _now.AddMinutes(1);
+        board.Blitz.Record(Ann, 4);   // ties Bo, but got there later
+        board.Blitz.Record(Bo, 2);    // a worse game doesn't lower Bo's best
+
+        Assert.Equal([(Ann, 9)], Rows(board.AllTime));
+        Assert.Equal([(Bo, 4), (Ann, 4)], Rows(board.Blitz.AllTime));
+        Assert.Equal([(Bo, 4), (Ann, 4)], Rows(board.Blitz.Today));
+
+        var reloaded = NewBoard();
+        Assert.Equal([(Ann, 9)], Rows(reloaded.AllTime));
+        Assert.Equal([(Bo, 4), (Ann, 4)], Rows(reloaded.Blitz.AllTime));
+        Assert.Contains($"\"Number\": {Bo.Number}", _env.ReadDataFile(TwentyFourBoard.BlitzFileName));
+        Assert.DoesNotContain(Bo.Id.ToString(), _env.ReadDataFile(TwentyFourBoard.FileName));
+    }
+
+    [Fact]
+    public void A_lost_counter_goes_on_past_the_highest_number_on_either_board()
+    {
+        NewBoard().Blitz.Record(new TwentyFourPlayer(Guid.NewGuid(), 52), 3);
+        NewBoard().Record(new TwentyFourPlayer(Guid.NewGuid(), 40), 2);
+        File.Delete(NumbersPath);
+
+        Assert.Equal(53, NewBoard().NewPlayer()!.Number);
+    }
+
+    [Fact]
+    public void An_unreadable_Blitz_board_is_set_aside_on_its_own()
+    {
+        var log = new CapturingLogger<TwentyFourBoard>();
+        NewBoard().Record(Ann, 5);
+        _env.WriteDataFile(TwentyFourBoard.BlitzFileName, "{ \"Today\": [ ,");
+
+        var board = new TwentyFourBoard(_env, log, () => _now);
+
+        Assert.Empty(board.Blitz.AllTime);
+        Assert.Equal([(Ann, 5)], Rows(board.AllTime));
+        var aside = Assert.Single(Directory.GetFiles(Path.Combine(_env.ContentRootPath, "App_Data"), "twentyfour-*.unreadable-*.json"));
+        Assert.StartsWith("twentyfour-blitz-board.unreadable-", Path.GetFileName(aside));
+        Assert.Contains(log.Entries, e => e.Level == LogLevel.Error && e.Message.Contains(TwentyFourBoard.BlitzFileName));
+    }
+
     // ---- days ------------------------------------------------------------------------
 
     [Fact]

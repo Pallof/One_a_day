@@ -120,11 +120,13 @@ builder.Services.AddSingleton<JudgedAnswerStore>();
 builder.Services.AddSingleton<AgreedVerdictStore>();
 builder.Services.AddSingleton<AnswerGrader>();
 
-// The Twenty Four scoreboard (PRD 07): each player's longest run, under a name no one else has,
+// The Twenty Four scoreboards (PRD 07): each player's longest run and best Blitz score, under a name no one else has,
 // an animal and the number they were given in order. Their browser keeps their id and number
 // encrypted; twentyfour-players.txt holds the last number given.
 builder.Services.AddSingleton<TwentyFourBoard>();
 builder.Services.AddScoped<ITwentyFourPlayerStorage, ProtectedTwentyFourPlayerStorage>();
+// 24 Blitz's clock (PRD 07): the server's time alone says when a game ends.
+builder.Services.AddSingleton(TimeProvider.System);
 
 // Every Monday from 7am Pacific the live site emails the author last week's numbers, so they
 // needn't download anything to see them. Totals and puzzle questions only. Off in Development.

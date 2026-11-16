@@ -8,27 +8,42 @@
 @inject CurrentTeaserContext OnScreen
 @inject TwentyFourBoard Board
 @inject ITwentyFourPlayerStorage PlayerIds
+@inject TimeProvider Clock
 @implements IAsyncDisposable
 
-<PageTitle>Stumpty · 24</PageTitle>
+<PageTitle>@(Blitz ? "Stumpty · 24 Blitz" : "Stumpty · 24")</PageTitle>
 
 @{
     // Read by the cards and the keypad alike, so the two can never disagree.
     var used = UsedCards();
-    var over = RoundOver;
+    var over = Locked;
 }
 
 <div class="tf-page">
-    <div class="oad-banner">Twenty Four</div>
+    <div class="oad-banner">@(Blitz ? "24 Blitz" : "Twenty Four")</div>
 
     @* On a laptop the board sits beside the game, and the rules marked tf-more fold away under
        "How to play", so the page fits a laptop's window (PRD 09). The first line and "Not every
        hand can make 24" always show. On a phone everything shows and the button is hidden. *@
     <div class="oad-box tf-rules-box @(_rulesOpen ? "tf-rules-open" : "")">
+        @* The two games, each at its own address (PRD 07). *@
+        <nav class="tf-modes" aria-label="Game">
+            <a href="twentyfour" class="tf-mode @(Blitz ? "" : "tf-mode-on")" aria-current="@(Blitz ? null : "page")">Normal</a>
+            <a href="twentyfour/blitz" class="tf-mode @(Blitz ? "tf-mode-on" : "")" aria-current="@(Blitz ? "page" : null)">Blitz</a>
+        </nav>
         <p class="tf-lead">
             Make <strong>24</strong> from all four numbers, using only
             <strong>+ &minus; &times; &divide;</strong> and parentheses.
         </p>
+        @if (Blitz)
+        {
+            @* What a game scores, before Go: it never folds away. *@
+            <p class="tf-rules tf-blitz-rules">
+                You have <strong>5 minutes</strong>. Each hand you solve, or correctly call
+                impossible, scores +1. Calling a hand impossible when it can be done scores &minus;1.
+                You get 3 passes, which score nothing.
+            </p>
+        }
         <p class="tf-rules tf-more" id="tf-rule-numbers">
             Each number must be used exactly once. Numbers run 1–10, like a deck of cards
             with the face cards counting as 10, so duplicates happen.
@@ -39,10 +54,13 @@
         <p class="tf-rules tf-impossible">
             <strong>Not every hand can make 24.</strong> If you think yours can't, press Impossible.
         </p>
-        <p class="tf-rules tf-impossible tf-more" id="tf-rule-run">
-            Each hand you solve, or correctly call impossible, adds +1 to your run. Pass deals a
-            fresh hand but ends your run, and so does calling a hand impossible when it can be done.
-        </p>
+        @if (!Blitz)
+        {
+            <p class="tf-rules tf-impossible tf-more" id="tf-rule-run">
+                Each hand you solve, or correctly call impossible, adds +1 to your run. Pass deals a
+                fresh hand but ends your run, and so does calling a hand impossible when it can be done.
+            </p>
+        }
         @* An easy base case, deliberately. Players work up from here.
 
            Two rules before changing this, both from PRD 07 and both learned the hard
@@ -60,111 +78,143 @@
         @* It names the paragraphs it opens: they're before it in the page as well as after, so a
            screen reader can find them. *@
         <button type="button" class="tf-how" aria-expanded="@(_rulesOpen ? "true" : "false")"
-                aria-controls="tf-rule-numbers tf-rule-run tf-rule-example"
+                aria-controls="@(Blitz ? "tf-rule-numbers tf-rule-example" : "tf-rule-numbers tf-rule-run tf-rule-example")"
                 @onclick="() => _rulesOpen = !_rulesOpen">
             @(_rulesOpen ? "Show less" : "How to play")
         </button>
     </div>
 
-    <div class="oad-box tf-hand-box">
-        <div class="tf-hand">
-            @for (var i = 0; i < _hand.Length; i++)
+    @if (Blitz && !BlitzInPlay)
+    {
+        @* Nothing is dealt until Go, so no number of the first hand exists, on the server or in the
+           page, before the clock starts (issue 84). Hiding a dealt hand would still send it. *@
+        <div class="oad-box tf-hand-box tf-start">
+            @if (_game is { } done)
             {
-                @* Corner ranks and suits are decorative repeats of the pip — hidden from
-                   screen readers so a card announces "3", not "3 spade 3 3 spade". *@
-                <span class="tf-card @SuitColour(i) @(used[i] ? "tf-card-used" : "")">
-                    <span class="tf-rank" aria-hidden="true">@_hand[i]<span class="tf-suit">@Suit(i)</span></span>
-                    <span class="tf-pip">@_hand[i]</span>
-                    <span class="tf-rank tf-rank-br" aria-hidden="true">@_hand[i]<span class="tf-suit">@Suit(i)</span></span>
-                </span>
+                <p class="tf-result" role="status">Time's up. You scored <strong>@Points(done.Score)</strong>.</p>
+            }
+            else
+            {
+                <p class="tf-start-note">The clock starts when you press Go.</p>
+            }
+            <button class="oad-btn-green tf-go" @onclick="Go">@(_game is null ? "Go" : "Play again")</button>
+        </div>
+    }
+    else
+    {
+        <div class="oad-box tf-hand-box">
+            <div class="tf-hand">
+                @for (var i = 0; i < _hand.Length; i++)
+                {
+                    @* Corner ranks and suits are decorative repeats of the pip — hidden from
+                       screen readers so a card announces "3", not "3 spade 3 3 spade". *@
+                    <span class="tf-card @SuitColour(i) @(used[i] ? "tf-card-used" : "")">
+                        <span class="tf-rank" aria-hidden="true">@_hand[i]<span class="tf-suit">@Suit(i)</span></span>
+                        <span class="tf-pip">@_hand[i]</span>
+                        <span class="tf-rank tf-rank-br" aria-hidden="true">@_hand[i]<span class="tf-suit">@Suit(i)</span></span>
+                    </span>
+                }
+            </div>
+            @if (_game is { } game)
+            {
+                @* The server's clock, redrawn each second. role="timer" is never read out unasked. *@
+                <p class="tf-run tf-blitz-status">
+                    <span>Time <strong class="tf-clock" role="timer">@BlitzGame.Clock(game.Left(Now))</strong></span>
+                    <span>Score <strong class="tf-score">@Points(game.Score)</strong></span>
+                    <span>Passes left <strong class="tf-passes-left">@game.PassesLeft</strong></span>
+                </p>
+            }
+            else
+            {
+                <p class="tf-run">Current run: <strong>@_run</strong></p>
             }
         </div>
-        <p class="tf-run">Current run: <strong>@_run</strong></p>
-    </div>
 
-    <div class="oad-box">
-        @* type="text" is what app.css styles every text box by; without it this one was a bare
-           browser box. The heading doubles as its label for screen readers. *@
-        <h2 id="tf-answer-label">Your answer:</h2>
-        <input type="text" class="tf-input" aria-labelledby="tf-answer-label" placeholder="Type your answer"
-               maxlength="120"
-               @bind="_expression" @bind:event="oninput"
-               @onkeydown="OnKeyDown"
-               disabled="@over" />
+        <div class="oad-box">
+            @* type="text" is what app.css styles every text box by; without it this one was a bare
+               browser box. The heading doubles as its label for screen readers. *@
+            <h2 id="tf-answer-label">Your answer:</h2>
+            <input type="text" class="tf-input" aria-labelledby="tf-answer-label" placeholder="Type your answer"
+                   maxlength="120"
+                   @bind="_expression" @bind:event="oninput"
+                   @onkeydown="OnKeyDown"
+                   disabled="@over" />
 
-        @* The dealt numbers and the symbols as buttons, so a phone player never swaps between
-           the letter and number keyboards. Touch screens only — the stylesheet hides it where
-           there's a mouse, and so a keyboard. Tapping never focuses the box, which would
-           bring the phone's keyboard up over the keypad (PRD 07). *@
-        <div class="tf-keypad" role="group" aria-label="Number and symbol buttons">
-            @for (var i = 0; i < _hand.Length; i++)
+            @* The dealt numbers and the symbols as buttons, so a phone player never swaps between
+               the letter and number keyboards. Touch screens only — the stylesheet hides it where
+               there's a mouse, and so a keyboard. Tapping never focuses the box, which would
+               bring the phone's keyboard up over the keypad (PRD 07). *@
+            <div class="tf-keypad" role="group" aria-label="Number and symbol buttons">
+                @for (var i = 0; i < _hand.Length; i++)
+                {
+                    var number = _hand[i];
+                    @* Goes out with its card, and comes back with it. *@
+                    <button class="tf-key tf-key-number" disabled="@(over || used[i])"
+                            @onclick="() => Tap(number.ToString(CultureInfo.InvariantCulture))">@number</button>
+                }
+                @foreach (var key in SymbolKeys)
+                {
+                    <button class="tf-key tf-key-symbol" aria-label="@key.Name" disabled="@over"
+                            @onclick="() => Tap(key.Text)">@key.Text</button>
+                }
+                <button class="tf-key tf-key-delete" aria-label="Delete"
+                        disabled="@(over || string.IsNullOrWhiteSpace(_expression))"
+                        @onclick="DeleteLast">⌫</button>
+            </div>
+
+            @* Once the hand is over, a laptop hides these three, all greyed out by then, and deals
+               the next hand from the button below, in their place. A phone keeps them, with the
+               next hand dealt from its own box under this one. *@
+            <div class="tf-buttons @(over ? "tf-buttons-over" : "")">
+                <button class="oad-btn-green" @onclick="Submit"
+                        disabled="@(over || string.IsNullOrWhiteSpace(_expression))">
+                    Submit
+                </button>
+                <button class="tf-call" @onclick="CallImpossible" disabled="@over">
+                    Impossible
+                </button>
+                <button class="tf-pass" @onclick="Pass" disabled="@(over || _game is { PassesLeft: 0 })">
+                    Pass
+                </button>
+            </div>
+
+            @if (over)
             {
-                var number = _hand[i];
-                @* Goes out with its card, and comes back with it. *@
-                <button class="tf-key tf-key-number" disabled="@(over || used[i])"
-                        @onclick="() => Tap(number.ToString(CultureInfo.InvariantCulture))">@number</button>
+                <div class="tf-next-here">
+                    <button class="tf-next" @onclick="() => NewHand()">Deal a new hand</button>
+                    <p class="tf-next-hint">or press the space bar</p>
+                </div>
             }
-            @foreach (var key in SymbolKeys)
+
+            @if (_message is not null)
             {
-                <button class="tf-key tf-key-symbol" aria-label="@key.Name" disabled="@over"
-                        @onclick="() => Tap(key.Text)">@key.Text</button>
+                <p class="tf-message @(_tone switch {
+                        Tone.Correct => "tf-correct",
+                        Tone.Passed => "tf-passed",
+                        _ => "tf-wrong" })">@_message</p>
             }
-            <button class="tf-key tf-key-delete" aria-label="Delete"
-                    disabled="@(over || string.IsNullOrWhiteSpace(_expression))"
-                    @onclick="DeleteLast">⌫</button>
+
         </div>
 
-        @* Once the hand is over, a laptop hides these three, all greyed out by then, and deals
-           the next hand from the button below, in their place. A phone keeps them, with the
-           next hand dealt from its own box under this one. *@
-        <div class="tf-buttons @(over ? "tf-buttons-over" : "")">
-            <button class="oad-btn-green" @onclick="Submit"
-                    disabled="@(over || string.IsNullOrWhiteSpace(_expression))">
-                Submit
-            </button>
-            <button class="tf-call" @onclick="CallImpossible" disabled="@over">
-                Impossible
-            </button>
-            <button class="tf-pass" @onclick="Pass" disabled="@over">
-                Pass
-            </button>
-        </div>
-
+        @* A phone's way to the next hand. A laptop hides it and uses the one in the box above. *@
         @if (over)
         {
-            <div class="tf-next-here">
+            <div class="oad-box tf-next-box">
                 <button class="tf-next" @onclick="() => NewHand()">Deal a new hand</button>
+                @* Hidden on touch screens, which have no space bar. *@
                 <p class="tf-next-hint">or press the space bar</p>
             </div>
         }
-
-        @if (_message is not null)
-        {
-            <p class="tf-message @(_state switch {
-                    RoundState.Solved or RoundState.CalledRight => "tf-correct",
-                    RoundState.Passed => "tf-passed",
-                    _ => "tf-wrong" })">@_message</p>
-        }
-
-    </div>
-
-    @* A phone's way to the next hand. A laptop hides it and uses the one in the box above. *@
-    @if (over)
-    {
-        <div class="oad-box tf-next-box">
-            <button class="tf-next" @onclick="() => NewHand()">Deal a new hand</button>
-            @* Hidden on touch screens, which have no space bar. *@
-            <p class="tf-next-hint">or press the space bar</p>
-        </div>
     }
 
     @* Folds to its title for a player who'd rather not see it while they play, and the browser
-       remembers which way it was left (PRD 07). Open until then. *@
+       remembers which way it was left (PRD 07). Open until then. Blitz has a board of its own,
+       folded or not the same way as this one. *@
     <section class="oad-box tf-board @(_boardOpen ? "" : "tf-board-closed")" aria-labelledby="tf-board-title">
         <h2 id="tf-board-title">
             <button type="button" class="tf-board-toggle" aria-expanded="@(_boardOpen ? "true" : "false")"
                     aria-controls="tf-board-body" @onclick="ToggleBoardAsync">
-                High scores<span class="tf-chevron" aria-hidden="true"></span>
+                @(Blitz ? "Blitz high scores" : "High scores")<span class="tf-chevron" aria-hidden="true"></span>
             </button>
         </h2>
         <div id="tf-board-body" hidden="@(!_boardOpen)">
@@ -177,11 +227,17 @@
                 <p class="tf-board-note">Get a hand right and you'll get a name on the board.</p>
             }
             <div class="tf-board-lists">
-                @foreach (var (title, runs, empty) in new[]
-                {
-                    ("Today", Board.Today, "No runs yet today. Solve a hand to get on the board."),
-                    ("All time", Board.AllTime, "No runs yet."),
-                })
+                @foreach (var (title, runs, empty) in Blitz
+                    ? new[]
+                    {
+                        ("Today", Board.Blitz.Today, "No scores yet today. Finish a game on 1 or more to get on the board."),
+                        ("All time", Board.Blitz.AllTime, "No scores yet."),
+                    }
+                    : new[]
+                    {
+                        ("Today", Board.Today, "No runs yet today. Solve a hand to get on the board."),
+                        ("All time", Board.AllTime, "No runs yet."),
+                    })
                 {
                     <div class="tf-board-list">
                         <h3>@title</h3>
@@ -218,10 +274,21 @@
     /// </summary>
     private enum RoundState { Playing, Wrong, Solved, Passed, CalledRight, CalledWrong }
 
+    /// <summary>How the message under the buttons reads: good news, bad, or neither.</summary>
+    private enum Tone { Correct, Wrong, Passed }
+
+    /// <summary>
+    /// 24 Blitz (issue 84): five minutes from Go, scored, with three passes. Set by the page at
+    /// /twentyfour/blitz. A solve or a call deals the next hand at once, so a Blitz hand is never
+    /// left over the way a normal one is: the round states past Wrong are the normal game's.
+    /// </summary>
+    [Parameter] public bool Blitz { get; set; }
+
     private readonly Random _random = new();
     private int[] _hand = [];
     private string _expression = string.Empty;
     private string? _message;
+    private Tone _tone;
     private RoundState _state = RoundState.Playing;
     private DotNetObjectReference<TwentyFour>? _selfRef;
 
@@ -249,9 +316,40 @@
     /// <summary>A new player was asked for this visit. Once, whether or not the browser kept it.</summary>
     private bool _triedJoining;
 
+    /// <summary>The Blitz game on, or last played this visit. Null until Go.</summary>
+    private BlitzGame? _game;
+
+    /// <summary>The Blitz game has ended, at 5:00 or when the page went, and its score is in.</summary>
+    private bool _gameEnded;
+
+    /// <summary>Redraws the Blitz clock each second, and ends the game at 5:00 if nothing else has.</summary>
+    private ITimer? _ticker;
+
     private bool RoundOver => _state is RoundState.Solved or RoundState.CalledRight or RoundState.CalledWrong;
 
-    protected override void OnInitialized() => NewHand();
+    private bool BlitzInPlay => _game is not null && !_gameEnded;
+
+    /// <summary>
+    /// Nothing typed, tapped or pressed counts: a normal hand that's over, or Blitz before Go and
+    /// after time's up. Checked on the server, not just by the browser's disabled buttons.
+    /// </summary>
+    private bool Locked => Blitz ? !BlitzInPlay : RoundOver;
+
+    /// <summary>The server's time, which alone says when a Blitz game ends.</summary>
+    private DateTime Now => Clock.GetUtcNow().UtcDateTime;
+
+    /// <summary>A score as the page shows it, with a real minus sign below zero.</summary>
+    private static string Points(int score) =>
+        score < 0 ? $"\u2212{-score}" : score.ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>The normal game deals at once. Blitz deals nothing until Go.</summary>
+    protected override void OnInitialized()
+    {
+        if (!Blitz)
+        {
+            NewHand();
+        }
+    }
 
     /// <summary>
     /// Which dealt cards the current expression has spent.
@@ -272,7 +370,7 @@
 
         // On a solve every card is spent — dimming the whole hand under the confetti
         // would read as a loss. Show the winning hand lit, and a called one too.
-        if (RoundOver || string.IsNullOrWhiteSpace(_expression))
+        if (Locked || string.IsNullOrWhiteSpace(_expression))
         {
             return flags;
         }
@@ -335,7 +433,7 @@
     /// </summary>
     private void Tap(string key)
     {
-        if (RoundOver)
+        if (Locked)
         {
             return;   // disabled in the browser; see Submit
         }
@@ -356,7 +454,7 @@
     /// </summary>
     private void DeleteLast()
     {
-        if (RoundOver)
+        if (Locked)
         {
             return;
         }
@@ -379,8 +477,13 @@
     {
         if (firstRender)
         {
-            _selfRef = DotNetObjectReference.Create(this);
-            await JS.InvokeVoidAsync("oadTwentyFour.register", _selfRef);
+            // The space bar deals the normal game's next hand. Blitz deals at once, so it leaves
+            // the space bar to the page.
+            if (!Blitz)
+            {
+                _selfRef = DotNetObjectReference.Create(this);
+                await JS.InvokeVoidAsync("oadTwentyFour.register", _selfRef);
+            }
             await LoadBoardFoldAsync();
             await LoadPlayerAsync();
             StateHasChanged();
@@ -436,8 +539,9 @@
             // The browser went away, or won't store anything. The game plays on regardless.
         }
 
-        // Hands solved while the browser was still answering.
-        if (_player is null && _run > 0)
+        // Hands solved while the browser was still answering. A Blitz score goes on the board only
+        // when its game ends.
+        if (_player is null && (_run > 0 || _game is { Score: > 0 }))
         {
             await JoinAsync();
         }
@@ -472,17 +576,25 @@
         // a quick double tap on "Deal a new hand", or a client sending the click again, arrives
         // with the next hand already in play. Dealing again would be a free Pass that keeps the
         // run (found in review, 2026-10-29).
-        if (note is null && _hand.Length > 0 && !RoundOver)
+        if (Blitz || (note is null && _hand.Length > 0 && !RoundOver))
         {
             return;
         }
 
+        Deal();
+        _message = note;
+        _tone = Tone.Passed;
+        _state = note is null ? RoundState.Playing : RoundState.Passed;
+    }
+
+    /// <summary>A fresh hand on the table, with the answer box cleared.</summary>
+    private void Deal()
+    {
         _hand = TwentyFourGame.Deal(_random);
         // Let "Report an issue" name the hand on screen — this one, not the first dealt.
         OnScreen.SetHand(_hand);
         _expression = string.Empty;
-        _message = note;
-        _state = note is null ? RoundState.Playing : RoundState.Passed;
+        _state = RoundState.Playing;
     }
 
     /// <summary>
@@ -542,33 +654,45 @@
         // The buttons are disabled once a round is over, but only in the browser. A client
         // driving the live connection could otherwise keep "solving" the same hand, inflating
         // the run, the board and the site metrics (PRD 16).
-        if (RoundOver)
+        var now = Now;
+        if (Locked || await TimeIsUpAsync(now))
         {
             return;
         }
 
-        var check = TwentyFourGame.Check(_expression, _hand);
+        var typed = _expression;
+        var check = TwentyFourGame.Check(typed, _hand);
         _message = check.Message;
 
         // A wrong answer leaves the run alone: try again as often as you like. Only Pass and
-        // a wrong Impossible call end it (author's decision, 2026-10-29).
-        if (check.IsCorrect)
+        // a wrong Impossible call end it (author's decision, 2026-10-29). In Blitz it costs
+        // nothing but the time (author's decision, 2026-11-13).
+        if (!check.IsCorrect)
         {
-            _state = RoundState.Solved;
-            _message = $"{check.Message} {await ExtendRunAsync()}";
+            _state = RoundState.Wrong;
+            _tone = Tone.Wrong;
+        }
+        else if (Blitz)
+        {
+            _game!.Play(BlitzMove.Solved, now);
+            await JoinIfNewAsync();
+            DealBlitzHand($"{check.Message} +1 point.", Tone.Correct);
         }
         else
         {
-            _state = RoundState.Wrong;
+            _state = RoundState.Solved;
+            _tone = Tone.Correct;
+            _message = $"{check.Message} {await ExtendRunAsync()}";
         }
 
         // Submitting is what makes a Twenty Four visitor count; opening the page isn't.
-        if (!string.IsNullOrWhiteSpace(_expression))
+        if (!string.IsNullOrWhiteSpace(typed))
         {
             await Metrics.TwentyFourAnswerAsync(check.IsCorrect);
         }
 
-        if (check.IsCorrect)
+        // Not in Blitz, where the next hand is already out: confetti over it would only be in the way.
+        if (check.IsCorrect && !Blitz)
         {
             await JS.InvokeVoidAsync("oadCelebrate");
         }
@@ -579,14 +703,33 @@
     // it could be done is what Impossible is for, at the risk of the run.
     private async Task Pass()
     {
-        if (RoundOver)
+        var now = Now;
+        if (Locked || await TimeIsUpAsync(now))
         {
             return;   // disabled in the browser; see Submit
         }
-        var ended = EndRun();
-        NewHand(ended == 0
-            ? "Passed. Here's a fresh hand."
-            : $"Passed, ending your run of {ended}. Here's a fresh hand.");
+        if (Blitz)
+        {
+            // Three a game, and once they're gone the button goes out; a pass sent anyway counts
+            // for nothing and deals nothing.
+            if (!_game!.Play(BlitzMove.Pass, now))
+            {
+                return;
+            }
+            DealBlitzHand(_game.PassesLeft switch
+            {
+                0 => "Passed. That was your last pass.",
+                1 => "Passed. 1 pass left.",
+                var left => $"Passed. {left} passes left.",
+            }, Tone.Passed);
+        }
+        else
+        {
+            var ended = EndRun();
+            NewHand(ended == 0
+                ? "Passed. Here's a fresh hand."
+                : $"Passed, ending your run of {ended}. Here's a fresh hand.");
+        }
         await Metrics.TwentyFourPassAsync();
     }
 
@@ -597,29 +740,151 @@
     /// </summary>
     private async Task CallImpossible()
     {
-        if (RoundOver)
+        var now = Now;
+        if (Locked || await TimeIsUpAsync(now))
         {
             return;   // disabled in the browser; see Submit
         }
 
         var right = !TwentyFourGame.HasSolution(_hand);
-        if (right)
+        if (Blitz)
+        {
+            // A wrong call costs a point (issue 84), and says no more than the normal game does.
+            _game!.Play(right ? BlitzMove.CalledRight : BlitzMove.CalledWrong, now);
+            if (right)
+            {
+                await JoinIfNewAsync();
+            }
+            DealBlitzHand(right ? "Right, these four can't make 24. +1 point." : "It could be done. \u22121 point.",
+                right ? Tone.Correct : Tone.Wrong);
+        }
+        else if (right)
         {
             _state = RoundState.CalledRight;
+            _tone = Tone.Correct;
             _message = $"Right, these four can't make 24. {await ExtendRunAsync()}";
         }
         else
         {
             _state = RoundState.CalledWrong;
+            _tone = Tone.Wrong;
             var ended = EndRun();
             _message = ended == 0 ? "It could be done." : $"It could be done. Your run of {ended} ends here.";
         }
 
         await Metrics.TwentyFourImpossibleAsync(right);
 
-        if (right)
+        if (right && !Blitz)
         {
             await JS.InvokeVoidAsync("oadCelebrate");
+        }
+    }
+
+    // ---- 24 Blitz ----------------------------------------------------------------------
+
+    /// <summary>
+    /// Starts a Blitz game: the clock from now, and the first hand, dealt only now (issue 84).
+    /// Also "Play again" once time's up.
+    /// </summary>
+    private void Go()
+    {
+        // A second Go mid-game, a double tap or a click sent again, would deal a fresh hand
+        // without a pass.
+        if (!Blitz || BlitzInPlay)
+        {
+            return;
+        }
+
+        _game = new BlitzGame(Now);
+        _gameEnded = false;
+        _message = null;
+        Deal();
+        _ticker?.Dispose();
+        _ticker = Clock.CreateTimer(_ => _ = TickAsync(), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+    }
+
+    /// <summary>Each second: the clock redrawn, and the game ended at 5:00.</summary>
+    private async Task TickAsync()
+    {
+        try
+        {
+            await InvokeAsync(async () =>
+            {
+                if (!BlitzInPlay)
+                {
+                    return;
+                }
+                await TimeIsUpAsync(Now);
+                StateHasChanged();
+            });
+        }
+        catch (ObjectDisposedException)
+        {
+            // The page went between the tick and its turn.
+        }
+    }
+
+    /// <summary>
+    /// Whether this Blitz game's time is up, ending it if so. Every move asks first, with the time
+    /// it arrived, so one sent at 5:00 or after doesn't count, even before the ticker has said
+    /// time's up (author's decision, 2026-11-13: no grace).
+    /// </summary>
+    private async Task<bool> TimeIsUpAsync(DateTime now)
+    {
+        if (!Blitz || !_game!.IsOver(now))
+        {
+            return false;
+        }
+        if (!_gameEnded)
+        {
+            EndGame();
+            if (_game.Score > 0)
+            {
+                try
+                {
+                    await JS.InvokeVoidAsync("oadCelebrate");
+                }
+                catch (Exception e) when (e is JSDisconnectedException or TaskCanceledException or JSException)
+                {
+                    // Played out with the page closed or offline; the score is in all the same.
+                }
+            }
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// The Blitz game is over: the clock stops, the hand leaves the table, and the score goes on
+    /// the board, if this browser has a player and the score is 1 or more.
+    /// </summary>
+    private void EndGame()
+    {
+        _gameEnded = true;
+        _ticker?.Dispose();
+        _ticker = null;
+        OnScreen.ClearHand(_hand);
+        _hand = [];
+        _expression = string.Empty;
+        if (_player is { } player)
+        {
+            Board.Blitz.Record(player, _game!.Score);
+        }
+    }
+
+    /// <summary>The next Blitz hand, straight away, with what became of the last one.</summary>
+    private void DealBlitzHand(string message, Tone tone)
+    {
+        Deal();
+        _message = message;
+        _tone = tone;
+    }
+
+    /// <summary>A Blitz player's first point makes them a player, as a normal game's first hand right does.</summary>
+    private async Task JoinIfNewAsync()
+    {
+        if (_player is null)
+        {
+            await JoinAsync();
         }
     }
 
@@ -627,7 +892,7 @@
     {
         // Any hand still in play, a passed one included: until 2026-10-29 Enter did nothing on
         // the hand Pass dealt until Submit was clicked once.
-        if (e.Key == "Enter" && !RoundOver && !string.IsNullOrWhiteSpace(_expression))
+        if (e.Key == "Enter" && !Locked && !string.IsNullOrWhiteSpace(_expression))
         {
             await Submit();
         }
@@ -638,6 +903,14 @@
         // Leaving the game: stop naming its hand in reports. First, ahead of the early return
         // below — the hand is set for every copy of the page.
         OnScreen.ClearHand(_hand);
+
+        // Leaving mid-game ends a Blitz game, and its score stands, as if the player had stopped
+        // playing: that wins nothing that sitting out the clock wouldn't.
+        if (BlitzInPlay)
+        {
+            EndGame();
+        }
+        _ticker?.Dispose();
 
         // Only the live copy of this page registered with the script. The server first
         // renders the page as plain HTML, and that copy never reaches OnAfterRenderAsync —

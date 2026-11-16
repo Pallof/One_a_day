@@ -1,6 +1,6 @@
 # PRD 07 — The Twenty Four game
 
-**Status:** Spec of record (Impossible and the board added 2026-10-29) · **Route:** `/twentyfour` (also answers `/questions`)
+**Status:** Spec of record (Impossible and the board added 2026-10-29; 24 Blitz 2026-11-16) · **Routes:** `/twentyfour` (also answers `/questions`), and `/twentyfour/blitz` for [24 Blitz](#24-blitz)
 
 ## In plain terms
 
@@ -18,6 +18,9 @@ hints that fractions are allowed. Whether a hand *can* be done it tells only a p
 
 To give players something to chase, hands solved in a row make a **run**, and the longest runs go on
 a **scoreboard**, today's and of all time *(author's decision, 2026-10-29)*.
+
+For players who want a race, **24 Blitz** gives them five minutes to score as many hands as they
+can, on a board of its own *(issue 84, 2026-11-16)*. It's the one timed part of the game.
 
 ## The game
 
@@ -152,6 +155,51 @@ there is. It shows what to type and reveals no method. Before adding or changing
     file that can't be read is set aside as `twentyfour-board.unreadable-<time>.json`, logged as
     an error, and the board starts empty: better than the game down for everyone.
 
+### 24 Blitz
+
+Five minutes from **Go** to score as many hands as you can *(issue 84; decisions the author's,
+2026-11-13)*. Everything above holds unless this says otherwise: the same deal, answer check,
+Impossible verdict, cards and keypad.
+
+30. **Its own address, `/twentyfour/blitz`**, with **Normal** and **Blitz** links at the top of
+    both games' rules. It's the Twenty Four page in a timed mode, so the two share their code and
+    styles. A page of its own wraps it, so switching games always starts the page afresh and
+    nothing carries over.
+31. **Nothing is dealt before Go.** Until then the page shows the rules, the board and a **Go**
+    button. No hand exists on the server yet, so none can reach the page, hidden or not. Go
+    deals the first hand and starts the clock.
+32. **Five minutes on the server's clock**, counting down in whole seconds and redrawn each
+    second. At 5:00 the game ends on its own: the hand leaves, the answer box goes, and the page
+    says *"Time's up. You scored 7."* with **Play again**. Each move reads the server's clock as
+    it arrives, so a move that arrives at 5:00 or later doesn't count, even before the page has
+    caught up. There's no grace period.
+33. **Scoring:** +1 for a solve, +1 for a right Impossible call, −1 for a wrong one. A wrong typed
+    answer costs nothing but time: try again, as in the normal game. The score **can go below
+    zero**, so a wrong call always costs something.
+34. **Three passes a game.** Each deals a fresh hand and scores nothing. Once they're used up, Pass
+    goes grey, and the server ignores one sent anyway.
+35. **The next hand comes at once** after a solve, a call or a pass, with a line saying how the
+    last one went (*"Correct! 6 + 6 + 6 + 6 = 24. +1 point."*, *"It could be done. −1 point."*,
+    *"Passed. 2 passes left."*). There's no *Deal a new hand*, and Blitz doesn't take over the
+    space bar. Confetti fires once, at the end, for a score above zero, since per-hand confetti
+    would cover the next hand.
+36. **It reveals no more than the normal game.** A wrong call says only that the hand could be
+    done, and Pass says nothing about the hand.
+37. **Its own board**, *Blitz high scores*, kept by the normal board's rules: Today and All time,
+    ten rows each, one per player holding their best, and of equal scores, whoever got there
+    first. Players and names are shared with the normal board, and a new player gets a number at
+    their first point. A game's score goes on **when the game ends**, at 5:00 or when the player
+    leaves the page. Leaving is the same as stopping play, so it gains nothing. Only scores of 1
+    or more go on. Stored in `App_Data/twentyfour-blitz-board.json` and set aside like the other
+    board if it can't be read. A lost player counter carries on past the highest number on
+    either board.
+38. **The server holds the game:** the clock, the score, the passes and the hand. Nothing a
+    browser sends can stretch the time, change the score or pick the numbers. Anticheat (issue
+    84's fifth criterion) is left for later, by the author's choice. It can be built on top of
+    this; see *Risks* for what the shadow ban taught.
+39. Blitz hands count in the site metrics just as normal hands do
+    ([PRD 16](16-site-metrics.md)).
+
 ### Showing the hand
 
 18. The numbers are drawn as **playing cards** — corner ranks, a centre symbol, red and black
@@ -246,7 +294,8 @@ Checked in this order, each failure naming what went wrong:
 
 - A run that carries over between visits: the board keeps a player's best, never a run in progress
 - Choosing your own name on the board
-- A timer, or any other pressure
+- A timer, or any other pressure, in the normal game. **24 Blitz is the timed exception**, a mode
+  of its own at its own address, so the normal game stays unhurried
 - Choosing a difficulty, or curating which hands appear
 - Revealing solutions anywhere, including on Pass and a wrong Impossible call
 
@@ -272,6 +321,9 @@ Checked in this order, each failure naming what went wrong:
     - **It's hidden only from people who don't look.** A private window shows the real board,
       and a script can check that way and start again under a new name. Consider hiding just the
       run rather than banning the player, or being open about the rule.
+- **Blitz rewards a script most.** A program solves a hand in milliseconds, so it could fill five
+  minutes with points. Anticheat is issue 84's fifth criterion, left for later by the author's
+  choice; the server already holds everything it would need to check.
 - **A wrong call is a hint.** "It could be done" tells the player the hand they gave up on was
   possible. That's the trade the author chose: the run is the price of finding out.
 
@@ -372,6 +424,31 @@ Checked in this order, each failure naming what went wrong:
 with a mouse it's the other way round; tapping keys never brings up the keyboard; quick double
 taps don't zoom the page.
 
+### 24 Blitz (`BlitzGameTests`, `TwentyFourBlitzPageTests`, `TwentyFourBoardTests`), each mutation-verified
+
+- [x] Its own address, `/twentyfour/blitz`, is the Twenty Four page in its timed mode; each game
+      links to the other and marks itself; the page widens for two columns like the normal one
+- [x] Before Go no hand is dealt: no cards, keypad or answer box, nothing for *Report an issue*,
+      no clock, and Submit, Impossible, Pass or a tap sent anyway do nothing
+- [x] Go deals the first hand and starts five minutes from Go, not from opening the page; the clock
+      counts down each second; a second Go mid-game changes nothing; Play again starts afresh
+- [x] At 5:00 the game ends on its own; a move arriving at 5:00 exactly or after doesn't count,
+      even before the clock has said; anything sent after the end changes nothing
+- [x] +1 for a solve or a right call, −1 for a wrong call, below zero allowed; a wrong typed answer
+      costs nothing and keeps the hand; the next hand comes at once
+- [x] Three passes, each a fresh hand for nothing; then Pass goes out and a forced one deals nothing;
+      neither Pass nor a wrong call shows anything of the hand
+- [x] A game's score goes on the Blitz board when it ends, or when the player leaves, and never on
+      the runs board; a normal run never goes on the Blitz board; each page shows its own board
+- [x] A score of 0 or less stays off; a new player gets a number at their first point
+- [x] The Blitz board keeps its own file by the same rules, survives a restart, is set aside on its
+      own when unreadable, and a lost counter goes on past the highest number on either board
+- [x] The rules say what a game scores and how long it lasts, never fold that away, and still say
+      nothing about fractions
+- [x] By hand, in a browser, at 1280px and at phone width with touch: nothing in the page before
+      Go, the clock counting on its own, a typed and a tapped solve, a pass, a wrong call, and the
+      game ending at 5:00 with the score on the Blitz board
+
 ## Implementation notes
 
 `Models/TwentyFourGame.cs` holds dealing, the solver and `Check`; `Components/Pages/TwentyFour.razor`
@@ -382,8 +459,13 @@ is the page. The arithmetic and its rounding are shared with teaser answers in
   remembered per hand. `FindSolution` stays off the page: the tests feed every solution it finds
   back through `Check`, so the two can't disagree about what a valid answer is. Before showing
   anything it finds, re-read [the Pass rule](#pass-rule) and requirement 10.
-- **`Models/RunBoard.cs`** holds the board's rules, **`Services/TwentyFourBoard.cs`** the two lists
-  and their files, numbers included, **`Models/PlayerName.cs`** the player and their name, and
+- **`Models/RunBoard.cs`** holds the board's rules, **`Services/Scoreboard.cs`** one board's two
+  lists and its file, **`Services/TwentyFourBoard.cs`** both boards (runs and Blitz) and the
+  player numbers, **`Models/PlayerName.cs`** the player and their name, and
   **`Services/TwentyFourPlayerStorage.cs`** the browser's player (`oad-24-player`). A browser
   holding an id from before numbers (2026-10-29) reads as having none.
-- The board lives only on the live site: nothing copies it down or up, and admin doesn't show it.
+- The boards live only on the live site: nothing copies them down or up, and admin doesn't show them.
+- **24 Blitz** is `TwentyFour.razor` with `Blitz` set, by `Components/Pages/TwentyFourBlitz.razor`
+  at `/twentyfour/blitz`. **`Models/BlitzGame.cs`** holds a game's rules: the clock, the score and
+  the passes. The page reads the time from `TimeProvider` (registered in `Program.cs`), so the
+  tests drive the clock and its one-second ticker by hand (`ManualClock`).
