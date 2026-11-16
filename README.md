@@ -261,6 +261,7 @@ OneADay.Tests/               xUnit tests for answer validation
 | `/` | Challenge of the day |
 | `/yesterday` | Yesterday's solution: the question, with the answer behind a tap |
 | `/twentyfour` | Twenty Four — make 24 from four dealt cards, with a scoreboard of the longest runs |
+| `/twentyfour/blitz` | 24 Blitz: five minutes to score as many hands as you can, on its own scoreboard |
 | `/about` · `/contact` | About, and the suggest-a-teaser form |
 | `/admin` | Author tools |
 

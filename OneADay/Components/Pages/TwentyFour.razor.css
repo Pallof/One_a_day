@@ -472,6 +472,86 @@
     font-size: 0.94rem;
 }
 
+/* --- the two games and 24 Blitz ----------------------------------------- */
+
+/* Normal and Blitz, at the top of the rules: two halves of one control, the current game filled
+   in the calm blue the next-hand button uses. */
+.tf-modes {
+    display: inline-flex;
+    margin-bottom: 0.75rem;
+}
+
+.tf-mode {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0.35rem 1rem;
+    border: 1.5px solid var(--field);
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--ink);
+    text-decoration: none;
+    background: #fff;
+}
+
+.tf-mode:first-child {
+    border-radius: 10px 0 0 10px;
+}
+
+.tf-mode:last-child {
+    border-radius: 0 10px 10px 0;
+    border-left: none;
+}
+
+.tf-mode:hover:not(.tf-mode-on) {
+    background: var(--paper);
+}
+
+.tf-mode-on {
+    color: var(--blue-deep);
+    background: var(--blue-tint);
+}
+
+/* What a game scores. The rule after it has no margin of its own, and folded on a laptop the next
+   line is inline, so the gap is this paragraph's. */
+.tf-blitz-rules {
+    margin-bottom: 0.5rem;
+}
+
+/* Before Go, and after time's up: no hand, just what to do next. */
+.tf-start {
+    text-align: center;
+}
+
+.tf-start-note {
+    margin: 0 0 0.9rem;
+    color: var(--ink-soft);
+}
+
+.tf-result {
+    margin: 0 0 0.9rem;
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.tf-go {
+    min-width: 10rem;
+    font-size: 1.1rem;
+}
+
+/* The clock, the score and the passes left, where the normal game shows its run. */
+.tf-blitz-status {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    column-gap: 1.4rem;
+    row-gap: 0.25rem;
+}
+
+.tf-clock {
+    font-size: 1.15rem;
+}
+
 /* --- on a laptop -------------------------------------------------------- */
 
 /* Two columns from 1100px, like today's challenge and yesterday's solution, so the page fits a
