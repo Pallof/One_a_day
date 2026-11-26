@@ -193,7 +193,8 @@
     color: var(--blue-deep);
 }
 
-.oad-menu-panel ::deep a[aria-current="page"] {
+/* The current page, or its section: "24" on 24 Blitz. */
+.oad-menu-panel ::deep a[aria-current] {
     font-weight: 700;
     color: var(--blue-deep);
 }

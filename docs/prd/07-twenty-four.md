@@ -164,12 +164,13 @@ Impossible verdict, cards and keypad.
 30. **Its own address, `/twentyfour/blitz`**, with **Normal** and **Blitz** links at the top of
     both games' rules. It's the Twenty Four page in a timed mode, so the two share their code and
     styles. A page of its own wraps it, so switching games always starts the page afresh and
-    nothing carries over.
+    nothing carries over. The bar's **24** lights up on both; on Blitz it marks the section, so
+    a screen reader isn't told it's the Twenty Four page itself *(author's decision, 2026-11-16)*.
 31. **Nothing is dealt before Go.** Until then the page shows the rules, the board and a **Go**
     button. No hand exists on the server yet, so none can reach the page, hidden or not. Go
     deals the first hand and starts the clock.
-32. **Five minutes on the server's clock**, counting down in whole seconds and redrawn each
-    second. At 5:00 the game ends on its own: the hand leaves, the answer box goes, and the page
+32. **Five minutes on the server's clock**, counting down in whole seconds and redrawn as each
+    whole second runs out, so the last redraw is 5:00 itself. At 5:00 the game ends on its own: the hand leaves, the answer box goes, and the page
     says *"Time's up. You scored 7."* with **Play again**. Each move reads the server's clock as
     it arrives, so a move that arrives at 5:00 or later doesn't count, even before the page has
     caught up. There's no grace period.
@@ -188,7 +189,9 @@ Impossible verdict, cards and keypad.
 37. **Its own board**, *Blitz high scores*, kept by the normal board's rules: Today and All time,
     ten rows each, one per player holding their best, and of equal scores, whoever got there
     first. Players and names are shared with the normal board, and a new player gets a number at
-    their first point. A game's score goes on **when the game ends**, at 5:00 or when the player
+    their first point. The next hand is dealt before the wait for their browser to keep it, so a
+    second click can't score the same hand twice; if time runs out during that wait, their score
+    goes on once the browser answers. A game's score goes on **when the game ends**, at 5:00 or when the player
     leaves the page. Leaving is the same as stopping play, so it gains nothing. Only scores of 1
     or more go on. Stored in `App_Data/twentyfour-blitz-board.json` and set aside like the other
     board if it can't be read. A lost player counter carries on past the highest number on
@@ -324,6 +327,9 @@ Checked in this order, each failure naming what went wrong:
 - **Blitz rewards a script most.** A program solves a hand in milliseconds, so it could fill five
   minutes with points. Anticheat is issue 84's fifth criterion, left for later by the author's
   choice; the server already holds everything it would need to check.
+- **Keys typed in the instant after a solve can land in the next hand's box.** Blitz deals the
+  next hand into the same box at once, so what's typed before the new hand reaches the browser
+  goes with it. It takes typing within one round trip, and the player just clears it.
 - **A wrong call is a hint.** "It could be done" tells the player the hand they gave up on was
   possible. That's the trade the author chose: the run is the price of finding out.
 
@@ -427,7 +433,8 @@ taps don't zoom the page.
 ### 24 Blitz (`BlitzGameTests`, `TwentyFourBlitzPageTests`, `TwentyFourBoardTests`), each mutation-verified
 
 - [x] Its own address, `/twentyfour/blitz`, is the Twenty Four page in its timed mode; each game
-      links to the other and marks itself; the page widens for two columns like the normal one
+      links to the other and marks itself; the page widens for two columns like the normal one;
+      the bar's 24 lights up there as the section, not the page (`ChallengeLayoutTests`)
 - [x] Before Go no hand is dealt: no cards, keypad or answer box, nothing for *Report an issue*,
       no clock, and Submit, Impossible, Pass or a tap sent anyway do nothing
 - [x] Go deals the first hand and starts five minutes from Go, not from opening the page; the clock
@@ -445,6 +452,12 @@ taps don't zoom the page.
       own when unreadable, and a lost counter goes on past the highest number on either board
 - [x] The rules say what a game scores and how long it lasts, never fold that away, and still say
       nothing about fractions
+- [x] Confetti fires once, at the end, for a score above zero, never over a hand; "Time's up" shows
+      without waiting for it; Blitz hands count in the site metrics
+- [x] A new player's first point deals the next hand before their browser has saved them, so a
+      second Submit scores nothing more; time running out during that save still puts the score on
+- [x] The ticker follows the clock's whole seconds: a late tick sets the next for when the clock
+      next changes
 - [x] By hand, in a browser, at 1280px and at phone width with touch: nothing in the page before
       Go, the clock counting on its own, a typed and a tapped solve, a pass, a wrong call, and the
       game ending at 5:00 with the score on the Blitz board

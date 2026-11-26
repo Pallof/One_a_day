@@ -178,4 +178,24 @@ public class ChallengeLayoutTests : BunitContext
 
         Assert.Equal(widens, layout.Find("main").ClassList.Contains("oad-measure-split"));
     }
+
+    /// <summary>
+    /// The bar lights up where the visitor is, in the inline bar and the menu alike. 24 Blitz is
+    /// in Twenty Four's section, so "24" lights up there too, but as its section, not its page.
+    /// </summary>
+    [Theory]
+    [InlineData("twentyfour", "24", "page")]
+    [InlineData("twentyfour/blitz", "24", "true")]
+    [InlineData("about", "About", "page")]
+    public void The_bar_lights_up_the_section_the_visitor_is_in(string path, string label, string current)
+    {
+        Services.GetRequiredService<NavigationManager>().NavigateTo(path);
+        var layout = Render<MainLayout>(p => p.Add(l => l.Body, (RenderFragment)(_ => { })));
+
+        var lit = Assert.Single(layout.FindAll(".oad-nav a"), a => a.ClassList.Contains("oad-nav-current"));
+        Assert.Equal((label, current), (lit.TextContent.Trim(), lit.GetAttribute("aria-current")));
+        Assert.Single(layout.FindAll(".oad-nav a[aria-current]"));
+        var menu = Assert.Single(layout.FindAll(".oad-menu-panel a[aria-current]"));
+        Assert.Equal((label, current), (menu.TextContent.Trim(), menu.GetAttribute("aria-current")));
+    }
 }
