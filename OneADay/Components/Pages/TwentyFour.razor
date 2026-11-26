@@ -322,7 +322,7 @@
     /// <summary>The Blitz game has ended, at 5:00 or when the page went, and its score is in.</summary>
     private bool _gameEnded;
 
-    /// <summary>Redraws the Blitz clock each second, and ends the game at 5:00 if nothing else has.</summary>
+    /// <summary>Redraws the Blitz clock each whole second, and ends the game at 5:00 if nothing else has.</summary>
     private ITimer? _ticker;
 
     private bool RoundOver => _state is RoundState.Solved or RoundState.CalledRight or RoundState.CalledWrong;
@@ -674,9 +674,12 @@
         }
         else if (Blitz)
         {
+            // The next hand goes out before the wait for the browser to keep a new player, so a
+            // second Submit sent meanwhile finds a fresh hand, not this one to score again (cold
+            // review, 2026-11-16).
             _game!.Play(BlitzMove.Solved, now);
-            await JoinIfNewAsync();
             DealBlitzHand($"{check.Message} +1 point.", Tone.Correct);
+            await JoinIfNewAsync();
         }
         else
         {
@@ -750,13 +753,14 @@
         if (Blitz)
         {
             // A wrong call costs a point (issue 84), and says no more than the normal game does.
+            // Dealt before any wait for the browser, as in Submit.
             _game!.Play(right ? BlitzMove.CalledRight : BlitzMove.CalledWrong, now);
+            DealBlitzHand(right ? "Right, these four can't make 24. +1 point." : "It could be done. \u22121 point.",
+                right ? Tone.Correct : Tone.Wrong);
             if (right)
             {
                 await JoinIfNewAsync();
             }
-            DealBlitzHand(right ? "Right, these four can't make 24. +1 point." : "It could be done. \u22121 point.",
-                right ? Tone.Correct : Tone.Wrong);
         }
         else if (right)
         {
@@ -800,10 +804,22 @@
         _message = null;
         Deal();
         _ticker?.Dispose();
-        _ticker = Clock.CreateTimer(_ => _ = TickAsync(), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+        _ticker = Clock.CreateTimer(_ => _ = TickAsync(), null, UntilNextSecond(), Timeout.InfiniteTimeSpan);
     }
 
-    /// <summary>Each second: the clock redrawn, and the game ended at 5:00.</summary>
+    /// <summary>
+    /// Until the clock on the page next changes: it shows whole seconds, a part-second counting as
+    /// one, so it changes as each whole second runs out. A ticker set by this changes the clock
+    /// when the time does, and its last tick lands on 5:00 itself (cold review, 2026-11-16: a
+    /// ticker every second from Go could show 0:01 with the game already over).
+    /// </summary>
+    private TimeSpan UntilNextSecond()
+    {
+        var left = _game!.Left(Now);
+        return left - TimeSpan.FromSeconds(Math.Max(0, Math.Ceiling(left.TotalSeconds) - 1));
+    }
+
+    /// <summary>Each whole second: the clock redrawn, and the game ended at 5:00.</summary>
     private async Task TickAsync()
     {
         try
@@ -814,7 +830,10 @@
                 {
                     return;
                 }
-                await TimeIsUpAsync(Now);
+                if (!await TimeIsUpAsync(Now))
+                {
+                    _ticker?.Change(UntilNextSecond(), Timeout.InfiniteTimeSpan);
+                }
                 StateHasChanged();
             });
         }
@@ -838,6 +857,9 @@
         if (!_gameEnded)
         {
             EndGame();
+            // "Time's up" first: from the ticker nothing redraws until this returns, and the
+            // confetti waits on the browser (cold review, 2026-11-16).
+            StateHasChanged();
             if (_game.Score > 0)
             {
                 try
@@ -879,12 +901,21 @@
         _tone = tone;
     }
 
-    /// <summary>A Blitz player's first point makes them a player, as a normal game's first hand right does.</summary>
+    /// <summary>
+    /// A Blitz player's first point makes them a player, as a normal game's first hand right does.
+    /// If time ran out while their browser was saving them, the game ended with no one to put on
+    /// the board, so their score goes on now.
+    /// </summary>
     private async Task JoinIfNewAsync()
     {
-        if (_player is null)
+        if (_player is not null)
         {
-            await JoinAsync();
+            return;
+        }
+        await JoinAsync();
+        if (_gameEnded && _player is { } player)
+        {
+            Board.Blitz.Record(player, _game!.Score);
         }
     }
 

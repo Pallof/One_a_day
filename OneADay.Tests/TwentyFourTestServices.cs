@@ -20,6 +20,9 @@ public sealed class InMemoryPlayerStorage : ITwentyFourPlayerStorage
     /// <summary>When set, a read waits for it: a browser slow to answer.</summary>
     public TaskCompletionSource? Hold { get; set; }
 
+    /// <summary>When set, a save waits for it: a browser slow to keep a new player.</summary>
+    public TaskCompletionSource? HoldWrites { get; set; }
+
     public async ValueTask<TwentyFourPlayer?> ReadAsync()
     {
         if (Hold is { } hold)
@@ -29,14 +32,17 @@ public sealed class InMemoryPlayerStorage : ITwentyFourPlayerStorage
         return FailWith is null ? Player : throw FailWith;
     }
 
-    public ValueTask WriteAsync(TwentyFourPlayer player)
+    public async ValueTask WriteAsync(TwentyFourPlayer player)
     {
+        if (HoldWrites is { } hold)
+        {
+            await hold.Task;
+        }
         if ((FailWith ?? FailWritesWith) is { } failure)
         {
-            return ValueTask.FromException(failure);
+            throw failure;
         }
         Player = player;
-        return ValueTask.CompletedTask;
     }
 }
 

@@ -21,8 +21,8 @@
         <nav class="oad-nav" aria-label="Main">
             @foreach (var item in NavItems)
             {
-                <a href="@item.Href" class="oad-nav-link @(IsCurrent(item.Href) ? "oad-nav-current" : "")"
-                   aria-current="@(IsCurrent(item.Href) ? "page" : null)">@item.Label</a>
+                <a href="@item.Href" class="oad-nav-link @(CurrentFor(item.Href) is null ? "" : "oad-nav-current")"
+                   aria-current="@CurrentFor(item.Href)">@item.Label</a>
             }
         </nav>
 
@@ -34,7 +34,7 @@
                 <ul>
                     @foreach (var item in NavItems)
                     {
-                        <li><a href="@item.Href" aria-current="@(IsCurrent(item.Href) ? "page" : null)">@item.Label</a></li>
+                        <li><a href="@item.Href" aria-current="@CurrentFor(item.Href)">@item.Label</a></li>
                     }
                     @* No admin link, in any mode. This menu is the visitor's map of the site
                        and /admin isn't part of it; a link that appears only sometimes is one
@@ -131,6 +131,16 @@
     protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => StateHasChanged();
+
+    /// <summary>
+    /// What the bar says about this item: "page" on its own page, "true" elsewhere in its section,
+    /// and null otherwise. 24 Blitz is in Twenty Four's section, so "24" lights up there too, but
+    /// it isn't that page, so it's "true" for a screen reader rather than "page".
+    /// </summary>
+    private string? CurrentFor(string href) =>
+        IsCurrent(href) ? "page"
+        : href == "twentyfour" && IsCurrent("twentyfour/blitz") ? "true"
+        : null;
 
     /// <summary>
     /// Marks the active section, so the current page is obvious in the bar. The query and the

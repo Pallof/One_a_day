@@ -38,8 +38,9 @@ public sealed class ManualClock : TimeProvider
 
 public sealed class ManualTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period) : ITimer
 {
-    public TimeSpan DueTime { get; } = dueTime;
-    public TimeSpan Period { get; } = period;
+    /// <summary>When it was last set to fire, from then: at its making, or its last change.</summary>
+    public TimeSpan DueTime { get; private set; } = dueTime;
+    public TimeSpan Period { get; private set; } = period;
     public bool Disposed { get; private set; }
 
     public void Fire()
@@ -50,7 +51,15 @@ public sealed class ManualTimer(TimerCallback callback, object? state, TimeSpan 
         }
     }
 
-    public bool Change(TimeSpan dueTime, TimeSpan period) => !Disposed;
+    public bool Change(TimeSpan dueTime, TimeSpan period)
+    {
+        if (Disposed)
+        {
+            return false;
+        }
+        (DueTime, Period) = (dueTime, period);
+        return true;
+    }
 
     public void Dispose() => Disposed = true;
 

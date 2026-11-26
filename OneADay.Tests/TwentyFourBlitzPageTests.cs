@@ -20,11 +20,12 @@ public class TwentyFourBlitzPageTests : BunitContext
     private readonly InMemoryPlayerStorage _player = new();
     private readonly ManualClock _clock = new();
     private readonly TwentyFourBoard _board;
+    private readonly MetricsStore _metrics;
 
     public TwentyFourBlitzPageTests()
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
-        Services.AddMetrics(_env);
+        _metrics = Services.AddMetrics(_env);
         Services.AddScoped<CurrentTeaserContext>();
         Services.AddSingleton<TimeProvider>(_clock);
         _board = Services.AddTwentyFour(_env, _player);
@@ -169,13 +170,19 @@ public class TwentyFourBlitzPageTests : BunitContext
         Assert.Equal(4, page.FindAll(".tf-card").Count);
         Assert.Equal(HandOnTable(page), Services.GetRequiredService<CurrentTeaserContext>().Hand);
         Assert.Equal(("5:00", "0", "3"), (Clock(page), Score(page), PassesLeft(page)));
-        Assert.Equal(TimeSpan.FromSeconds(1), Assert.Single(_clock.Running).Period);
+        var ticker = Assert.Single(_clock.Running);
+        Assert.Equal(TimeSpan.FromSeconds(1), ticker.DueTime);
 
         await Tick(page, TimeSpan.FromSeconds(1));
         Assert.Equal("4:59", Clock(page));
         await Tick(page, TimeSpan.FromSeconds(298));
         Assert.Equal("0:01", Clock(page));
         Assert.Empty(page.FindAll(".tf-result"));
+
+        // A late tick sets the next for when the clock next changes, so the last lands on 5:00.
+        await Tick(page, TimeSpan.FromMilliseconds(400));
+        Assert.Equal("0:01", Clock(page));
+        Assert.Equal(TimeSpan.FromMilliseconds(600), ticker.DueTime);
     }
 
     [Fact]
@@ -198,6 +205,7 @@ public class TwentyFourBlitzPageTests : BunitContext
         // What a client driving the live connection could still send.
         Deal(page, 1, 1, 1, 1);
         await CallAnyway(page, "Tap", "1");
+        await CallAnyway(page, "Submit");
         await CallAnyway(page, "CallImpossible");
         await CallAnyway(page, "Pass");
         page.Find("button.tf-go");   // still the end of the game
@@ -206,16 +214,16 @@ public class TwentyFourBlitzPageTests : BunitContext
     }
 
     [Theory]
-    [InlineData("button.oad-btn-green")]
-    [InlineData("button.tf-call")]
-    [InlineData("button.tf-pass")]
-    public void A_move_that_arrives_at_five_minutes_doesnt_count_even_before_the_clock_has_said(string button)
+    [InlineData("button.oad-btn-green", new[] { 6, 6, 6, 6 })]   // a right answer
+    [InlineData("button.tf-call", new[] { 1, 1, 1, 1 })]         // a right call
+    [InlineData("button.tf-pass", new[] { 1, 1, 1, 1 })]
+    public void A_move_that_arrives_at_five_minutes_doesnt_count_even_before_the_clock_has_said(string button, int[] hand)
     {
         // The ticker may not have had its turn when a move arrives: the move asks the clock itself.
         var page = Playing(6, 6, 6, 6);
         Solve(page, "6 + 6 + 6 + 6");
-        Deal(page, 1, 1, 1, 1);
-        page.Find("input.tf-input").Input("1 + 1 + 1 + 1");
+        Deal(page, hand);
+        page.Find("input.tf-input").Input("6 + 6 + 6 + 6");
         _clock.Skip(TimeSpan.FromMinutes(5));
 
         page.Find(button).Click();
@@ -352,6 +360,114 @@ public class TwentyFourBlitzPageTests : BunitContext
         await CallAnyway(page, "Pass");
         Assert.Equal([1, 2, 3, 4], HandOnTable(page));
         Assert.Equal("Passed. That was your last pass.", Message(page));
+    }
+
+    // ---- confetti and metrics --------------------------------------------------------
+
+    private int Celebrations => JSInterop.Invocations["oadCelebrate"].Count;
+
+    [Fact]
+    public async Task Confetti_fires_once_at_the_end_for_a_score_above_zero_and_never_over_a_hand()
+    {
+        // Per hand, it would cover the next one, which is already out.
+        var page = Playing(6, 6, 6, 6);
+        Solve(page, "6 + 6 + 6 + 6");
+        Deal(page, 1, 1, 1, 1);
+        page.Find("button.tf-call").Click();
+        Assert.Equal(0, Celebrations);
+
+        await Tick(page, TimeSpan.FromMinutes(5));
+
+        Assert.Equal(1, Celebrations);
+    }
+
+    [Fact]
+    public async Task A_game_that_ends_on_zero_gets_no_confetti()
+    {
+        var page = Playing(1, 1, 1, 1);
+        page.Find("button.tf-call").Click();
+        Deal(page, 3, 3, 8, 8);
+        page.Find("button.tf-call").Click();
+
+        await Tick(page, TimeSpan.FromMinutes(5));
+
+        Assert.Equal("Time's up. You scored 0.", Text(page, ".tf-result"));
+        Assert.Equal(0, Celebrations);
+    }
+
+    [Fact]
+    public async Task Times_up_shows_while_the_confetti_is_still_on_its_way()
+    {
+        // From the ticker nothing redraws until the call returns, and the browser can be slow.
+        JSInterop.SetupVoid("oadCelebrate");   // never answered
+        var page = Playing(6, 6, 6, 6);
+        Solve(page, "6 + 6 + 6 + 6");
+
+        await Tick(page, TimeSpan.FromMinutes(5));
+
+        Assert.Equal("Time's up. You scored 1.", Text(page, ".tf-result"));
+        Assert.Equal(1, Celebrations);
+    }
+
+    [Fact]
+    public void Blitz_hands_count_in_the_site_metrics_like_normal_ones()
+    {
+        var page = Playing(6, 6, 6, 6);
+        Solve(page, "6 + 6 + 6 + 6");
+        Deal(page, 1, 1, 1, 1);
+        page.Find("button.tf-call").Click();
+        Deal(page, 3, 3, 8, 8);
+        page.Find("button.tf-call").Click();
+        page.Find("button.tf-pass").Click();
+
+        var day = _metrics.Read().Days[MetricsData.Key(AppTime.Today)].TwentyFour;
+        Assert.Equal((1, 1, 1, 1, 1),
+            (day.Players, day.HandsSolved, day.ImpossibleRight, day.ImpossibleWrong, day.HandsPassed));
+    }
+
+    // ---- a new player's first point --------------------------------------------------
+
+    [Theory]
+    [InlineData("button.oad-btn-green", new[] { 6, 6, 6, 6 }, "6 + 6 + 6 + 6")]
+    [InlineData("button.tf-call", new[] { 1, 1, 1, 1 }, "")]
+    public async Task A_new_players_first_point_deals_the_next_hand_before_their_browser_has_saved_them(
+        string button, int[] hand, string answer)
+    {
+        // Saving a new player waits on the browser. With the hand still on the table, a double
+        // click, or a client holding that answer back, scored the same hand twice and then dealt
+        // over the hand it got (cold review, 2026-11-16).
+        _player.HoldWrites = new TaskCompletionSource();
+        var page = Playing(hand);
+        page.Find("input.tf-input").Input(answer);
+        var scored = HandOnTable(page);
+
+        var first = page.Find(button).ClickAsync(new Microsoft.AspNetCore.Components.Web.MouseEventArgs());
+
+        var dealt = HandOnTable(page);
+        Assert.NotSame(scored, dealt);   // out already, while the browser is still saving
+        await CallAnyway(page, "Submit");   // a second click, sent meanwhile
+        await page.InvokeAsync(() => _player.HoldWrites.SetResult());
+        await first;
+
+        Assert.Equal("1", Score(page));
+        Assert.Same(dealt, HandOnTable(page));   // nothing dealt over it
+        Assert.NotNull(_player.Player);
+    }
+
+    [Fact]
+    public async Task A_new_players_score_still_goes_on_if_time_runs_out_while_their_browser_saves_them()
+    {
+        _player.HoldWrites = new TaskCompletionSource();
+        var page = Playing(6, 6, 6, 6);
+        page.Find("input.tf-input").Input("6 + 6 + 6 + 6");
+        var first = page.Find("button.oad-btn-green").ClickAsync(new Microsoft.AspNetCore.Components.Web.MouseEventArgs());
+
+        await Tick(page, TimeSpan.FromMinutes(5));
+        Assert.Empty(_board.Blitz.AllTime);   // no player yet to put there
+        await page.InvokeAsync(() => _player.HoldWrites.SetResult());
+        await first;
+
+        Assert.Equal([(_player.Player!, 1)], Rows(_board.Blitz.AllTime));
     }
 
     // ---- the board -------------------------------------------------------------------
