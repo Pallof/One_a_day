@@ -159,13 +159,14 @@ public class ChallengeLayoutTests : BunitContext
 
     /// <summary>
     /// Only today's challenge, yesterday's solution and Twenty Four widen for their two columns;
-    /// every other page keeps the reading column. Twenty Four under its old address too.
+    /// every other page keeps the reading column. Twenty Four under its old address too, and 24 Blitz.
     /// </summary>
     [Theory]
     [InlineData("", true)]
     [InlineData("yesterday", true)]
     [InlineData("twentyfour", true)]
     [InlineData("questions", true)]
+    [InlineData("twentyfour/blitz", true)]
     [InlineData("twentyfour#oad-main", true)]   // after "Skip to content"
     [InlineData("#oad-main", true)]
     [InlineData("about", false)]

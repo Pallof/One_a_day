@@ -122,10 +122,11 @@
 
     /// <summary>
     /// The pages that go to two columns on a laptop (PRD 09). Twenty Four under both its
-    /// addresses: /questions is the old one, kept for bookmarks.
+    /// addresses (/questions is the old one, kept for bookmarks), and 24 Blitz.
     /// </summary>
     private bool IsSplitPage =>
-        IsHomePage || IsCurrent("yesterday") || IsCurrent("twentyfour") || IsCurrent("questions");
+        IsHomePage || IsCurrent("yesterday") || IsCurrent("twentyfour") || IsCurrent("questions")
+        || IsCurrent("twentyfour/blitz");
 
     protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
 

@@ -1,0 +1,7 @@
+@page "/twentyfour/blitz"
+
+@* 24 Blitz (PRD 07, issue 84): the Twenty Four page in its timed mode, so the two share one set of
+   cards, keypad, styles and board code. A page of its own rather than a third address on
+   TwentyFour.razor: Blazor keeps a page across its own addresses, so switching games would carry
+   a game in play over. Here every switch starts the page afresh, which also ends a Blitz game. *@
+<TwentyFour Blitz="true" />

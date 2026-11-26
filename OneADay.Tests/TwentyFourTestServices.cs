@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging.Abstractions;
 using OneADay.Models;
 using OneADay.Services;
@@ -41,13 +42,14 @@ public sealed class InMemoryPlayerStorage : ITwentyFourPlayerStorage
 
 public static class TwentyFourTestServices
 {
-    /// <summary>What the Twenty Four page needs besides metrics: its board and a player.</summary>
+    /// <summary>What the Twenty Four page needs besides metrics: its boards, a player and a clock.</summary>
     public static TwentyFourBoard AddTwentyFour(this IServiceCollection services, TestEnvironment env,
         InMemoryPlayerStorage? player = null)
     {
         var board = new TwentyFourBoard(env, NullLogger<TwentyFourBoard>.Instance);
         services.AddSingleton(board);
         services.AddSingleton<ITwentyFourPlayerStorage>(player ?? new InMemoryPlayerStorage());
+        services.TryAddSingleton(TimeProvider.System);   // Blitz tests put their own clock in first
         return board;
     }
 }
